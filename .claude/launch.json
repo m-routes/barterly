@@ -1,0 +1,25 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "web",
+        "run",
+        "dev"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "mobile-web-preview",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "-e",
+        "const h=require(\"http\"),fs=require(\"fs\"),p=require(\"path\"),r=p.resolve(\"mobile/build/web-preview\"),t={\".html\":\"text/html\",\".js\":\"text/javascript\",\".mjs\":\"text/javascript\",\".json\":\"application/json\",\".wasm\":\"application/wasm\",\".png\":\"image/png\",\".css\":\"text/css\",\".otf\":\"font/otf\",\".ttf\":\"font/ttf\"};h.createServer((q,s)=>{let u=decodeURIComponent(q.url.split(\"?\")[0]);let f=p.join(r,u.endsWith(\"/\")?u+\"index.html\":u);if(!f.startsWith(r)||!fs.existsSync(f)){s.writeHead(404);return s.end()}s.writeHead(200,{\"Content-Type\":t[p.extname(f)]||\"application/octet-stream\"});fs.createReadStream(f).pipe(s)}).listen(Number(process.env.PORT||8090),\"127.0.0.1\")"
+      ],
+      "port": 8090
+    }
+  ]
+}

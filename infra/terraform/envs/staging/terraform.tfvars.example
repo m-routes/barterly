@@ -1,0 +1,4 @@
+project_id   = "barterly-prod-123456"
+state_bucket = "barterly-prod-123456-tfstate"
+api_domains  = ["api.staging.barterly.in"]
+web_domains  = ["staging.barterly.in"]

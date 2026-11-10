@@ -1,0 +1,39 @@
+# Install: pip install pre-commit && pre-commit install
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.4
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
+
+  - repo: local
+    hooks:
+      - id: eslint
+        name: eslint (web)
+        entry: bash -c 'cd web && npx eslint --max-warnings=0 "${@/#web\//}"' --
+        language: system
+        files: ^web/.*\.(ts|tsx|js|jsx|mjs)$
+      - id: prettier
+        name: prettier (web)
+        entry: bash -c 'cd web && npx prettier --write --ignore-unknown "${@/#web\//}"' --
+        language: system
+        files: ^web/
+        exclude: ^web/(package-lock\.json|\.next/)
+      - id: dart-format
+        name: dart format (mobile)
+        entry: dart format
+        language: system
+        files: ^mobile/.*\.dart$
