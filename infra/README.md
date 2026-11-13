@@ -108,7 +108,11 @@ infra/scripts/set-secrets.sh production
 | `GCP_DEPLOY_SA` | `terraform output` → `environment.deploy_service_account` |
 | `WEB_URL` | `terraform output` → `environment.web_run_url` (or your domain) |
 
-Also protect `main` so merges need the backend, web and infra checks to pass. Deploys run on merge and don't re-run CI.
+Protect `main`: require a pull request (0 approvals, since GitHub doesn't let you approve your own PR), require conversation resolution, block force-pushes and deletion, and include administrators.
+
+No status checks are required, because each CI workflow is path-filtered: a required check for a folder a PR doesn't touch would never start, and the PR would wait forever. Check that the workflows that ran on the PR are green before merging. Merging to `main` deploys staging, and the deploy doesn't re-run CI.
+
+To make checks required later, add a gate workflow that runs on every PR, works out which areas changed and fails if any of their checks failed. Then require only that gate.
 
 7. Deploy. Merge to `main` to deploy staging. Tag a commit that staging is running and push the tag to deploy production after approval:
 
