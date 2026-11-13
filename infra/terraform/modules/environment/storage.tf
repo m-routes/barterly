@@ -24,7 +24,7 @@ resource "google_storage_bucket" "media" {
   cors {
     origin          = local.web_origins
     method          = ["GET", "PUT"]
-    response_header = ["Content-Type"]
+    response_header = ["Content-Type", "Content-MD5", "x-goog-content-length-range"]
     max_age_seconds = 3600
   }
 

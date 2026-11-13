@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     "apps.common",
     "apps.accounts",
     "apps.profiles",
+    "apps.media",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -94,6 +95,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "auth_exchange_ip": env_str("THROTTLE_AUTH_EXCHANGE_IP", "60/hour"),
         "auth_exchange_phone": env_str("THROTTLE_AUTH_EXCHANGE_PHONE", "10/hour"),
+        "media_upload": env_str("THROTTLE_MEDIA_UPLOAD", "120/hour"),
     },
     # Proxies in front of Django that append to X-Forwarded-For. 0 = use REMOTE_ADDR.
     "NUM_PROXIES": env_int("TRUSTED_PROXY_COUNT", 0),
@@ -142,3 +144,16 @@ LOGGING = logging_config(
     fmt=env_str("LOG_FORMAT", "json"),
     level=env_str("DJANGO_LOG_LEVEL", "INFO"),
 )
+
+# Uploads (apps.media). Files live in the private media bucket and are only ever reached
+# through short-lived signed URLs. Class paths are code settings, like the verifier.
+MEDIA_BUCKET = env_str("GS_MEDIA_BUCKET", "")
+GS_SA_EMAIL = env_str("GS_SA_EMAIL", "") or None
+MEDIA_STORAGE_CLASS = "apps.media.storage.GCSMediaStorage"
+MEDIA_VIRUS_SCANNER = "apps.media.scanning.NoopVirusScanner"
+TASK_QUEUE_CLASS = "apps.media.tasks.InlineTaskQueue"
+MEDIA_UPLOAD_URL_SECONDS = env_int("MEDIA_UPLOAD_URL_SECONDS", 900)
+MEDIA_READ_URL_SECONDS = env_int("MEDIA_READ_URL_SECONDS", 300)
+MEDIA_MAX_PENDING_UPLOADS = env_int("MEDIA_MAX_PENDING_UPLOADS", 20)
+# Serve only files a virus scanner passed. Off until a real scanner is wired up.
+MEDIA_REQUIRE_SCAN = env_bool("MEDIA_REQUIRE_SCAN", False)

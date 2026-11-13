@@ -79,10 +79,10 @@ def test_log_action_requires_action_and_target(kwargs):
 
 def test_snapshot_uses_raw_fk_ids_and_json_types():
     profile = TalentProfileFactory(languages=["Hindi"])
-    assert snapshot(profile, ["user", "languages", "full_name"]) == {
+    assert snapshot(profile, ["user", "languages", "display_name"]) == {
         "user": str(profile.user_id),
         "languages": ["Hindi"],
-        "full_name": profile.full_name,
+        "display_name": profile.display_name,
     }
 
 

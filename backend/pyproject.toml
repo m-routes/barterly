@@ -17,6 +17,7 @@ dependencies = [
   "sentry-sdk[django]>=2.19",
   "djangorestframework-simplejwt>=5.4",
   "firebase-admin>=6.6",
+  "pillow>=11.0",
 ]
 
 [dependency-groups]

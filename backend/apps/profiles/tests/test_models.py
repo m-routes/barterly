@@ -12,7 +12,7 @@ pytestmark = pytest.mark.django_db
 
 
 def test_profiles_link_to_their_user():
-    talent = TalentProfileFactory(full_name="Asha Rao")
+    talent = TalentProfileFactory(display_name="Asha Rao")
     vendor = VendorProfileFactory(business_name="Zostel Manali")
     assert talent.user.talent_profile == talent
     assert vendor.user.vendor_profile == vendor
@@ -25,11 +25,11 @@ def test_profiles_link_to_their_user():
 @pytest.mark.parametrize(
     ("profile_cls", "wrong_user_factory", "kwargs"),
     [
-        (TalentProfile, VendorFactory, {"full_name": "X"}),
+        (TalentProfile, VendorFactory, {"display_name": "X"}),
         (
             VendorProfile,
             TalentFactory,
-            {"business_name": "X", "property_type": "hostel", "city": "Goa", "state": "Goa"},
+            {"business_name": "X", "business_type": "hostel", "city": "Panaji", "state": "Goa"},
         ),
     ],
 )
@@ -43,7 +43,7 @@ def test_profile_requires_matching_role(profile_cls, wrong_user_factory, kwargs)
 def test_one_profile_per_user():
     profile = TalentProfileFactory()
     with pytest.raises(IntegrityError), transaction.atomic():
-        TalentProfile.objects.create(user=profile.user, full_name="Second")
+        TalentProfile.objects.create(user=profile.user, display_name="Second")
 
 
 @pytest.mark.parametrize(
@@ -70,7 +70,7 @@ def test_soft_deleted_profile_is_hidden():
 def test_admin_lists_include_soft_deleted(client):
     admin = User.objects.create_superuser("+919876599998", "admin-pass-123")
     client.force_login(admin)
-    deleted = TalentProfileFactory(full_name="Deleted Person")
+    deleted = TalentProfileFactory(display_name="Deleted Person")
     deleted.delete()
     VendorProfileFactory()
     talent_list = client.get(reverse("admin:profiles_talentprofile_changelist"))
