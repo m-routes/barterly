@@ -6,7 +6,7 @@ from config.settings.env import database_config, env_bool, env_list, env_str
 
 DEBUG = env_bool("DJANGO_DEBUG", True)
 
-SECRET_KEY = env_str("DJANGO_SECRET_KEY", "insecure-local-only-key")
+SECRET_KEY = env_str("DJANGO_SECRET_KEY", "insecure-local-only-key-never-use-when-deployed")
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,[::1]")
 

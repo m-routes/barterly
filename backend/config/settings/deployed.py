@@ -19,6 +19,10 @@ CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
 DATABASES = {"default": database_config(ssl_require=True, pool=True)}
 
+# Google's front end appends the real client IP to X-Forwarded-For; trust only that
+# last hop for per-IP rate limits (anything before it is client-supplied).
+REST_FRAMEWORK = {**REST_FRAMEWORK, "NUM_PROXIES": env_int("TRUSTED_PROXY_COUNT", 1)}  # noqa: F405
+
 # Cloud Run terminates TLS and forwards the original scheme.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = True

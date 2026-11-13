@@ -53,7 +53,9 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_user(self, phone, password=None, *, role, **extra_fields):
+    def create_user(self, phone, password=None, *, role="", **extra_fields):
+        # role "" means "not chosen yet": OTP sign-up creates the user, then the user
+        # picks vendor or talent once (POST /api/v1/me/role/).
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
         return self._create_user(phone, password, role=role, **extra_fields)
@@ -78,7 +80,10 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     )
     # NULL, not '', for "no email": the conditional unique constraint skips NULLs.
     email = models.EmailField(null=True, blank=True)  # noqa: DJ001
-    role = models.CharField(max_length=16, choices=Role.choices, db_index=True)
+    # "" until the user picks vendor or talent after their first sign-in.
+    role = models.CharField(
+        max_length=16, choices=Role.choices, blank=True, default="", db_index=True
+    )
     is_active = models.BooleanField(
         default=True,
         help_text="Unset instead of deleting accounts. Changes are audit-logged.",
@@ -101,7 +106,7 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
                 violation_error_message="A user with this email already exists.",
             ),
             models.CheckConstraint(
-                condition=models.Q(role__in=Role.values),
+                condition=models.Q(role__in=[*Role.values, ""]),
                 name="accounts_user_role_valid",
             ),
         ]
@@ -117,6 +122,10 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
             except ValidationError as exc:
                 raise ValidationError({"phone": exc.messages}) from exc
         self.email = UserManager.normalize_email(self.email)
+
+    @property
+    def has_role(self) -> bool:
+        return bool(self.role)
 
     @property
     def is_vendor(self) -> bool:

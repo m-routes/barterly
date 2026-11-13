@@ -9,7 +9,7 @@ URL = reverse("accounts:me")
 
 def test_anonymous_gets_error_shape(client):
     response = client.get(URL)
-    assert response.status_code == 403
+    assert response.status_code == 401
     assert response.json() == {
         "code": "not_authenticated",
         "message": "Authentication credentials were not provided.",
@@ -28,6 +28,7 @@ def test_signed_in_user_sees_themselves(client):
         "email": "host@example.com",
         "role": "vendor",
         "is_active": True,
+        "profile_complete": False,
         "created_at": response.json()["created_at"],
     }
     assert response["X-Request-ID"]
@@ -39,4 +40,4 @@ def test_basic_auth_is_not_accepted(client):
 
     token = base64.b64encode(f"{user.phone}:test-password-123".encode()).decode()
     response = client.get(URL, HTTP_AUTHORIZATION=f"Basic {token}")
-    assert response.status_code == 403
+    assert response.status_code == 401

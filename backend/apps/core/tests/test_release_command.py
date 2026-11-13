@@ -6,7 +6,7 @@ from django.core.management import call_command
 RELEASE = "apps.core.management.commands.release"
 
 
-def test_release_runs_migrate_then_collectstatic():
+def test_release_runs_migrate_cache_table_then_collectstatic():
     out = StringIO()
     with (
         mock.patch(f"{RELEASE}.call_command") as inner,
@@ -14,9 +14,14 @@ def test_release_runs_migrate_then_collectstatic():
     ):
         call_command("release", stdout=out)
     switch.assert_called_once()
-    assert [c.args[0] for c in inner.call_args_list] == ["migrate", "collectstatic"]
+    assert [c.args[0] for c in inner.call_args_list] == [
+        "migrate",
+        "createcachetable",
+        "collectstatic",
+    ]
     for c in inner.call_args_list:
-        assert c.kwargs["interactive"] is False
+        if c.args[0] != "createcachetable":
+            assert c.kwargs["interactive"] is False
     assert "Release tasks complete" in out.getvalue()
 
 
@@ -27,7 +32,7 @@ def test_release_can_skip_static():
         mock.patch(f"{RELEASE}.switch_to_custom_user", return_value=[]),
     ):
         call_command("release", "--skip-static", stdout=out)
-    assert [c.args[0] for c in inner.call_args_list] == ["migrate"]
+    assert [c.args[0] for c in inner.call_args_list] == ["migrate", "createcachetable"]
     assert "Skipping collectstatic" in out.getvalue()
 
 

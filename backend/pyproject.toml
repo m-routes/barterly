@@ -15,6 +15,8 @@ dependencies = [
   "uvicorn-worker>=0.3",
   "phonenumberslite>=8.13",
   "sentry-sdk[django]>=2.19",
+  "djangorestframework-simplejwt>=5.4",
+  "firebase-admin>=6.6",
 ]
 
 [dependency-groups]
