@@ -1,38 +1,33 @@
-import 'package:barterly/src/pay_model.dart';
-import 'package:flutter/material.dart';
+import 'dart:async';
 
-class BarterlyApp extends StatelessWidget {
-  const new({super.key});
+import 'package:barterly/src/auth/session.dart';
+import 'package:barterly/src/providers.dart';
+import 'package:barterly/src/router.dart';
+import 'package:barterly/src/theme/app_theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
+
+class BarterlyApp extends ConsumerWidget {
+  const new({this.brandFonts = true, super.key});
+
+  /// Tests turn this off so no fonts are fetched.
+  final bool brandFonts;
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Tag crash reports with the account id (not the phone number).
+    ref.listen(sessionProvider, (_, next) {
+      unawaited(
+        ref
+            .read(crashReporterProvider)
+            .setUser(next is SignedIn ? next.user.id : null),
+      );
+    });
+    return MaterialApp.router(
       title: 'Barterly',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-      ),
-      home: const HomeScreen(),
-    );
-  }
-}
-
-class HomeScreen extends StatelessWidget {
-  const new({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Barterly')),
-      body: ListView(
-        children: [
-          for (final model in PayModel.values)
-            ListTile(
-              key: ValueKey('pay-model-${model.name}'),
-              title: Text(model.label),
-              subtitle: Text(model.summary),
-            ),
-        ],
-      ),
+      debugShowCheckedModeBanner: false,
+      theme: barterlyTheme(brandFonts: brandFonts),
+      routerConfig: ref.watch(routerProvider),
     );
   }
 }
