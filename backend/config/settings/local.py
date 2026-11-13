@@ -21,3 +21,7 @@ LOGGING = logging_config(
     fmt=env_str("LOG_FORMAT", "plain"),
     level=env_str("DJANGO_LOG_LEVEL", "INFO"),
 )
+
+# Local development checks nothing: finish ID checks with `manage.py fake_kyc_result`.
+KYC_PROVIDER = "apps.verification.providers.fake.FakeKycProvider"
+KYC_WEBHOOK_SECRET = env_str("KYC_WEBHOOK_SECRET", "local-only-fake-kyc-webhook-secret")
