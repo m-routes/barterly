@@ -2,7 +2,8 @@
 
 from pathlib import Path
 
-from config.settings.env import env_float, env_int
+from apps.common.logging import logging_config
+from config.settings.env import env_bool, env_float, env_int, env_str
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -16,9 +17,15 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_spectacular",
     "apps.core",
+    "apps.common",
+    "apps.accounts",
+    "apps.profiles",
 ]
 
+AUTH_USER_MODEL = "accounts.User"
+
 MIDDLEWARE = [
+    "apps.common.middleware.RequestIDMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -72,9 +79,17 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Session auth for the admin console for now; Firebase token auth comes with sign-in.
+    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_PAGINATION_CLASS": "apps.common.pagination.DefaultPagination",
+    "PAGE_SIZE": 20,
+    "EXCEPTION_HANDLER": "apps.common.exceptions.exception_handler",
 }
+
+# Swagger UI at /api/docs/. Turned off in production; the schema stays at /api/schema/.
+API_DOCS_ENABLED = env_bool("API_DOCS_ENABLED", True)
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Barterly API",
@@ -83,14 +98,9 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
 }
 
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "plain": {"format": "%(levelname)s %(name)s %(message)s"},
-    },
-    "handlers": {
-        "console": {"class": "logging.StreamHandler", "formatter": "plain"},
-    },
-    "root": {"handlers": ["console"], "level": "INFO"},
-}
+# Structured JSON logs (one object per line, with request_id). LOG_FORMAT=plain for
+# human-readable local output.
+LOGGING = logging_config(
+    fmt=env_str("LOG_FORMAT", "json"),
+    level=env_str("DJANGO_LOG_LEVEL", "INFO"),
+)

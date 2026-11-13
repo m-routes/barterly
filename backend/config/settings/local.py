@@ -1,5 +1,6 @@
 """Local development and tests. Never used in a deployed environment."""
 
+from apps.common.logging import logging_config
 from config.settings.base import *  # noqa: F403
 from config.settings.env import database_config, env_bool, env_list, env_str
 
@@ -15,3 +16,8 @@ DATABASES = {
         default_url="postgres://barterly:barterly@localhost:5432/barterly",
     )
 }
+
+LOGGING = logging_config(
+    fmt=env_str("LOG_FORMAT", "plain"),
+    level=env_str("DJANGO_LOG_LEVEL", "INFO"),
+)
