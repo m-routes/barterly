@@ -3,6 +3,8 @@
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
+from apps.accounts.services.user_model_switch import switch_to_custom_user
+
 
 class Command(BaseCommand):
     help = "Apply migrations and upload static files. Run once per deploy, before traffic moves."
@@ -15,6 +17,10 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        # One-time, guarded: see apps.accounts.services.user_model_switch.
+        dropped = switch_to_custom_user()
+        if dropped:
+            self.stdout.write(f"Switched to accounts.User; dropped empty tables: {dropped}")
         self.stdout.write("Applying migrations")
         call_command("migrate", interactive=False, verbosity=options["verbosity"])
         if options["skip_static"]:

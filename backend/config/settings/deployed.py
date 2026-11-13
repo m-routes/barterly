@@ -64,7 +64,6 @@ STORAGES = {
 }
 STATIC_URL = f"https://storage.googleapis.com/{GS_STATIC_BUCKET}/static/"
 
-LOGGING["root"]["level"] = env_str("DJANGO_LOG_LEVEL", "INFO")  # noqa: F405
 
 # Health probes come from inside Cloud Run over plain HTTP.
 SECURE_REDIRECT_EXEMPT = [r"^api/v1/health/$"]

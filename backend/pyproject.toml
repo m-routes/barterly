@@ -13,6 +13,8 @@ dependencies = [
   "django-storages[google]>=1.14.4",
   "uvicorn[standard]>=0.32",
   "uvicorn-worker>=0.3",
+  "phonenumberslite>=8.13",
+  "sentry-sdk[django]>=2.19",
 ]
 
 [dependency-groups]
