@@ -9,6 +9,9 @@ locals {
     DJANGO_CSRF_TRUSTED_ORIGINS = join(",", concat([for h in local.api_hosts : "https://${h}"], local.web_origins))
     GS_MEDIA_BUCKET             = google_storage_bucket.media.name
     GS_STATIC_BUCKET            = google_storage_bucket.static.name
+    # Firebase Auth lives in the same Google Cloud project; ID tokens are checked
+    # against it (public certificates only, no key).
+    FIREBASE_PROJECT_ID = var.project_id
   }
 }
 

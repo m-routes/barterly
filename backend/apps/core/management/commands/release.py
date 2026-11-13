@@ -23,6 +23,8 @@ class Command(BaseCommand):
             self.stdout.write(f"Switched to accounts.User; dropped empty tables: {dropped}")
         self.stdout.write("Applying migrations")
         call_command("migrate", interactive=False, verbosity=options["verbosity"])
+        # Shared cache table (rate-limit counters). No-op when it exists.
+        call_command("createcachetable", verbosity=options["verbosity"])
         if options["skip_static"]:
             self.stdout.write("Skipping collectstatic")
         else:

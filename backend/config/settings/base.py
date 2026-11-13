@@ -1,5 +1,6 @@
 """Settings shared by every environment. Environment modules import from here."""
 
+from datetime import timedelta
 from pathlib import Path
 
 from apps.common.logging import logging_config
@@ -16,6 +17,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "drf_spectacular",
+    "rest_framework_simplejwt.token_blacklist",
     "apps.core",
     "apps.common",
     "apps.accounts",
@@ -79,14 +81,50 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    # Session auth for the admin console for now; Firebase token auth comes with sign-in.
-    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
+    # Apps send the JWT from /api/v1/auth/exchange/; the session is for the Django admin.
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PAGINATION_CLASS": "apps.common.pagination.DefaultPagination",
     "PAGE_SIZE": 20,
     "EXCEPTION_HANDLER": "apps.common.exceptions.exception_handler",
+    "DEFAULT_THROTTLE_RATES": {
+        "auth_exchange_ip": env_str("THROTTLE_AUTH_EXCHANGE_IP", "60/hour"),
+        "auth_exchange_phone": env_str("THROTTLE_AUTH_EXCHANGE_PHONE", "10/hour"),
+    },
+    # Proxies in front of Django that append to X-Forwarded-For. 0 = use REMOTE_ADDR.
+    "NUM_PROXIES": env_int("TRUSTED_PROXY_COUNT", 0),
 }
+
+# Throttle counters must be shared by every instance, so they live in Postgres
+# (`manage.py createcachetable`, run by the release command).
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "django_cache",
+    }
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=env_int("JWT_ACCESS_MINUTES", 15)),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=env_int("JWT_REFRESH_DAYS", 30)),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": False,  # the exchange view records it
+    "ALGORITHM": "HS256",  # signed with SECRET_KEY, which comes from Secret Manager
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+}
+
+# Sign-in token verifier (see apps.accounts.auth.verifiers). Set in code, not from the
+# environment, so a deployed service can't be pointed at the test fake.
+AUTH_TOKEN_VERIFIER = "apps.accounts.auth.verifiers.FirebaseTokenVerifier"  # noqa: S105 (class path)
+FIREBASE_PROJECT_ID = env_str("FIREBASE_PROJECT_ID", "")
+FIREBASE_CHECK_REVOKED = env_bool("FIREBASE_CHECK_REVOKED", False)
 
 # Swagger UI at /api/docs/. Turned off in production; the schema stays at /api/schema/.
 API_DOCS_ENABLED = env_bool("API_DOCS_ENABLED", True)

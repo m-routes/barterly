@@ -103,3 +103,29 @@ def test_natural_key_lookup_and_authentication_accept_local_format():
 def test_inactive_users_cannot_authenticate():
     TalentFactory(phone="+919876500008", is_active=False)
     assert authenticate(username="+919876500008", password="test-password-123") is None
+
+
+def test_role_is_empty_until_chosen():
+    user = User.objects.create_user("+919876500077")
+    assert user.role == "" and not user.has_role
+    user.full_clean(exclude=["password"])
+
+
+def test_database_rejects_unknown_roles():
+    from django.db import IntegrityError, transaction
+
+    user = User.objects.create_user("+919876500078")
+    with pytest.raises(IntegrityError), transaction.atomic():
+        User.objects.filter(pk=user.pk).update(role="guest")
+
+
+def test_role_migration_refuses_to_reverse_with_roleless_users():
+    import importlib
+
+    from django.apps import apps as global_apps
+
+    migration = importlib.import_module("apps.accounts.migrations.0002_role_chosen_after_sign_up")
+    migration.refuse_if_role_missing(global_apps, None)  # no users: fine
+    User.objects.create_user("+919876500079")
+    with pytest.raises(RuntimeError, match="1 user"):
+        migration.refuse_if_role_missing(global_apps, None)
