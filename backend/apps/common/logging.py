@@ -15,10 +15,16 @@ _STANDARD_ATTRS = set(vars(logging.makeLogRecord({}))) | {"message", "asctime", 
 
 
 class RequestIDFilter(logging.Filter):
-    """Attach the current request id (or '-') to every record."""
+    """Attach the request id (or '-') to every record.
+
+    Django's `django.request` warnings for 4xx/5xx responses are written after the
+    middleware has returned and cleared the context, but they carry the request in
+    `extra={"request": ...}`, so the id is read from there first.
+    """
 
     def filter(self, record: logging.LogRecord) -> bool:
-        record.request_id = get_request_id() or "-"
+        request = getattr(record, "request", None)
+        record.request_id = getattr(request, "request_id", None) or get_request_id() or "-"
         return True
 
 
@@ -32,8 +38,14 @@ class JsonFormatter(logging.Formatter):
             "request_id": getattr(record, "request_id", "-"),
         }
         for key, value in vars(record).items():
-            if key not in _STANDARD_ATTRS and not key.startswith("_"):
-                payload[key] = value
+            if key in _STANDARD_ATTRS or key.startswith("_"):
+                continue
+            if key == "request":
+                # Log what identifies the request, not the object's repr.
+                payload["method"] = getattr(value, "method", None)
+                payload["path"] = getattr(value, "path", None)
+                continue
+            payload[key] = value
         if record.exc_info:
             payload["exception"] = self.formatException(record.exc_info)
         if record.stack_info:
