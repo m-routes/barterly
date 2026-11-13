@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - "backend/**"
+      - "web/openapi/schema.yaml"
       - ".github/workflows/backend.yml"
   pull_request:
     paths:
       - "backend/**"
+      - "web/openapi/schema.yaml"
       - ".github/workflows/backend.yml"
 
 concurrency:
@@ -71,6 +73,10 @@ jobs:
         run: uv run python manage.py migrate --noinput
       - name: OpenAPI schema validates
         run: uv run python manage.py spectacular --validate --fail-on-warn --file openapi.yaml
+      - name: Web client schema is up to date
+        # web/ generates its typed API client from this file. If this fails, run
+        # `npm run api:generate` in web/ and commit both files.
+        run: diff -u ../web/openapi/schema.yaml openapi.yaml
       - name: Tests
         run: uv run pytest --cov --cov-report=term --cov-report=xml
       - name: Coverage gate (services >= 85%)

@@ -41,3 +41,13 @@ def test_basic_auth_is_not_accepted(client):
     token = base64.b64encode(f"{user.phone}:test-password-123".encode()).decode()
     response = client.get(URL, HTTP_AUTHORIZATION=f"Basic {token}")
     assert response.status_code == 401
+
+
+def test_schema_allows_blank_role():
+    """Clients generate types from the schema; it must admit role "" (no role yet)."""
+    from drf_spectacular.generators import SchemaGenerator
+
+    schema = SchemaGenerator().get_schema(request=None, public=True)
+    role = schema["components"]["schemas"]["User"]["properties"]["role"]
+    refs = {option["$ref"].rsplit("/", 1)[-1] for option in role["oneOf"]}
+    assert refs == {"UserRoleEnum", "BlankEnum"}

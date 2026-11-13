@@ -35,6 +35,10 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check
+      - name: Generated API types match web/openapi/schema.yaml
+        run: |
+          npm run api:types
+          git diff --exit-code -- src/lib/api/schema.d.ts
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
@@ -67,4 +71,4 @@ jobs:
           test "$(docker run --rm --entrypoint id barterly-web:ci -u)" != "0"
           docker run -d --name web -p 8080:8080 barterly-web:ci
           for _ in $(seq 1 20); do curl -fsS localhost:8080/ >/dev/null && break; sleep 1; done
-          curl -fsS localhost:8080/ | grep -q "Barterly vendor console"
+          curl -fsS localhost:8080/ | grep -q "Find talent for your stay"

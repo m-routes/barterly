@@ -1,0 +1,1420 @@
+openapi: 3.0.3
+info:
+  title: Barterly API
+  version: 0.1.0
+  description: Work-exchange marketplace for travel and hospitality in India.
+paths:
+  /api/v1/auth/exchange/:
+    post:
+      operationId: auth_exchange
+      description: Verifies the ID token from Firebase phone sign-in, creates the
+        user on first sign-in, and returns a short-lived access token and a refresh
+        token. Rate limited per IP and per phone number.
+      summary: Exchange an OTP provider ID token for API tokens
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExchangeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ExchangeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ExchangeRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExchangeResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/auth/logout/:
+    post:
+      operationId: auth_logout
+      description: |-
+        Revoke a refresh token. Holding the token is proof enough, so no access token is
+        needed (it may already have expired).
+      summary: Sign out by blacklisting the refresh token
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+        required: true
+      responses:
+        '204':
+          description: Signed out.
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/auth/refresh/:
+    post:
+      operationId: auth_refresh
+      description: 'Rotating refresh: the old refresh token is blacklisted once used.'
+      summary: Get a new access token (and a new refresh token)
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/health/:
+    get:
+      operationId: health_check
+      tags:
+      - system
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+          description: ''
+  /api/v1/me/:
+    get:
+      operationId: accounts_me
+      summary: The signed-in user
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/me/role/:
+    post:
+      operationId: accounts_me_role
+      description: Sets the role of a user who signed up by OTP. Allowed once; admin
+        roles are granted only in the Django admin.
+      summary: Choose vendor or talent (once)
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChooseRole'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChooseRole'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChooseRole'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/media/{media_id}/:
+    get:
+      operationId: media_retrieve
+      description: Owner (or a Barterly admin) only. `url` is null until the file
+        is ready.
+      summary: A file, with short-lived signed read URLs
+      parameters:
+      - in: path
+        name: media_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - media
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaFile'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/media/confirm/:
+    post:
+      operationId: media_confirm
+      description: Checks the stored file against what was declared (type, size, checksum,
+        file signature), records it, and starts processing (virus scan; resized copies
+        for images). Safe to repeat.
+      summary: Record an uploaded file
+      tags:
+      - media
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConfirmRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConfirmRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaFile'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/media/upload-url/:
+    post:
+      operationId: media_upload_url
+      description: 'Allowed: avatar and photo (jpeg, png, webp; 5 MB and 10 MB), video
+        (mp4, 100 MB), document (pdf, jpeg, png; 10 MB). PUT the file to `upload_url`
+        with exactly the returned `headers` before `expires_at`, then call /api/v1/media/confirm/.'
+      summary: Get a signed URL to upload one file
+      tags:
+      - media
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadUrlRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UploadUrlRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UploadUrlRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadUrlResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/profiles/skills/:
+    get:
+      operationId: profiles_skills_list
+      summary: Skills talent can pick
+      tags:
+      - profiles
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Skill'
+          description: ''
+  /api/v1/profiles/talent/me/:
+    get:
+      operationId: profiles_talent_me_retrieve
+      description: GET the signed-in user's profile; PATCH creates it on first save.
+      summary: Get my talent profile
+      tags:
+      - profiles
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TalentProfile'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    patch:
+      operationId: profiles_talent_me_update
+      description: Partial update; the first PATCH creates the profile (201). The
+        response says whether the profile is complete and which fields are missing.
+      summary: Create or update my talent profile
+      tags:
+      - profiles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTalentProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTalentProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTalentProfile'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TalentProfile'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TalentProfile'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/profiles/vendor/me/:
+    get:
+      operationId: profiles_vendor_me_retrieve
+      description: GET the signed-in user's profile; PATCH creates it on first save.
+      summary: Get my vendor profile
+      tags:
+      - profiles
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorProfile'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    patch:
+      operationId: profiles_vendor_me_update
+      description: Partial update; the first PATCH creates the profile (201). The
+        response says whether the profile is complete and which fields are missing.
+      summary: Create or update my vendor profile
+      tags:
+      - profiles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedVendorProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedVendorProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedVendorProfile'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorProfile'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorProfile'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+components:
+  schemas:
+    BlankEnum:
+      enum:
+      - ''
+    BusinessTypeEnum:
+      enum:
+      - hostel
+      - homestay
+      - guesthouse
+      - hotel
+      - resort
+      - cafe
+      - restaurant
+      - camp
+      - farm
+      - tour_operator
+      - coworking
+      - other
+      type: string
+      description: |-
+        * `hostel` - Hostel
+        * `homestay` - Homestay
+        * `guesthouse` - Guesthouse
+        * `hotel` - Hotel
+        * `resort` - Resort
+        * `cafe` - Café
+        * `restaurant` - Restaurant
+        * `camp` - Camp
+        * `farm` - Farm stay
+        * `tour_operator` - Tour operator
+        * `coworking` - Co-working / co-living
+        * `other` - Other
+    ChooseRole:
+      type: object
+      properties:
+        role:
+          $ref: '#/components/schemas/ChooseRoleRoleEnum'
+      required:
+      - role
+    ChooseRoleRoleEnum:
+      enum:
+      - vendor
+      - talent
+      type: string
+      description: |-
+        * `vendor` - Vendor
+        * `talent` - Talent
+    ConfirmRequest:
+      type: object
+      properties:
+        media_id:
+          type: string
+          format: uuid
+      required:
+      - media_id
+    ContentTypeEnum:
+      enum:
+      - application/pdf
+      - image/jpeg
+      - image/png
+      - image/webp
+      - video/mp4
+      type: string
+      description: |-
+        * `application/pdf` - application/pdf
+        * `image/jpeg` - image/jpeg
+        * `image/png` - image/png
+        * `image/webp` - image/webp
+        * `video/mp4` - video/mp4
+    DatabaseEnum:
+      enum:
+      - ok
+      - unavailable
+      type: string
+      description: |-
+        * `ok` - ok
+        * `unavailable` - unavailable
+    Error:
+      type: object
+      description: Shape of every error response. Use it in extend_schema(responses=...).
+      properties:
+        code:
+          type: string
+          description: Stable machine-readable code, e.g. 'not_found'.
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: {}
+          description: Extra context. Field errors for 'validation_error'; otherwise
+            often empty.
+      required:
+      - code
+      - details
+      - message
+    ExchangeRequest:
+      type: object
+      properties:
+        id_token:
+          type: string
+          description: The ID token the client got from Firebase phone (OTP) sign-in.
+          maxLength: 8192
+      required:
+      - id_token
+    ExchangeResponse:
+      type: object
+      properties:
+        access:
+          type: string
+          description: 'Short-lived JWT. Send as `Authorization: Bearer`.'
+        refresh:
+          type: string
+          description: Exchange at /api/v1/auth/refresh/ for new tokens.
+        is_new_user:
+          type: boolean
+        profile_complete:
+          type: boolean
+        needs_role:
+          type: boolean
+          description: True until the user picks vendor or talent at /api/v1/me/role/.
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+      - access
+      - is_new_user
+      - needs_role
+      - profile_complete
+      - refresh
+      - user
+    Health:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/HealthStatusEnum'
+        database:
+          $ref: '#/components/schemas/DatabaseEnum'
+      required:
+      - database
+      - status
+    HealthStatusEnum:
+      enum:
+      - ok
+      - degraded
+      type: string
+      description: |-
+        * `ok` - ok
+        * `degraded` - degraded
+    KindEnum:
+      enum:
+      - avatar
+      - photo
+      - video
+      - document
+      type: string
+      description: |-
+        * `avatar` - Profile photo
+        * `photo` - Photo
+        * `video` - Video
+        * `document` - Document
+    LanguagesEnum:
+      enum:
+      - ar
+      - as
+      - bn
+      - de
+      - en
+      - es
+      - fr
+      - gu
+      - he
+      - hi
+      - it
+      - ja
+      - kn
+      - ko
+      - kok
+      - ml
+      - mr
+      - ne
+      - nl
+      - or
+      - pa
+      - pt
+      - ru
+      - ta
+      - te
+      - ur
+      - zh
+      type: string
+      description: |-
+        * `ar` - Arabic
+        * `as` - Assamese
+        * `bn` - Bengali
+        * `de` - German
+        * `en` - English
+        * `es` - Spanish
+        * `fr` - French
+        * `gu` - Gujarati
+        * `he` - Hebrew
+        * `hi` - Hindi
+        * `it` - Italian
+        * `ja` - Japanese
+        * `kn` - Kannada
+        * `ko` - Korean
+        * `kok` - Konkani
+        * `ml` - Malayalam
+        * `mr` - Marathi
+        * `ne` - Nepali
+        * `nl` - Dutch
+        * `or` - Odia
+        * `pa` - Punjabi
+        * `pt` - Portuguese
+        * `ru` - Russian
+        * `ta` - Tamil
+        * `te` - Telugu
+        * `ur` - Urdu
+        * `zh` - Chinese
+    MediaFile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/KindEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/MediaFileStatusEnum'
+          readOnly: true
+        content_type:
+          type: string
+          readOnly: true
+        size_bytes:
+          type: integer
+          readOnly: true
+          description: Declared at upload, checked on confirm.
+        checksum_md5:
+          type: string
+          readOnly: true
+          description: Hex MD5 of the stored bytes (from Cloud Storage).
+        scan_status:
+          allOf:
+          - $ref: '#/components/schemas/ScanStatusEnum'
+          readOnly: true
+        rejection_reason:
+          type: string
+          readOnly: true
+        url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+          description: Signed, short-lived; null until ready.
+        variants:
+          type: object
+          additionalProperties:
+            type: string
+            format: uri
+          readOnly: true
+          description: Signed URLs for resized copies (images only).
+        url_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - checksum_md5
+      - content_type
+      - created_at
+      - id
+      - kind
+      - rejection_reason
+      - scan_status
+      - size_bytes
+      - status
+      - url
+      - url_expires_at
+      - variants
+    MediaFileStatusEnum:
+      enum:
+      - pending_upload
+      - processing
+      - ready
+      - rejected
+      - quarantined
+      type: string
+      description: |-
+        * `pending_upload` - Waiting for upload
+        * `processing` - Processing
+        * `ready` - Ready
+        * `rejected` - Rejected
+        * `quarantined` - Quarantined
+    PatchedTalentProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        display_name:
+          type: string
+          maxLength: 120
+        bio:
+          type: string
+          maxLength: 2000
+        talent_type:
+          oneOf:
+          - $ref: '#/components/schemas/TalentTypeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        skills:
+          type: array
+          items:
+            type: string
+          description: Skill slugs from GET /api/v1/profiles/skills/.
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/LanguagesEnum'
+          description: ISO 639 codes, e.g. ['en', 'hi'].
+          maxItems: 10
+        home_city:
+          type: string
+          maxLength: 80
+        emergency_contact_name:
+          type: string
+          maxLength: 80
+        emergency_contact_phone:
+          type: string
+          description: E.164
+          maxLength: 16
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        instagram_handle:
+          description: With or without the @.
+          oneOf:
+          - type: string
+            pattern: ^[A-Za-z0-9._]{1,30}$
+            maxLength: 31
+          - type: string
+            maxLength: 0
+        profile_complete:
+          type: boolean
+          readOnly: true
+        missing_fields:
+          type: array
+          items:
+            type: string
+          readOnly: true
+          description: Fields still empty that stop the profile counting as complete.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedVendorProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        business_name:
+          type: string
+          maxLength: 150
+        business_type:
+          oneOf:
+          - $ref: '#/components/schemas/BusinessTypeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        contact_name:
+          type: string
+          maxLength: 80
+        city:
+          type: string
+          maxLength: 80
+        state:
+          oneOf:
+          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        about:
+          type: string
+          maxLength: 3000
+        address:
+          type: string
+          maxLength: 500
+        gstin:
+          type: string
+          description: 15-character GSTIN
+          maxLength: 15
+        website:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        profile_complete:
+          type: boolean
+          readOnly: true
+        missing_fields:
+          type: array
+          items:
+            type: string
+          readOnly: true
+          description: Fields still empty that stop the profile counting as complete.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    RefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+      required:
+      - refresh
+    ScanStatusEnum:
+      enum:
+      - pending
+      - clean
+      - infected
+      - skipped
+      - error
+      type: string
+      description: |-
+        * `pending` - Not scanned yet
+        * `clean` - Clean
+        * `infected` - Infected
+        * `skipped` - No scanner configured
+        * `error` - Scan failed
+    Skill:
+      type: object
+      properties:
+        slug:
+          type: string
+          maxLength: 60
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          maxLength: 60
+      required:
+      - name
+      - slug
+    StateEnum:
+      enum:
+      - Andhra Pradesh
+      - Arunachal Pradesh
+      - Assam
+      - Bihar
+      - Chhattisgarh
+      - Goa
+      - Gujarat
+      - Haryana
+      - Himachal Pradesh
+      - Jharkhand
+      - Karnataka
+      - Kerala
+      - Madhya Pradesh
+      - Maharashtra
+      - Manipur
+      - Meghalaya
+      - Mizoram
+      - Nagaland
+      - Odisha
+      - Punjab
+      - Rajasthan
+      - Sikkim
+      - Tamil Nadu
+      - Telangana
+      - Tripura
+      - Uttar Pradesh
+      - Uttarakhand
+      - West Bengal
+      - Andaman and Nicobar Islands
+      - Chandigarh
+      - Dadra and Nagar Haveli and Daman and Diu
+      - Delhi
+      - Jammu and Kashmir
+      - Ladakh
+      - Lakshadweep
+      - Puducherry
+      type: string
+      description: |-
+        * `Andhra Pradesh` - Andhra Pradesh
+        * `Arunachal Pradesh` - Arunachal Pradesh
+        * `Assam` - Assam
+        * `Bihar` - Bihar
+        * `Chhattisgarh` - Chhattisgarh
+        * `Goa` - Goa
+        * `Gujarat` - Gujarat
+        * `Haryana` - Haryana
+        * `Himachal Pradesh` - Himachal Pradesh
+        * `Jharkhand` - Jharkhand
+        * `Karnataka` - Karnataka
+        * `Kerala` - Kerala
+        * `Madhya Pradesh` - Madhya Pradesh
+        * `Maharashtra` - Maharashtra
+        * `Manipur` - Manipur
+        * `Meghalaya` - Meghalaya
+        * `Mizoram` - Mizoram
+        * `Nagaland` - Nagaland
+        * `Odisha` - Odisha
+        * `Punjab` - Punjab
+        * `Rajasthan` - Rajasthan
+        * `Sikkim` - Sikkim
+        * `Tamil Nadu` - Tamil Nadu
+        * `Telangana` - Telangana
+        * `Tripura` - Tripura
+        * `Uttar Pradesh` - Uttar Pradesh
+        * `Uttarakhand` - Uttarakhand
+        * `West Bengal` - West Bengal
+        * `Andaman and Nicobar Islands` - Andaman and Nicobar Islands
+        * `Chandigarh` - Chandigarh
+        * `Dadra and Nagar Haveli and Daman and Diu` - Dadra and Nagar Haveli and Daman and Diu
+        * `Delhi` - Delhi
+        * `Jammu and Kashmir` - Jammu and Kashmir
+        * `Ladakh` - Ladakh
+        * `Lakshadweep` - Lakshadweep
+        * `Puducherry` - Puducherry
+    TalentProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        display_name:
+          type: string
+          maxLength: 120
+        bio:
+          type: string
+          maxLength: 2000
+        talent_type:
+          oneOf:
+          - $ref: '#/components/schemas/TalentTypeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        skills:
+          type: array
+          items:
+            type: string
+          description: Skill slugs from GET /api/v1/profiles/skills/.
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/LanguagesEnum'
+          description: ISO 639 codes, e.g. ['en', 'hi'].
+          maxItems: 10
+        home_city:
+          type: string
+          maxLength: 80
+        emergency_contact_name:
+          type: string
+          maxLength: 80
+        emergency_contact_phone:
+          type: string
+          description: E.164
+          maxLength: 16
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        instagram_handle:
+          description: With or without the @.
+          oneOf:
+          - type: string
+            pattern: ^[A-Za-z0-9._]{1,30}$
+            maxLength: 31
+          - type: string
+            maxLength: 0
+        profile_complete:
+          type: boolean
+          readOnly: true
+        missing_fields:
+          type: array
+          items:
+            type: string
+          readOnly: true
+          description: Fields still empty that stop the profile counting as complete.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - missing_fields
+      - profile_complete
+      - updated_at
+    TalentTypeEnum:
+      enum:
+      - artist
+      - photo_video
+      - content_creator
+      - musician
+      - wellness
+      - culinary
+      - hospitality
+      - teacher
+      - tech
+      - outdoor
+      - other
+      type: string
+      description: |-
+        * `artist` - Artist / muralist
+        * `photo_video` - Photographer / videographer
+        * `content_creator` - Content creator / social media
+        * `musician` - Musician / performer
+        * `wellness` - Yoga / wellness
+        * `culinary` - Chef / barista
+        * `hospitality` - Hospitality / front desk
+        * `teacher` - Teacher / workshop host
+        * `tech` - Tech / design
+        * `outdoor` - Outdoor / trek guide
+        * `other` - Other
+    TokenPair:
+      type: object
+      properties:
+        access:
+          type: string
+          description: 'Short-lived JWT. Send as `Authorization: Bearer`.'
+        refresh:
+          type: string
+          description: Exchange at /api/v1/auth/refresh/ for new tokens.
+      required:
+      - access
+      - refresh
+    UploadUrlRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/KindEnum'
+        content_type:
+          $ref: '#/components/schemas/ContentTypeEnum'
+        size_bytes:
+          type: integer
+          minimum: 1
+        checksum_md5:
+          description: Optional hex MD5. If sent, Cloud Storage rejects a body that
+            doesn't match.
+          oneOf:
+          - type: string
+            pattern: ^[0-9a-fA-F]{32}$
+          - type: string
+            maxLength: 0
+      required:
+      - content_type
+      - kind
+      - size_bytes
+    UploadUrlResponse:
+      type: object
+      properties:
+        media_id:
+          type: string
+          format: uuid
+        upload_url:
+          type: string
+          format: uri
+        method:
+          type: string
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+          description: Send exactly these headers with the upload.
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - expires_at
+      - headers
+      - media_id
+      - method
+      - upload_url
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+          description: Login identifier, stored in E.164 (e.g. +919876543210).
+        email:
+          type: string
+          format: email
+          readOnly: true
+          nullable: true
+        role:
+          readOnly: true
+          description: |-
+            "" until the user picks vendor or talent at /api/v1/me/role/.
+
+            * `vendor` - Vendor
+            * `talent` - Talent
+            * `admin` - Admin
+          oneOf:
+          - $ref: '#/components/schemas/UserRoleEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        is_active:
+          type: boolean
+          readOnly: true
+          description: Unset instead of deleting accounts. Changes are audit-logged.
+        profile_complete:
+          type: boolean
+          readOnly: true
+          description: True once the user has a role and the matching profile.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - email
+      - id
+      - is_active
+      - phone
+      - profile_complete
+      - role
+    UserRoleEnum:
+      enum:
+      - vendor
+      - talent
+      - admin
+      type: string
+      description: |-
+        * `vendor` - Vendor
+        * `talent` - Talent
+        * `admin` - Admin
+    VendorProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        business_name:
+          type: string
+          maxLength: 150
+        business_type:
+          oneOf:
+          - $ref: '#/components/schemas/BusinessTypeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        contact_name:
+          type: string
+          maxLength: 80
+        city:
+          type: string
+          maxLength: 80
+        state:
+          oneOf:
+          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        about:
+          type: string
+          maxLength: 3000
+        address:
+          type: string
+          maxLength: 500
+        gstin:
+          type: string
+          description: 15-character GSTIN
+          maxLength: 15
+        website:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        profile_complete:
+          type: boolean
+          readOnly: true
+        missing_fields:
+          type: array
+          items:
+            type: string
+          readOnly: true
+          description: Fields still empty that stop the profile counting as complete.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - missing_fields
+      - profile_complete
+      - updated_at
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
