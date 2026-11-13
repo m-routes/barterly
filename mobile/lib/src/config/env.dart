@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 ///     flutter run --dart-define-from-file=env/staging.json
 ///
 /// Files in `env/` hold public config only (URLs, Firebase app ids). The Sentry
-/// DSN and Firebase API key are public client identifiers, not secrets.
+/// DSN and Firebase API keys are public client identifiers, not secrets.
 enum AppEnv {
   local,
   staging,
@@ -68,10 +68,14 @@ class AppConfig {
   };
 
   static FirebaseOptions? _firebaseOptions() {
-    const apiKey = String.fromEnvironment('FIREBASE_API_KEY');
     const projectId = String.fromEnvironment('FIREBASE_PROJECT_ID');
     const senderId = String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID');
-    final appId = defaultTargetPlatform == TargetPlatform.iOS
+    // Firebase issues a separate API key and app id per platform.
+    final ios = defaultTargetPlatform == TargetPlatform.iOS;
+    final apiKey = ios
+        ? const String.fromEnvironment('FIREBASE_IOS_API_KEY')
+        : const String.fromEnvironment('FIREBASE_ANDROID_API_KEY');
+    final appId = ios
         ? const String.fromEnvironment('FIREBASE_IOS_APP_ID')
         : const String.fromEnvironment('FIREBASE_ANDROID_APP_ID');
     if (apiKey.isEmpty || projectId.isEmpty || appId.isEmpty) return null;
