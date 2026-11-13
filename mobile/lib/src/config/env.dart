@@ -5,8 +5,8 @@ import 'package:flutter/foundation.dart';
 ///
 ///     flutter run --dart-define-from-file=env/staging.json
 ///
-/// Files in `env/` hold public config only (URLs, Firebase app ids). The Sentry
-/// DSN and Firebase API keys are public client identifiers, not secrets.
+/// Files in `env/` hold public config (URLs, Firebase app ids); Firebase API keys
+/// come from the uncommitted env/firebase-keys.json (second --dart-define-from-file).
 enum AppEnv {
   local,
   staging,

@@ -131,7 +131,7 @@ Money and status changes write an `AuditLog` entry through `apps.common.services
 
 Flutter 3.47 with Riverpod 3, go_router 18 and Dio. Material comes from the standalone `material_ui` package; import `package:material_ui/material_ui.dart`, not `package:flutter/material.dart`.
 
-**Environments.** Each build targets one environment through a settings file: `flutter run --dart-define-from-file=env/staging.json` (or `local.json`, `production.json`).
+**Environments.** Each build targets one environment through a settings file: `flutter run --dart-define-from-file=env/staging.json --dart-define-from-file=env/firebase-keys.json` (or `local.json`, `production.json`). Firebase API keys sit in the uncommitted `env/firebase-keys.json` so they never land in git.
 - The files set the API base URL, the Firebase app config and the Sentry DSN. All are public client identifiers, not secrets.
 - With no file, the app talks to `localhost:8000`, or `10.0.2.2:8000` from the Android emulator.
 
@@ -180,13 +180,13 @@ Until then, sign-in says it isn't available.
 | Task | backend/ | web/ | mobile/ |
 | --- | --- | --- | --- |
 | Install | `uv sync` | `npm ci` | `flutter pub get` |
-| Run | `uv run python manage.py runserver` | `npm run dev` | `flutter run --dart-define-from-file=env/local.json` |
+| Run | `uv run python manage.py runserver` | `npm run dev` | `flutter run --dart-define-from-file=env/local.json --dart-define-from-file=env/firebase-keys.json` |
 | Lint | `uv run ruff check .` | `npm run lint` | `flutter analyze --fatal-infos` |
 | Format check | `uv run ruff format --check .` | `npm run format:check` | `dart format --output=none --set-exit-if-changed .` |
 | Type check | — | `npm run typecheck` | (part of analyze) |
 | Unit tests | `uv run pytest --cov` | `npm test` | `flutter test` |
 | E2E / integration | — | `npm run test:e2e` | `flutter test integration_test` |
-| Build | — | `npm run build` | `flutter build apk --dart-define-from-file=env/production.json` (or `ios`) |
+| Build | — | `npm run build` | `flutter build apk --dart-define-from-file=env/production.json --dart-define-from-file=env/firebase-keys.json` (or `ios`) |
 | Dependency audit | `uv export … \| uvx pip-audit` | `npm audit` | — |
 
 The backend needs Postgres: `docker compose up -d db` from `backend/`, and `DJANGO_DEBUG=1` for local runs.

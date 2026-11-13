@@ -4,8 +4,9 @@ Flutter app for talent. See [docs/architecture.md](../docs/architecture.md#talen
 
 ```bash
 flutter pub get
-flutter run --dart-define-from-file=env/staging.json   # or env/local.json, env/production.json
+cp env/firebase-keys.example.json env/firebase-keys.json   # once; fill in the keys
+flutter run --dart-define-from-file=env/staging.json --dart-define-from-file=env/firebase-keys.json
 flutter analyze --fatal-infos && flutter test
 ```
 
-`env/*.json` hold public build settings (API URL, Firebase app ids, Sentry DSN). Sign-in needs the Firebase values filled in; without them the app says sign-in isn't available.
+`env/{local,staging,production}.json` hold build settings (API URL, Firebase project and app ids, Sentry DSN). The Firebase API keys live in `env/firebase-keys.json`, which is not committed: copy them from the Firebase console (Project settings → Your apps) or from `GoogleService-Info.plist` / `google-services.json`. Without the keys the app says sign-in isn't available.
