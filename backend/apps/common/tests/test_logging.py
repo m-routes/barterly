@@ -1,6 +1,7 @@
 import json
 import logging
 import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -76,3 +77,32 @@ def test_logging_config_rejects_unknown_format():
 
 def test_settings_use_structured_logging(settings):
     assert settings.LOGGING["handlers"]["console"]["filters"] == ["request_id"]
+
+
+def test_filter_prefers_the_request_attached_to_the_record():
+    request = SimpleNamespace(request_id="req-from-request", method="GET", path="/api/v1/me/")
+    record = make_record(request=request)
+    assert record.request_id == "req-from-request"
+
+
+def test_json_formatter_replaces_request_object_with_method_and_path():
+    request = SimpleNamespace(request_id="req-from-request", method="GET", path="/api/v1/me/")
+    payload = json.loads(JsonFormatter().format(make_record(request=request)))
+    assert "request" not in payload
+    assert payload["method"] == "GET"
+    assert payload["path"] == "/api/v1/me/"
+    assert payload["request_id"] == "req-from-request"
+
+
+@pytest.mark.django_db
+def test_django_4xx_warnings_carry_the_response_request_id(client, caplog):
+    with caplog.at_level(logging.WARNING, logger="django.request"):
+        response = client.get("/api/v1/me/", HTTP_X_REQUEST_ID="trace-me-12345")
+    assert response.status_code == 403
+
+    [record] = [r for r in caplog.records if r.name == "django.request"]
+    RequestIDFilter().filter(record)  # what the console handler does in production
+    payload = json.loads(JsonFormatter().format(record))
+    assert payload["request_id"] == response["X-Request-ID"] == "trace-me-12345"
+    assert payload["path"] == "/api/v1/me/"
+    assert payload["status_code"] == 403
