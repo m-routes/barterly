@@ -61,6 +61,13 @@ Surfaces: the vendor console (web), the talent app (mobile) and the admin consol
 | `accounts` | Custom `User` (`AUTH_USER_MODEL = "accounts.User"`), sign-in (OTP token exchange, JWT refresh and logout), audited role and status changes, `/api/v1/me/` |
 | `profiles` | `TalentProfile` and `VendorProfile` (one per user, role must match, soft-deleted), curated `Skill` list, `/api/v1/profiles/{vendor,talent}/me/` |
 | `media` | `MediaFile` records for uploads to the private bucket, signed upload/read URLs, the `media.process` task (virus scan hook, image resizing) |
+| `geo` | Distance helpers (haversine, bounding box), the `Geocoder` interface with Nominatim and a fake, and the database cache of every geocoding answer |
+| `properties` | `Property` (location as lat/lng columns, approximate public point) and `PropertyPhoto`, owner CRUD, the public view, submitting a property for verification |
+| `gigs` | `Gig` (role template, compensation model, dates, hours, stay, meals, stipend, deliverables, eligibility, screening questions), the business rules, the status machine and review, plan limits, auto-close |
+| `discovery` | Gig search for talent (`GET /api/v1/gigs/`): hard filters, the fit score, cursor pages; saved searches and their alert job |
+| `applications` | `Application` and its attachments, the apply rules (with every blocking reason), the status table, applicant views for vendors |
+| `notifications` | Queued `Notification` rows; delivery arrives in Phase 3 |
+| `verification` | Verification cases per check, evidence (provider references and masked numbers only), badges, the KYC provider interface and webhook, re-verification on profile edits, the review API |
 
 ### Users and permissions
 
@@ -110,6 +117,143 @@ Three interfaces keep the pieces swappable, each named by a code setting:
 - `MEDIA_STORAGE_CLASS`: `GCSMediaStorage` signs through IAM `signBlob` on Cloud Run. Tests use `apps.media.tests.fakes.InMemoryMediaStorage`.
 - `MEDIA_VIRUS_SCANNER`: `NoopVirusScanner` for now, which marks files `skipped`. Set `MEDIA_REQUIRE_SCAN=1` once a real scanner is in, and only `clean` files are served.
 - `TASK_QUEUE_CLASS`: `InlineTaskQueue` runs tasks inside the confirm request. A Cloud Tasks queue would enqueue an HTTP task to an internal endpoint that verifies the task's OIDC token and calls `run_task(name, payload)`. Tasks are idempotent, so retries are safe.
+
+### Properties and location
+
+A vendor can have several properties (`hostel`, `homestay`, `cafe`, `hotel`, `trek_operator`). Each has an address, a map pin, amenities (fixed codes), house rules, a `women_friendly` flag and photos. `verification_status` mirrors the property's verification case, and changes go through the case so they're audit-logged.
+
+**No PostGIS.** Production is Cloud SQL Postgres 16. PostGIS is available there, but GeoDjango would need GDAL and GEOS in the image, CI and every laptop. Location is stored as `latitude`/`longitude` decimal columns with a composite index instead. `Property.objects.within_radius(lat, lng, metres)` filters on a bounding box the index can serve, then on the exact haversine distance computed in SQL, nearest first. Moving to a `PointField` with a GiST index later only changes that one method.
+
+**Exact and approximate location.** The street address and exact pin go only to the owner and admins, and once bookings exist, to guests with a confirmed booking (`can_see_exact_location`). Everyone else sees `approximate_location`. That point is 300–900 m from the real one, in a direction seeded from `SECRET_KEY` and the property id. It's stored and stable, so repeated requests can't be averaged back to the real spot. Public "nearby" queries must use it too (`within_radius(public=True)`, the default), because ordering by the real distance would leak the pin.
+
+**Pin flow.** Creating a property, or changing its address without sending a pin, geocodes the address once to suggest a pin. The vendor then confirms or moves it (`location_confirmed`). Moving the pin or changing the address clears the confirmation unless the same request confirms it again.
+
+**Geocoding.** `apps.geo.services.geocode()` normalizes the query and returns the cached `GeocodeResult` when there is one. Hits are kept forever; "not found" is asked again after 30 days. Otherwise it calls the `GEOCODER` (a code setting). `NominatimGeocoder` follows the OpenStreetMap usage policy:
+- an identifying `NOMINATIM_USER_AGENT` and optional `NOMINATIM_EMAIL`;
+- at most one request per second across every instance, through a slot in the shared Postgres cache;
+- results limited to India;
+- a 5-second timeout.
+
+We never geocode on each keystroke: only on save, or when a vendor presses "find on map" (`POST /api/v1/geo/geocode/`, 30 an hour per vendor). Tests use `FakeGeocoder`.
+
+**Photos.** Upload through the signed flow (`/api/v1/media/upload-url/`, then `/confirm/`, kind `photo`), then `POST /api/v1/properties/{id}/photos/ {media_id, latitude?, longitude?, captured_at?}`. There's a limit of 20 per property. `POST /api/v1/properties/{id}/verification/` needs at least 3 photos taken within 500 m of the confirmed pin. The public page lists only photos that are ready to serve.
+
+### Gigs
+
+A gig belongs to one of the vendor's properties. It has a role template (`volunteer`, `content_creator`, `trip_leader`, `specialist`) and a compensation model (`volunteer`, `barter`, `hybrid`, `paid`).
+
+**Rules** (`apps.gigs.rules`, run by the services whatever the caller):
+- At most 6 hours a day and 6 days a week (at least one day off).
+- At least 1 slot.
+- A start date in the future; apply-by on or before the start; an end date after the start, or a duration.
+- Volunteer gigs state the stay and the meals.
+- Barter gigs list at least one deliverable.
+- Hybrid and paid gigs have a stipend above zero and say its period. A stipend only on hybrid and paid gigs; deliverables only on barter and hybrid.
+- Eligibility is a fixed minimum age of 18, plus optional languages, minimum followers and minimum stay. Up to 5 screening questions.
+
+Drafts may be incomplete but never wrong. The full rules apply on submit and on every edit of a gig past draft, and all problems are reported together as field errors. A few rules are also database constraints, as a backstop.
+
+**Status machine.** `apps.gigs.constants.TRANSITIONS` lists every allowed `(from, to)` move and who may make it (vendor, admin or system):
+- **Vendor:** submits a draft (draft → in_review), withdraws it (in_review → draft), pauses, resumes, closes and archives.
+- **Admin:** approves (in_review → live), or sends back to draft with a reason the vendor sees.
+- **System:** reopens review, fills, and auto-closes.
+
+Every change writes an audit row `gig.<status>`. Its `after.by` records whether the vendor, an admin or the system made it. Stipend changes also write `gig.compensation_changed`.
+
+**Re-review.** Editing a live or paused gig's pay (`compensation_model`, `stipend_*`), hours (`hours_per_day`, `days_per_week`) or dates sends it back to `in_review`. Other edits keep it live. Filled, closed and archived gigs can't be edited.
+
+**Plan limits.** `GIG_PLAN_POLICY` names a `PlanPolicy` that returns the vendor's `Plan(max_live_gigs)`. It's checked when a gig goes live, either approved or resumed. `UnlimitedPlanPolicy` is used for now.
+
+**Jobs and hooks.**
+- `manage.py close_expired_gigs` closes live and paused gigs whose apply-by date has passed. It should run daily.
+- `on_confirmed_bookings_changed(gig_id, confirmed)` is for bookings (Phase 3). It marks a live gig `filled` when confirmed bookings reach its slots, and reopens it if one is cancelled before applications close.
+
+### Discovery
+
+`GET /api/v1/gigs/` is for talent. Vendors create gigs with `POST /gigs/` and list their own at `/gigs/mine/`.
+
+**Hard filters first, in SQL.** A talent sees only live gigs that are still taking applications, at properties that still exist, that they're eligible for:
+- They share at least one of the gig's languages, if the gig lists any.
+- Their `instagram_followers` meets `min_followers`. An unknown follower count counts as 0.
+
+Then their own filters apply:
+- compensation model, role and stay type (comma lists);
+- city, or a point with a radius (on the approximate location);
+- a start-date range;
+- women-friendly;
+- verified hosts (property approved, and the vendor holds an active `id_verified` badge);
+- how many days they can stay (`min_stay`);
+- keywords (`q`): Postgres full text, `websearch_to_tsquery`, on `Gig.search_vector`. Title is weighted A and description B, with a GIN index. A signal keeps the vector up to date.
+
+**Fit score** (`apps.discovery.scoring.fit_score`): a pure function of the talent's facts, the gig's facts and `DISCOVERY_FIT_WEIGHTS`.
+
+| Component | Weight | Data today |
+| --- | --- | --- |
+| Skill match | 30 | Gig skills matched by the talent's profile skills |
+| Reliability | 25 | None until bookings (Phase 3), so neutral |
+| Ratings | 20 | None until reviews (Phase 3), so neutral |
+| Audience quality | 15 | No source yet, so neutral |
+| Distance and availability | 10 | Distance from the searcher's point (0 at `DISCOVERY_DISTANCE_ZERO_KM`), and the share of the gig inside their date range |
+
+Each component is 0–1. Missing data scores the neutral 0.5, never 0. Weights are scaled to 100. Every result carries `fit.breakdown`: value, weight, points, whether the value was neutral, and a reason. `talent_signals()` is where Phase 3 plugs in reliability, ratings and audience quality.
+
+**Sorts and pages.** The sorts are `best_fit` (the default), `newest`, `start_date` and `distance` (needs a point). Pages use an opaque keyset cursor tied to the sort: pass `next_cursor` back as `cursor`. `best_fit` scores the newest `DISCOVERY_MAX_CANDIDATES` (1000) matching gigs in Python; the other sorts page in SQL. A list request costs 5 queries however many gigs it returns, and a test asserts it.
+
+**Saved searches and alerts.** Talent save up to 10 searches (`/api/v1/gigs/saved-searches/`), stored as validated filter params. `manage.py run_search_alerts` (hourly) finds gigs published since each search's `last_checked_at` that it hasn't matched before. It stores each match with its fit breakdown (`SavedSearchMatch`, unique per search and gig, so nothing repeats) and queues one `Notification` (`gigs.search_alert`) per search with new matches. Delivery (FCM and email) comes in Phase 3.
+
+### Applications
+
+Talent apply with `POST /api/v1/gigs/{id}/applications/`. An application has a pitch, one answer per screening question (stored with the question text), proposed dates, up to 8 attachments (their own photo, video and document uploads, or https links), and a snapshot of the fit score and its breakdown at the time they applied.
+
+**Apply rules** (`apps.applications.rules`). Every failed check is collected, and a 422 `application_blocked` returns all of them in `details.reasons` as `[{code, message}]`. The checks are:
+- talent role, and not the gig's own vendor;
+- the gig is live and still taking applications;
+- a complete profile;
+- the gig's `required_verification` (`none`, `id_verified` by default, or `trusted_member`);
+- no other active application to the gig;
+- a shared language, and the follower minimum;
+- 18 or older on the start date;
+- dates inside the gig and at least its minimum stay;
+- every screening question answered;
+- usable attachments.
+
+A database constraint also allows only one active application per talent per gig (`applied`, `shortlisted`, `interview`, `offered`).
+
+**Statuses.** `apps.applications.constants.TRANSITIONS` defines every move and who makes it:
+- **Vendor:** shortlist, interview, offer and reject.
+- **Talent:** withdraw (from any active status, so up to accepting an offer) and decline an offer.
+- **System:** expire.
+
+This phase uses apply and withdraw. The rest are wired for Phase 3. Every change writes an audit row `application.<status>`.
+
+**Vendors** list applicants with `GET /api/v1/gigs/{id}/applications/`. Filters are status (comma list) and `min_score`. Sorts are `fit` (default), `newest` and `oldest`. The query count is fixed and a test checks it. `GET /api/v1/applications/{id}/` adds attachments with short-lived signed URLs and the applicant's active badges. Applicant data never includes phone, email, emergency contact, birth date or social handle.
+
+**Notification.** A new application queues `applications.new` for the vendor.
+
+### Verification
+
+Each user has one `VerificationCase` per check, kept across attempts. Statuses: `not_started → submitted → in_review → approved | rejected | changes_requested`, plus `expired`. The allowed moves are in `apps.verification.constants.TRANSITIONS`, and anything else returns 409.
+
+| Role | Check | How it is checked | Badge |
+| --- | --- | --- | --- |
+| both | `id_selfie` | KYC provider: ID plus selfie, result by webhook | `id_verified` |
+| vendor | `business_registration` | PAN format, GSTIN format, GSTIN contains the PAN; then a reviewer | `licence_verified` |
+| vendor | `property` (one case per property) | Confirmed map pin in India, at least 3 own photos taken within 500 m of it; then a reviewer | `property_verified` (held while any property is approved) |
+| talent | `social_account` | Instagram handle from the profile; the reviewer looks for `details.bio_code` in its bio | `social_verified` |
+| talent | `certificate` (optional) | Own document uploads; then a reviewer | `licence_verified` |
+| talent | `reference` | One contact (not the user's own number); a reviewer calls them | `reference_checked` |
+
+`trusted_member` is granted while a user holds every required badge for their role and revoked as soon as one goes. Badges are granted and revoked with a reason; revoked rows stay as history. Every case status change and every badge change is audit-logged (`verification.case.<status>`, `verification.badge.granted|revoked`).
+
+**What we store.** Provider reference ids, statuses and the last four characters of a number. ID images and selfies go straight from the app to the provider. A check constraint stops an ID document row from pointing at an upload; only property photos and certificates may.
+
+**KYC provider.** `KycProvider` (`start_check`, `get_result`, `verify_webhook`) is named by the code setting `KYC_PROVIDER`. Deployed services use `ExternalKycProvider`, a documented stub that answers 503 until a real provider is wired in (see `providers/external.py`). Local runs and tests use `FakeKycProvider`. To finish a check locally, run `uv run python manage.py fake_kyc_result <reference> approved`.
+
+**Webhook.** `POST /api/v1/verification/webhooks/kyc/` has no user auth. The provider signs the raw body (HMAC-SHA256 with `KYC_WEBHOOK_SECRET`, timestamp within 5 minutes), and a bad signature returns 401. Each delivery's idempotency key is stored, so a repeat is acknowledged and skipped. A result for an older attempt, or one arriving after a reviewer decided, changes nothing. `manage.py sync_kyc_results` polls the provider for checks whose webhook never came.
+
+**Re-verification.** Profile saves are watched through model signals, so the API, the admin and scripts all trigger it. Changing a verified field moves an approved case back to `in_review` and revokes its badge until a reviewer approves again. The watched fields are a property's name, address, city, state and pin (that property's case), the business name and GSTIN (business check), and the Instagram handle (social check). Starting a new ID check on an approved case does the same for the ID badge.
+
+**Review.** Admins use `GET /api/v1/verification/admin/cases/?status=submitted` (oldest first), then `POST …/cases/{id}/decision/ {decision, reason}`. The decision is one of `start_review`, `approve`, `reject`, `request_changes`, or `revoke` for an approved case. The Django admin is read-only. `manage.py expire_verifications` expires approved cases after their validity (ID 2 years; business, property and reference 1 year; social 6 months) and should run daily.
 
 ### Audit log
 

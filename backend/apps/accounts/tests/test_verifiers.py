@@ -2,6 +2,7 @@
 
 from unittest import mock
 
+import google.auth.exceptions
 import pytest
 from django.conf import settings
 from firebase_admin import auth
@@ -43,7 +44,28 @@ def test_phone_token_is_accepted(verifier):
 
 
 def test_app_is_reused_across_instances(verifier):
-    assert FirebaseTokenVerifier(project_id="barterly-test").app is verifier.app
+    again = FirebaseTokenVerifier(project_id="barterly-test", check_revoked=True)
+    assert again.app is verifier.app
+
+
+def no_default_credentials():
+    error = google.auth.exceptions.DefaultCredentialsError("no ADC on this machine")
+    return mock.patch("google.auth.default", side_effect=error)
+
+
+def test_without_revocation_check_no_google_credentials_are_needed():
+    # A laptop has no Application Default Credentials; checking signatures must still work.
+    keys_only = FirebaseTokenVerifier(project_id="barterly-keys", check_revoked=False)
+    with no_default_credentials():
+        client = auth._get_client(keys_only.app)
+    assert client is not None
+    assert keys_only.app.project_id == "barterly-keys"
+
+
+def test_revocation_check_uses_default_credentials():
+    revoking = FirebaseTokenVerifier(project_id="barterly-adc", check_revoked=True)
+    with no_default_credentials(), pytest.raises(google.auth.exceptions.DefaultCredentialsError):
+        auth._get_client(revoking.app)
 
 
 @pytest.mark.parametrize(

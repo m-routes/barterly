@@ -151,6 +151,11 @@ class TalentProfile(BaseProfile):
     )
     date_of_birth = models.DateField(null=True, blank=True, validators=[validate_adult])
     instagram_handle = models.CharField(max_length=30, blank=True, validators=[INSTAGRAM_VALIDATOR])
+    instagram_followers = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Self-reported; checked during social verification. Used for gig eligibility.",
+    )
 
     class Meta:
         ordering = ["-created_at"]

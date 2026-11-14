@@ -211,6 +211,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/gigs/{gig_id}/public/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A live gig, as talent see it
+     * @description The description and screening questions of a gig talent can apply to (live, still taking applications, property not removed). Other gigs are 404.
+     */
+    get: operations["gigs_public_retrieve"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/gigs/{gig_id}/status/": {
     parameters: {
       query?: never;
@@ -1435,6 +1455,62 @@ export interface components {
       /** Format: double */
       readonly distance_km: number | null;
       readonly fit: components["schemas"]["Fit"];
+    };
+    /**
+     * @description A live gig as talent see it before applying: the work, the terms and the
+     *     screening questions. No review notes or internal timestamps; the property is
+     *     an id (its public view is GET /api/v1/properties/{id}/public/).
+     */
+    GigListing: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      property: string;
+      readonly title: string;
+      readonly description: string;
+      readonly role_template: components["schemas"]["RoleTemplateEnum"];
+      readonly compensation_model: components["schemas"]["CompensationModelEnum"];
+      /** Format: date */
+      readonly start_date: string | null;
+      /** Format: date */
+      readonly end_date: string | null;
+      /** @description Instead of an end date, for flexible starts. */
+      readonly duration_days: number | null;
+      /** Format: date */
+      readonly apply_by: string | null;
+      readonly slots: number;
+      /** @description 1 to 6. */
+      readonly hours_per_day: number | null;
+      /** @description 1 to 6: at least one day off. */
+      readonly days_per_week: number | null;
+      readonly stay_type: components["schemas"]["StayTypeEnum"];
+      readonly meals: components["schemas"]["MealsEnum"];
+      readonly wifi: boolean;
+      /**
+       * Format: decimal
+       * @description INR, above zero. Hybrid and paid only.
+       */
+      readonly stipend_amount: string | null;
+      readonly stipend_period: components["schemas"]["StipendPeriodEnum"];
+      deliverables?: components["schemas"]["Deliverable"][];
+      /** @description Skill slugs (GET /api/v1/profiles/skills/). Used for the fit score. */
+      skills?: string[];
+      /** @description Fixed at 18 for every gig. */
+      readonly min_age: number;
+      languages?: components["schemas"]["LanguagesEnum"][];
+      readonly min_followers: number | null;
+      readonly min_stay_days: number | null;
+      screening_questions?: string[];
+      /**
+       * @description The badge talent need before they can apply.
+       *
+       *     * `none` - No verification needed
+       *     * `id_verified` - ID verified
+       *     * `trusted_member` - Trusted member
+       */
+      readonly required_verification: components["schemas"]["RequiredVerificationEnum"];
+      /** Format: date-time */
+      readonly published_at: string | null;
     };
     GigPage: {
       results: components["schemas"]["GigCard"][];
@@ -3015,6 +3091,59 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Blocked"];
+        };
+      };
+    };
+  };
+  gigs_public_retrieve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        gig_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GigListing"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
         };
       };
     };

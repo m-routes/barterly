@@ -820,6 +820,56 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/gigs/{gig_id}/public/:
+    get:
+      operationId: gigs_public_retrieve
+      description: The description and screening questions of a gig talent can apply
+        to (live, still taking applications, property not removed). Other gigs are
+        404.
+      summary: A live gig, as talent see it
+      parameters:
+      - in: path
+        name: gig_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - gigs
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GigListing'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/gigs/{gig_id}/status/:
     post:
       operationId: gigs_status_change
@@ -3845,6 +3895,160 @@ components:
       - required_verification
       - role_template
       - skills
+      - slots
+      - start_date
+      - stay_type
+      - stipend_amount
+      - stipend_period
+      - title
+      - wifi
+    GigListing:
+      type: object
+      description: |-
+        A live gig as talent see it before applying: the work, the terms and the
+        screening questions. No review notes or internal timestamps; the property is
+        an id (its public view is GET /api/v1/properties/{id}/public/).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        property:
+          type: string
+          format: uuid
+        title:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        role_template:
+          allOf:
+          - $ref: '#/components/schemas/RoleTemplateEnum'
+          readOnly: true
+        compensation_model:
+          allOf:
+          - $ref: '#/components/schemas/CompensationModelEnum'
+          readOnly: true
+        start_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        duration_days:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Instead of an end date, for flexible starts.
+        apply_by:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        slots:
+          type: integer
+          readOnly: true
+        hours_per_day:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: 1 to 6.
+        days_per_week:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: '1 to 6: at least one day off.'
+        stay_type:
+          allOf:
+          - $ref: '#/components/schemas/StayTypeEnum'
+          readOnly: true
+        meals:
+          allOf:
+          - $ref: '#/components/schemas/MealsEnum'
+          readOnly: true
+        wifi:
+          type: boolean
+          readOnly: true
+        stipend_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+          description: INR, above zero. Hybrid and paid only.
+        stipend_period:
+          allOf:
+          - $ref: '#/components/schemas/StipendPeriodEnum'
+          readOnly: true
+        deliverables:
+          type: array
+          items:
+            $ref: '#/components/schemas/Deliverable'
+        skills:
+          type: array
+          items:
+            type: string
+          description: Skill slugs (GET /api/v1/profiles/skills/). Used for the fit
+            score.
+        min_age:
+          type: integer
+          readOnly: true
+          description: Fixed at 18 for every gig.
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/LanguagesEnum'
+        min_followers:
+          type: integer
+          readOnly: true
+          nullable: true
+        min_stay_days:
+          type: integer
+          readOnly: true
+          nullable: true
+        screening_questions:
+          type: array
+          items:
+            type: string
+            maxLength: 300
+          maxItems: 5
+        required_verification:
+          allOf:
+          - $ref: '#/components/schemas/RequiredVerificationEnum'
+          readOnly: true
+          description: |-
+            The badge talent need before they can apply.
+
+            * `none` - No verification needed
+            * `id_verified` - ID verified
+            * `trusted_member` - Trusted member
+        published_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - apply_by
+      - compensation_model
+      - days_per_week
+      - description
+      - duration_days
+      - end_date
+      - hours_per_day
+      - id
+      - meals
+      - min_age
+      - min_followers
+      - min_stay_days
+      - property
+      - published_at
+      - required_verification
+      - role_template
       - slots
       - start_date
       - stay_type
