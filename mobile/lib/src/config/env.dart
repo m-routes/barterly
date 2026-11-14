@@ -26,6 +26,7 @@ class AppConfig {
     required this.apiBaseUrl,
     this.firebase,
     this.sentryDsn = '',
+    this.mapTileUrl = defaultMapTileUrl,
   });
 
   /// Reads the `--dart-define` values baked in at build time.
@@ -41,10 +42,22 @@ class AppConfig {
       // set per build from env/*.json.
       // ignore: avoid_redundant_argument_values
       sentryDsn: const String.fromEnvironment('SENTRY_DSN'),
+      // Set per build when a different tile server is used.
+      // ignore: avoid_redundant_argument_values
+      mapTileUrl: const String.fromEnvironment(
+        'MAP_TILE_URL',
+        defaultValue: defaultMapTileUrl,
+      ),
     );
   }
 
   final AppEnv env;
+
+  /// OpenStreetMap's standard tiles. Their tile policy allows light use with
+  /// visible attribution and an identifying User-Agent; point MAP_TILE_URL at
+  /// a commercial or self-hosted tile server before traffic grows.
+  static const defaultMapTileUrl =
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
   /// Origin of the Django API, without a trailing slash (paths start /api/v1/).
   final String apiBaseUrl;
@@ -52,6 +65,9 @@ class AppConfig {
   /// Null when this build has no Firebase app: sign-in is unavailable.
   final FirebaseOptions? firebase;
   final String sentryDsn;
+
+  /// Map tile URL template with {z}/{x}/{y} (`--dart-define=MAP_TILE_URL=…`).
+  final String mapTileUrl;
 
   bool get crashReportingEnabled => sentryDsn.isNotEmpty;
 
@@ -88,3 +104,8 @@ class AppConfig {
     );
   }
 }
+
+/// Whether to turn on Firebase's `appVerificationDisabledForTesting`: only for
+/// local debug builds, which sign in with Firebase test numbers.
+bool skipAppVerification(AppEnv env, {required bool debug}) =>
+    debug && env == AppEnv.local;

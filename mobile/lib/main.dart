@@ -5,7 +5,9 @@ import 'package:barterly/src/auth/phone_auth.dart';
 import 'package:barterly/src/config/env.dart';
 import 'package:barterly/src/crash/crash_reporter.dart';
 import 'package:barterly/src/providers.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -26,6 +28,14 @@ Future<void> main() async {
     if (firebase != null) {
       try {
         await Firebase.initializeApp(options: firebase);
+        if (skipAppVerification(config.env, debug: kDebugMode)) {
+          // Firebase's switch for its fictional test numbers: no reCAPTCHA or
+          // Play Integrity check, which emulators often can't pass. It never
+          // works for real numbers, and only local debug builds turn it on.
+          await FirebaseAuth.instance.setSettings(
+            appVerificationDisabledForTesting: true,
+          );
+        }
         phoneAuth = FirebasePhoneAuth();
       } on Object catch (error, stack) {
         // Sign-in shows "not available" rather than the app failing to start.

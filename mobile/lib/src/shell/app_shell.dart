@@ -1,9 +1,15 @@
+import 'package:barterly/src/apply/outbox.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The bottom bar around the four tabs. Each tab keeps its own navigation
 /// stack ([StatefulShellRoute.indexedStack]).
-class AppShell extends StatelessWidget {
+///
+/// It also keeps the application outbox running while the talent is in the
+/// app, so queued applications are sent when the network returns, whichever
+/// tab is open.
+class AppShell extends ConsumerWidget {
   const new({required this.shell, super.key});
 
   final StatefulNavigationShell shell;
@@ -32,7 +38,8 @@ class AppShell extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(outboxProvider, (_, _) {});
     return Scaffold(
       body: shell,
       bottomNavigationBar: NavigationBar(

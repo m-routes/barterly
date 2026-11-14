@@ -1,4 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- API calls, uploads and map tiles. Debug and profile builds already
+         had this; release builds need it too. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- connectivity_plus: knowing when the network returns, to send queued
+         applications. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <application
         android:label="barterly"
         android:name="${applicationName}"
@@ -40,6 +46,15 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- url_launcher: open https links (OSM copyright page) and the KYC
+             provider's page in Custom Tabs. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.support.customtabs.action.CustomTabsService"/>
         </intent>
     </queries>
 </manifest>

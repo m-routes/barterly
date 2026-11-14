@@ -33,6 +33,16 @@ class ProfileRepository {
         return TalentProfile.fromJson(response.data!);
       });
 
+  /// Changes only the Instagram handle (for the social account check).
+  Future<TalentProfile> saveInstagramHandle(String handle) =>
+      guardApi(() async {
+        final response = await _dio.patch<Map<String, Object?>>(
+          '/api/v1/profiles/talent/me/',
+          data: {'instagram_handle': handle},
+        );
+        return TalentProfile.fromJson(response.data!);
+      });
+
   Future<List<Skill>> skills() => guardApi(() async {
     final response = await _dio.get<List<Object?>>('/api/v1/profiles/skills/');
     return [
