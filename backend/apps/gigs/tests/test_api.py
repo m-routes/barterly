@@ -149,4 +149,39 @@ def test_every_endpoint_is_in_the_openapi_schema(tmp_path):
         "/api/v1/gigs/admin/",
         "/api/v1/gigs/{gig_id}/",
         "/api/v1/gigs/{gig_id}/status/",
+        "/api/v1/gigs/{gig_id}/public/",
+        "/api/v1/gigs/{gig_id}/applications/",
     }
+
+
+class TestPublicListing:
+    def test_talent_see_a_live_gigs_questions_but_no_review_notes(self):
+        gig = GigFactory(
+            status=GigStatus.LIVE,
+            screening_questions=["Can you commit to the full dates?"],
+            status_reason="Internal note",
+        )
+        response = client_for(TalentFactory()).get(f"/api/v1/gigs/{gig.pk}/public/")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["screening_questions"] == ["Can you commit to the full dates?"]
+        assert data["description"] == gig.description
+        assert data["min_age"] == 18
+        assert "status_reason" not in data and "status" not in data
+
+    @pytest.mark.parametrize("status", [GigStatus.DRAFT, GigStatus.IN_REVIEW, GigStatus.PAUSED])
+    def test_gigs_not_taking_applications_are_hidden(self, status):
+        gig = GigFactory(status=status)
+        assert client_for(TalentFactory()).get(f"/api/v1/gigs/{gig.pk}/public/").status_code == 404
+
+    def test_past_apply_by_is_hidden(self):
+        gig = GigFactory(status=GigStatus.LIVE)
+        type(gig).objects.filter(pk=gig.pk).update(apply_by=in_days(-1))
+        assert client_for(TalentFactory()).get(f"/api/v1/gigs/{gig.pk}/public/").status_code == 404
+
+    def test_vendors_use_their_own_endpoint(self):
+        gig = GigFactory(status=GigStatus.LIVE)
+        assert client_for(VendorFactory()).get(f"/api/v1/gigs/{gig.pk}/public/").status_code == 403
+        assert (
+            client_for(AdminUserFactory()).get(f"/api/v1/gigs/{gig.pk}/public/").status_code == 200
+        )

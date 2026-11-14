@@ -63,6 +63,7 @@ Surfaces: the vendor console (web), the talent app (mobile) and the admin consol
 | `properties` | `Property` (location as lat/lng columns, approximate public point) and `PropertyPhoto`, owner CRUD, the public view, submitting a property for verification |
 | `gigs` | `Gig` (role template, compensation model, dates, hours, stay, meals, stipend, deliverables, eligibility, screening questions), the business rules, the status machine and review, plan limits, auto-close |
 | `discovery` | Gig search for talent (`GET /api/v1/gigs/`): hard filters, the fit score, cursor pages; saved searches and their alert job |
+| `applications` | `Application` and its attachments, the apply rules (with every blocking reason), the status table, applicant views for vendors |
 | `notifications` | Queued `Notification` rows; delivery arrives in Phase 3 |
 | `verification` | Verification cases per check, evidence (provider references and masked numbers only), badges, the KYC provider interface and webhook, re-verification on profile edits, the review API |
 
@@ -197,6 +198,35 @@ Each component is 0–1. Missing data scores the neutral 0.5, never 0. Weights a
 **Sorts and pages.** The sorts are `best_fit` (the default), `newest`, `start_date` and `distance` (needs a point). Pages use an opaque keyset cursor tied to the sort: pass `next_cursor` back as `cursor`. `best_fit` scores the newest `DISCOVERY_MAX_CANDIDATES` (1000) matching gigs in Python; the other sorts page in SQL. A list request costs 5 queries however many gigs it returns, and a test asserts it.
 
 **Saved searches and alerts.** Talent save up to 10 searches (`/api/v1/gigs/saved-searches/`), stored as validated filter params. `manage.py run_search_alerts` (hourly) finds gigs published since each search's `last_checked_at` that it hasn't matched before. It stores each match with its fit breakdown (`SavedSearchMatch`, unique per search and gig, so nothing repeats) and queues one `Notification` (`gigs.search_alert`) per search with new matches. Delivery (FCM and email) comes in Phase 3.
+
+### Applications
+
+Talent apply with `POST /api/v1/gigs/{id}/applications/`. An application has a pitch, one answer per screening question (stored with the question text), proposed dates, up to 8 attachments (their own photo, video and document uploads, or https links), and a snapshot of the fit score and its breakdown at the time they applied.
+
+**Apply rules** (`apps.applications.rules`). Every failed check is collected, and a 422 `application_blocked` returns all of them in `details.reasons` as `[{code, message}]`. The checks are:
+- talent role, and not the gig's own vendor;
+- the gig is live and still taking applications;
+- a complete profile;
+- the gig's `required_verification` (`none`, `id_verified` by default, or `trusted_member`);
+- no other active application to the gig;
+- a shared language, and the follower minimum;
+- 18 or older on the start date;
+- dates inside the gig and at least its minimum stay;
+- every screening question answered;
+- usable attachments.
+
+A database constraint also allows only one active application per talent per gig (`applied`, `shortlisted`, `interview`, `offered`).
+
+**Statuses.** `apps.applications.constants.TRANSITIONS` defines every move and who makes it:
+- **Vendor:** shortlist, interview, offer and reject.
+- **Talent:** withdraw (from any active status, so up to accepting an offer) and decline an offer.
+- **System:** expire.
+
+This phase uses apply and withdraw. The rest are wired for Phase 3. Every change writes an audit row `application.<status>`.
+
+**Vendors** list applicants with `GET /api/v1/gigs/{id}/applications/`. Filters are status (comma list) and `min_score`. Sorts are `fit` (default), `newest` and `oldest`. The query count is fixed and a test checks it. `GET /api/v1/applications/{id}/` adds attachments with short-lived signed URLs and the applicant's active badges. Applicant data never includes phone, email, emergency contact, birth date or social handle.
+
+**Notification.** A new application queues `applications.new` for the vendor.
 
 ### Verification
 

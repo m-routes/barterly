@@ -6,10 +6,11 @@ from rest_framework.views import APIView
 
 from apps.common.permissions import IsAdminRole, IsTalent, IsVendor
 from apps.common.serializers import ErrorSerializer
+from apps.discovery.services import live_gigs
 from apps.discovery.views import DISCOVER_SCHEMA, discover
 from apps.gigs.constants import GigStatus
 from apps.gigs.models import Gig
-from apps.gigs.serializers import GigSerializer, StatusChangeSerializer
+from apps.gigs.serializers import GigListingSerializer, GigSerializer, StatusChangeSerializer
 from apps.gigs.services import (
     GigLocked,
     InvalidGigTransition,
@@ -132,6 +133,27 @@ class GigDetailView(generics.RetrieveUpdateAPIView):
         except GigLocked as exc:
             raise GigConflict(str(exc)) from exc
         return Response(self.get_serializer(gig).data)
+
+
+@extend_schema_view(
+    get=extend_schema(
+        operation_id="gigs_public_retrieve",
+        summary="A live gig, as talent see it",
+        description=(
+            "The description and screening questions of a gig talent can apply to (live, "
+            "still taking applications, property not removed). Other gigs are 404."
+        ),
+        responses={200: GigListingSerializer, 404: ErrorSerializer, **ERRORS},
+        tags=TAG,
+    )
+)
+class GigPublicView(generics.RetrieveAPIView):
+    permission_classes = [IsTalent | IsAdminRole]
+    serializer_class = GigListingSerializer
+    lookup_url_kwarg = "gig_id"
+
+    def get_queryset(self):
+        return live_gigs().prefetch_related("skills")
 
 
 class GigStatusView(APIView):

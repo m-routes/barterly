@@ -63,6 +63,12 @@ class DeliverableType(models.TextChoices):
     OTHER = "other", "Other"
 
 
+class RequiredVerification(models.TextChoices):
+    NONE = "none", "No verification needed"
+    ID_VERIFIED = "id_verified", "ID verified"
+    TRUSTED_MEMBER = "trusted_member", "Trusted member"
+
+
 class GigStatus(models.TextChoices):
     DRAFT = "draft", "Draft"
     IN_REVIEW = "in_review", "In review"

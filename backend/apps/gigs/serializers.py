@@ -68,6 +68,7 @@ class GigSerializer(serializers.ModelSerializer):
             "min_followers",
             "min_stay_days",
             "screening_questions",
+            "required_verification",
             "status",
             "status_reason",
             "submitted_at",
@@ -117,3 +118,41 @@ class StatusChangeSerializer(serializers.Serializer):
         allow_blank=True,
         help_text="Required when an admin sends a gig back. Shown to the vendor.",
     )
+
+
+class GigListingSerializer(GigSerializer):
+    """A live gig as talent see it before applying: the work, the terms and the
+    screening questions. No review notes or internal timestamps; the property is
+    an id (its public view is GET /api/v1/properties/{id}/public/)."""
+
+    class Meta(GigSerializer.Meta):
+        fields = [
+            "id",
+            "property",
+            "title",
+            "description",
+            "role_template",
+            "compensation_model",
+            "start_date",
+            "end_date",
+            "duration_days",
+            "apply_by",
+            "slots",
+            "hours_per_day",
+            "days_per_week",
+            "stay_type",
+            "meals",
+            "wifi",
+            "stipend_amount",
+            "stipend_period",
+            "deliverables",
+            "skills",
+            "min_age",
+            "languages",
+            "min_followers",
+            "min_stay_days",
+            "screening_questions",
+            "required_verification",
+            "published_at",
+        ]
+        read_only_fields = fields
