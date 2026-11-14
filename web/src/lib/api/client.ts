@@ -92,3 +92,12 @@ export async function unwrap<T>(call: Promise<Result<T>>): Promise<T> {
   }
   return result.data as T;
 }
+
+/**
+ * A create body. The schema reuses response components for requests, so read-only
+ * fields (id, timestamps, status, nested lists) show up as required; the API ignores
+ * them. This says so in one place instead of at every call.
+ */
+export function writeBody<T>(body: Partial<T>): T {
+  return body as T;
+}

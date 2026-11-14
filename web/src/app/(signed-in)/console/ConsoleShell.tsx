@@ -18,6 +18,8 @@ function SectionIcon({ href }: { href: string }) {
     "/console/gigs": "M4 7h16v12H4zM9 7V5h6v2",
     "/console/applicants":
       "M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-6 9a6 6 0 0 1 12 0M17 11a3 3 0 0 0 0-6m4 15a6 6 0 0 0-4-5.6",
+    "/console/properties": "M3 11 12 4l9 7M5 10v10h14V10M10 20v-5h4v5",
+    "/console/verification": "M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4",
     "/console/talent": "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm5-2 4 4",
     "/console/agreements": "M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5",
     "/console/payments": "M3 7h18v10H3zM3 11h18M7 15h3",

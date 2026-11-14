@@ -28,7 +28,7 @@ beforeEach(() => {
 });
 
 describe("ConsoleShell", () => {
-  it("lists the seven sections in order and marks the current one", () => {
+  it("lists the sections in order and marks the current one", () => {
     nav.pathname = "/console/gigs";
     render(<ConsoleShell>content</ConsoleShell>);
     const sidebar = within(screen.getByRole("navigation", { name: "Console" }));
@@ -37,6 +37,8 @@ describe("ConsoleShell", () => {
       "Dashboard",
       "Gigs",
       "Applicants",
+      "Properties",
+      "Verification",
       "Talent search",
       "Agreements",
       "Payments",
