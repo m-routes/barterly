@@ -27,6 +27,8 @@ INSTALLED_APPS = [
     "apps.properties",
     "apps.verification",
     "apps.gigs",
+    "apps.discovery",
+    "apps.notifications",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -196,3 +198,17 @@ GEOCODER_TIMEOUT_SECONDS = env_int("GEOCODER_TIMEOUT_SECONDS", 5)
 
 # Gigs (apps.gigs): how many live gigs a vendor's plan allows. Unlimited for now.
 GIG_PLAN_POLICY = "apps.gigs.plans.UnlimitedPlanPolicy"
+
+# Discovery (apps.discovery). Fit-score weights: they needn't add to 100 (they are
+# scaled), but keeping them at 100 makes each one read as "points".
+DISCOVERY_FIT_WEIGHTS = {
+    "skill_match": 30,
+    "reliability": 25,
+    "ratings": 20,
+    "audience_quality": 15,
+    "distance_availability": 10,
+}
+DISCOVERY_DISTANCE_ZERO_KM = env_int("DISCOVERY_DISTANCE_ZERO_KM", 300)
+DISCOVERY_PAGE_SIZE = env_int("DISCOVERY_PAGE_SIZE", 20)
+# best_fit scores the newest matching gigs in Python; this caps how many.
+DISCOVERY_MAX_CANDIDATES = env_int("DISCOVERY_MAX_CANDIDATES", 1000)

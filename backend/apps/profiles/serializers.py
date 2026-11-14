@@ -108,6 +108,7 @@ class TalentProfileSerializer(_ProfileSerializer):
             "emergency_contact_phone",
             "date_of_birth",
             "instagram_handle",
+            "instagram_followers",
             "profile_complete",
             "missing_fields",
             "created_at",

@@ -45,10 +45,14 @@ def actor_for(user, gig: Gig) -> str | None:
 
 
 def create_gig(vendor, data: dict, *, request=None) -> Gig:
+    data = dict(data)
+    skills = data.pop("skills", None)
     gig = Gig(vendor=vendor, **data)
     check_shape(gig)
     with transaction.atomic():
         gig.save()
+        if skills is not None:
+            gig.skills.set(skills)
         log_action(
             actor=vendor,
             action="gig.created",
@@ -66,6 +70,8 @@ def update_gig(gig_id, data: dict, *, user, request=None) -> Gig:
         gig = Gig.objects.select_for_update().select_related("property").get(pk=gig_id)
         if gig.status not in EDITABLE:
             raise GigLocked(f"A {gig.get_status_display().lower()} gig can't be edited.")
+        data = dict(data)
+        skills = data.pop("skills", None)
         before = {name: getattr(gig, name) for name in data}
         money_before = snapshot(gig, MONEY_FIELDS)
         for name, value in data.items():
@@ -79,6 +85,8 @@ def update_gig(gig_id, data: dict, *, user, request=None) -> Gig:
             # unless this edit moved them.
             check_complete(gig, check_dates=bool(changed & DATE_FIELDS))
         gig.save()
+        if skills is not None:
+            gig.skills.set(skills)
 
         money_after = snapshot(gig, MONEY_FIELDS)
         if money_after != money_before:

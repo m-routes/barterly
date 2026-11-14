@@ -62,6 +62,8 @@ Surfaces: the vendor console (web), the talent app (mobile) and the admin consol
 | `geo` | Distance helpers (haversine, bounding box), the `Geocoder` interface with Nominatim and a fake, and the database cache of every geocoding answer |
 | `properties` | `Property` (location as lat/lng columns, approximate public point) and `PropertyPhoto`, owner CRUD, the public view, submitting a property for verification |
 | `gigs` | `Gig` (role template, compensation model, dates, hours, stay, meals, stipend, deliverables, eligibility, screening questions), the business rules, the status machine and review, plan limits, auto-close |
+| `discovery` | Gig search for talent (`GET /api/v1/gigs/`): hard filters, the fit score, cursor pages; saved searches and their alert job |
+| `notifications` | Queued `Notification` rows; delivery arrives in Phase 3 |
 | `verification` | Verification cases per check, evidence (provider references and masked numbers only), badges, the KYC provider interface and webhook, re-verification on profile edits, the review API |
 
 ### Users and permissions
@@ -162,6 +164,39 @@ Every change writes an audit row `gig.<status>`. Its `after.by` records whether 
 **Jobs and hooks.**
 - `manage.py close_expired_gigs` closes live and paused gigs whose apply-by date has passed. It should run daily.
 - `on_confirmed_bookings_changed(gig_id, confirmed)` is for bookings (Phase 3). It marks a live gig `filled` when confirmed bookings reach its slots, and reopens it if one is cancelled before applications close.
+
+### Discovery
+
+`GET /api/v1/gigs/` is for talent. Vendors create gigs with `POST /gigs/` and list their own at `/gigs/mine/`.
+
+**Hard filters first, in SQL.** A talent sees only live gigs that are still taking applications, at properties that still exist, that they're eligible for:
+- They share at least one of the gig's languages, if the gig lists any.
+- Their `instagram_followers` meets `min_followers`. An unknown follower count counts as 0.
+
+Then their own filters apply:
+- compensation model, role and stay type (comma lists);
+- city, or a point with a radius (on the approximate location);
+- a start-date range;
+- women-friendly;
+- verified hosts (property approved, and the vendor holds an active `id_verified` badge);
+- how many days they can stay (`min_stay`);
+- keywords (`q`): Postgres full text, `websearch_to_tsquery`, on `Gig.search_vector`. Title is weighted A and description B, with a GIN index. A signal keeps the vector up to date.
+
+**Fit score** (`apps.discovery.scoring.fit_score`): a pure function of the talent's facts, the gig's facts and `DISCOVERY_FIT_WEIGHTS`.
+
+| Component | Weight | Data today |
+| --- | --- | --- |
+| Skill match | 30 | Gig skills matched by the talent's profile skills |
+| Reliability | 25 | None until bookings (Phase 3), so neutral |
+| Ratings | 20 | None until reviews (Phase 3), so neutral |
+| Audience quality | 15 | No source yet, so neutral |
+| Distance and availability | 10 | Distance from the searcher's point (0 at `DISCOVERY_DISTANCE_ZERO_KM`), and the share of the gig inside their date range |
+
+Each component is 0–1. Missing data scores the neutral 0.5, never 0. Weights are scaled to 100. Every result carries `fit.breakdown`: value, weight, points, whether the value was neutral, and a reason. `talent_signals()` is where Phase 3 plugs in reliability, ratings and audience quality.
+
+**Sorts and pages.** The sorts are `best_fit` (the default), `newest`, `start_date` and `distance` (needs a point). Pages use an opaque keyset cursor tied to the sort: pass `next_cursor` back as `cursor`. `best_fit` scores the newest `DISCOVERY_MAX_CANDIDATES` (1000) matching gigs in Python; the other sorts page in SQL. A list request costs 5 queries however many gigs it returns, and a test asserts it.
+
+**Saved searches and alerts.** Talent save up to 10 searches (`/api/v1/gigs/saved-searches/`), stored as validated filter params. `manage.py run_search_alerts` (hourly) finds gigs published since each search's `last_checked_at` that it hasn't matched before. It stores each match with its fit breakdown (`SavedSearchMatch`, unique per search and gig, so nothing repeats) and queues one `Notification` (`gigs.search_alert`) per search with new matches. Delivery (FCM and email) comes in Phase 3.
 
 ### Verification
 

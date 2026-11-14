@@ -77,27 +77,39 @@ class PropertyQuerySet(SoftDeleteQuerySet):
         lat_f, lng_f = (
             ("approx_latitude", "approx_longitude") if public else ("latitude", "longitude")
         )
-        box = bounding_box(latitude, longitude, radius_m)
-        lat = Radians(Cast(F(lat_f), FloatField()))
-        lng = Radians(Cast(F(lng_f), FloatField()))
-        lat0, lng0 = math.radians(latitude), math.radians(longitude)
-        a = Power(Sin((lat - lat0) / 2), 2) + math.cos(lat0) * Cos(lat) * Power(
-            Sin((lng - lng0) / 2), 2
-        )
-        distance = 2 * EARTH_RADIUS_M * ASin(Sqrt(a))
         return (
-            self.filter(
-                **{
-                    f"{lat_f}__gte": box.min_lat,
-                    f"{lat_f}__lte": box.max_lat,
-                    f"{lng_f}__gte": box.min_lng,
-                    f"{lng_f}__lte": box.max_lng,
-                }
-            )
-            .annotate(distance_m=distance)
+            self.filter(in_bounding_box(lat_f, lng_f, latitude, longitude, radius_m))
+            .annotate(distance_m=distance_m_expression(lat_f, lng_f, latitude, longitude))
             .filter(distance_m__lte=radius_m)
             .order_by("distance_m")
         )
+
+
+def in_bounding_box(lat_field: str, lng_field: str, latitude, longitude, radius_m) -> Q:
+    """The indexed pre-filter: every point within radius_m lies in this box."""
+    box = bounding_box(latitude, longitude, radius_m)
+    return Q(
+        **{
+            f"{lat_field}__gte": box.min_lat,
+            f"{lat_field}__lte": box.max_lat,
+            f"{lng_field}__gte": box.min_lng,
+            f"{lng_field}__lte": box.max_lng,
+        }
+    )
+
+
+def distance_m_expression(lat_field: str, lng_field: str, latitude: float, longitude: float):
+    """Haversine distance in metres from (latitude, longitude), computed in SQL.
+
+    The fields may span relations, e.g. "property__approx_latitude".
+    """
+    lat = Radians(Cast(F(lat_field), FloatField()))
+    lng = Radians(Cast(F(lng_field), FloatField()))
+    lat0, lng0 = math.radians(latitude), math.radians(longitude)
+    a = Power(Sin((lat - lat0) / 2), 2) + math.cos(lat0) * Cos(lat) * Power(
+        Sin((lng - lng0) / 2), 2
+    )
+    return 2 * EARTH_RADIUS_M * ASin(Sqrt(a))
 
 
 class PropertyManager(models.Manager.from_queryset(PropertyQuerySet)):
