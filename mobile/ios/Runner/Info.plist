@@ -66,5 +66,16 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<!-- Firebase phone auth: the reCAPTCHA fallback returns to the app through
+			     this scheme (the iOS app's "encoded app id" from the Firebase console). -->
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>app-1-127055045383-ios-6261b1e2b272404bea9ba2</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

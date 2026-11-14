@@ -46,3 +46,6 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Firebase API keys stay out of git (see env/firebase-keys.example.json)
+/env/firebase-keys.json

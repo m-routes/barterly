@@ -8,14 +8,25 @@ environment:
 
 dependencies:
   cupertino_icons: ^1.0.8
+  dio: ^5.11.1
+  firebase_auth: ^7.0.1
+  firebase_core: ^5.1.0
   flutter:
     sdk: flutter
+  flutter_riverpod: ^3.5.0
+  flutter_secure_storage: ^11.2.0
+  go_router: ^18.1.4
+  google_fonts: ^9.0.0
+  intl: ^0.20.3
+  material_ui: ^1.11.0
+  sentry_flutter: ^10.4.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   integration_test:
     sdk: flutter
+  mocktail: ^1.0.5
   very_good_analysis: ^11.0.0
 
 flutter:

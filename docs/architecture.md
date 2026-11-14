@@ -20,7 +20,8 @@ Barterly is a monorepo with three apps that share one API.
 │   ├── Dockerfile      Next.js standalone server, non-root
 │   └── e2e/            Playwright tests
 ├── mobile/             Flutter talent app
-│   ├── lib/src/        app code
+│   ├── lib/src/        app code: api/, auth/, profile/, shell/, theme/, router.dart
+│   ├── env/            per-environment build settings (--dart-define-from-file)
 │   ├── test/           unit and widget tests (flutter_test)
 │   └── integration_test/  on-device tests
 ├── infra/              Terraform (GCP, incl. Cloud SQL), deploy/rollback scripts, runbooks
@@ -301,18 +302,66 @@ The API authorizes every call regardless.
 
 Forms use react-hook-form with zod. Every screen has loading, empty and error states (`src/components/ui/states.tsx`).
 
+## Talent app (mobile)
+
+Flutter 3.47 with Riverpod 3, go_router 18 and Dio. Material comes from the standalone `material_ui` package; import `package:material_ui/material_ui.dart`, not `package:flutter/material.dart`.
+
+**Environments.** Each build targets one environment through a settings file: `flutter run --dart-define-from-file=env/staging.json --dart-define-from-file=env/firebase-keys.json` (or `local.json`, `production.json`). Firebase API keys sit in the uncommitted `env/firebase-keys.json` so they never land in git.
+- The files set the API base URL, the Firebase app config and the Sentry DSN. All are public client identifiers, not secrets.
+- With no file, the app talks to `localhost:8000`, or `10.0.2.2:8000` from the Android emulator.
+
+**Layers.** Screens never call the API directly.
+- Screens use Riverpod providers (`lib/src/providers.dart`).
+- The providers wrap repositories: `AuthRepository` and `ProfileRepository`.
+- The repositories use one Dio client.
+- Tests override the providers, or swap in a fake HTTP adapter, so no screen needs a network.
+
+**Sign-in.**
+1. Firebase phone OTP proves the number. Android may read the SMS itself.
+2. The Firebase ID token is exchanged once at `/api/v1/auth/exchange/`, and the Firebase session is dropped.
+3. The API's tokens are kept in flutter_secure_storage: the Keychain on iOS (this device only, not synced) and encrypted storage on Android.
+
+`AuthInterceptor` attaches the access token. On a 401 it refreshes once and retries. It is a queued interceptor, so parallel 401s share one refresh, because refresh tokens rotate and a reused one is blacklisted.
+- A rejected refresh clears the tokens and signs the person out.
+- A network failure keeps the session.
+
+**Navigation.** `redirectFor` in `lib/src/router.dart` is a pure function of the session:
+- Loading → splash.
+- Signed out → `/login`.
+- No role → `/join` (join as talent).
+- Vendor or admin → `/wrong-app`.
+- Incomplete profile → `/setup`.
+- Everyone else → the bottom bar: Discover, My trips, Wallet, Profile.
+
+**Profile setup.** The form checks the API's rules before submitting:
+- Date of birth: 18 or older, counted on today's date in India. The picker won't offer a later date.
+- At least one skill (from `/api/v1/profiles/skills/`) and one language.
+- An emergency contact whose number isn't the user's own.
+
+Field errors from the API are shown on the matching fields.
+
+**Crash reporting.** Sentry starts only when `SENTRY_DSN` is set. Reports carry the account id, never the phone number, and personal data is off (`sendDefaultPii = false`).
+
+**Firebase setup still needed per environment.**
+1. Add iOS and Android apps to the Firebase project and enable Phone sign-in.
+2. Put their app ids and API key in `env/*.json`.
+3. Add the Android SHA-256 fingerprints.
+4. On iOS, add the reversed client id (or the encoded app id) as a URL scheme in `ios/Runner/Info.plist`, for the reCAPTCHA fallback, and upload an APNs key so codes can be verified silently.
+
+Until then, sign-in says it isn't available.
+
 ## Commands
 
 | Task | backend/ | web/ | mobile/ |
 | --- | --- | --- | --- |
 | Install | `uv sync` | `npm ci` | `flutter pub get` |
-| Run | `uv run python manage.py runserver` | `npm run dev` | `flutter run` |
+| Run | `uv run python manage.py runserver` | `npm run dev` | `flutter run --dart-define-from-file=env/local.json --dart-define-from-file=env/firebase-keys.json` |
 | Lint | `uv run ruff check .` | `npm run lint` | `flutter analyze --fatal-infos` |
 | Format check | `uv run ruff format --check .` | `npm run format:check` | `dart format --output=none --set-exit-if-changed .` |
 | Type check | — | `npm run typecheck` | (part of analyze) |
 | Unit tests | `uv run pytest --cov` | `npm test` | `flutter test` |
 | E2E / integration | — | `npm run test:e2e` | `flutter test integration_test` |
-| Build | — | `npm run build` | `flutter build apk` / `flutter build ios` |
+| Build | — | `npm run build` | `flutter build apk --dart-define-from-file=env/production.json --dart-define-from-file=env/firebase-keys.json` (or `ios`) |
 | Dependency audit | `uv export … \| uvx pip-audit` | `npm audit` | — |
 
 The backend needs Postgres: `docker compose up -d db` from `backend/`, and `DJANGO_DEBUG=1` for local runs.
