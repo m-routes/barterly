@@ -10,12 +10,14 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.common.services.audit import log_action, snapshot
+from apps.properties.models import Property
 from apps.verification.constants import (
     DECIDABLE,
     TRANSITIONS,
     TRUSTED_MEMBER_REQUIRES,
     BadgeKind,
     CaseStatus,
+    CheckType,
     rule_for,
 )
 from apps.verification.models import Badge, VerificationCase
@@ -41,13 +43,19 @@ class Decision:
     NEEDS_REASON = frozenset({REJECT, REQUEST_CHANGES, REVOKE})
 
 
-def locked_case(user, check_type: str) -> VerificationCase:
-    """The user's case for this check, created on first use and locked. Needs a transaction."""
+def locked_case(user, check_type: str, *, prop=None) -> VerificationCase:
+    """The user's case for this check (per property for the property check), created on
+    first use and locked. Needs a transaction."""
     rule = rule_for(user.role, check_type)
     if rule is None:
         raise CheckNotAvailable(f"{check_type} isn't a check for {user.role or 'this account'}.")
+    if (check_type == CheckType.PROPERTY) != (prop is not None):
+        raise ValueError("The property check, and only it, is per property.")
     case, _ = VerificationCase.objects.get_or_create(
-        user=user, check_type=check_type, defaults={"subject_type": rule.subject}
+        user=user,
+        check_type=check_type,
+        property=prop,
+        defaults={"subject_type": rule.subject, "subject_id": str(prop.pk) if prop else ""},
     )
     return VerificationCase.objects.select_for_update().get(pk=case.pk)
 
@@ -78,6 +86,8 @@ def transition(case: VerificationCase, new_status: str, *, actor, reason: str = 
     elif new_status == CaseStatus.IN_REVIEW and reviewer is not None:
         case.reviewer = reviewer
     case.save()
+    if case.property_id:
+        Property.all_objects.filter(pk=case.property_id).update(verification_status=new_status)
 
     log_action(
         actor=actor,
@@ -88,7 +98,8 @@ def transition(case: VerificationCase, new_status: str, *, actor, reason: str = 
         request=request,
     )
 
-    if rule is not None and old_status == CaseStatus.APPROVED and new_status != CaseStatus.APPROVED:
+    leaving_approved = old_status == CaseStatus.APPROVED and new_status != CaseStatus.APPROVED
+    if rule is not None and leaving_approved and not _badge_still_earned(case, rule.badge):
         revoke_badge(
             case.user,
             rule.badge,
@@ -106,6 +117,34 @@ def transition(case: VerificationCase, new_status: str, *, actor, reason: str = 
             request=request,
         )
     return case
+
+
+def _badge_still_earned(case: VerificationCase, badge: str) -> bool:
+    """Another approved case of the user's earns the same badge (e.g. a second property)."""
+    others = VerificationCase.objects.filter(user=case.user, status=CaseStatus.APPROVED).exclude(
+        pk=case.pk
+    )
+    return any(
+        (rule := rule_for(case.user.role, check)) is not None and rule.badge == badge
+        for check in others.values_list("check_type", flat=True)
+    )
+
+
+def withdraw_property(prop, *, actor, request=None) -> None:
+    """The property was removed: its verification no longer stands."""
+    case = (
+        VerificationCase.objects.select_for_update()
+        .select_related("user")
+        .filter(property=prop)
+        .first()
+    )
+    if case is None:
+        return
+    reason = "The property was removed."
+    if case.status == CaseStatus.APPROVED:
+        transition(case, CaseStatus.EXPIRED, actor=actor, reason=reason, request=request)
+    elif case.status in DECIDABLE:
+        transition(case, CaseStatus.REJECTED, actor=actor, reason=reason, request=request)
 
 
 def grant_badge(user, kind: str, *, case=None, actor=None, reason: str, request=None) -> Badge:

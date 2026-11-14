@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import pytest
 from django.core.exceptions import ValidationError
 
@@ -5,20 +7,13 @@ from apps.accounts.tests.factories import AdminUserFactory, TalentFactory, Vendo
 from apps.media.models import MediaStatus
 from apps.media.policy import Kind
 from apps.profiles.tests.factories import TalentProfileFactory, VendorProfileFactory
+from apps.properties.tests.factories import PropertyFactory, add_photos
 from apps.verification.constants import CaseStatus, DocumentType
 from apps.verification.services import checks
 from apps.verification.services.cases import Decision, InvalidTransition, decide
 from apps.verification.tests.factories import PIN, MediaFileFactory
 
 pytestmark = pytest.mark.django_db
-
-
-def geo(media, metres_north=20):
-    return checks.GeoPhoto(
-        media_id=str(media.pk),
-        latitude=PIN["latitude"] + metres_north / 111_000,
-        longitude=PIN["longitude"],
-    )
 
 
 @pytest.fixture
@@ -58,60 +53,68 @@ class TestBusiness:
 
 
 class TestProperty:
-    def photos(self, user, n=3, **kwargs):
-        return [MediaFileFactory(owner=user, **kwargs) for _ in range(n)]
-
-    def test_pin_and_nearby_photos_are_recorded(self, vendor):
-        photos = self.photos(vendor)
-        case = checks.submit_property(
-            vendor, **PIN, pin_confirmed=True, photos=[geo(p) for p in photos]
-        )
+    def test_pin_and_nearby_photos_are_recorded(self):
+        prop = PropertyFactory()
+        add_photos(prop)
+        case = checks.submit_property(prop.vendor, prop)
         assert case.status == CaseStatus.SUBMITTED
-        assert case.subject_type == "property"
-        assert case.subject_id == str(vendor.vendor_profile.pk)
+        assert case.property == prop and case.subject_type == "property"
+        assert case.subject_id == str(prop.pk)
         assert case.details["pin"] == PIN
-        assert case.details["address"] == "Old Manali Road, Manali 175131"
-        assert case.documents.filter(document_type=DocumentType.PROPERTY_PHOTO).count() == 3
-        assert case.documents.first().metadata["distance_m"] == 20
+        assert case.details["address"] == prop.address
+        docs = case.documents.filter(document_type=DocumentType.PROPERTY_PHOTO)
+        assert docs.count() == 3
+        assert docs.first().metadata["distance_m"] == 20
+        prop.refresh_from_db()
+        assert prop.verification_status == CaseStatus.SUBMITTED
 
-    def test_needs_address_confirmation_and_enough_photos(self, vendor):
-        photos = [geo(p) for p in self.photos(vendor)]
-        with pytest.raises(ValidationError, match="Confirm"):
-            checks.submit_property(vendor, **PIN, pin_confirmed=False, photos=photos)
-        with pytest.raises(ValidationError, match="at least 3"):
-            checks.submit_property(vendor, **PIN, pin_confirmed=True, photos=photos[:2])
-        no_address = VendorProfileFactory(address="").user
-        with pytest.raises(ValidationError, match="address"):
-            checks.submit_property(no_address, **PIN, pin_confirmed=True, photos=photos)
+    def test_needs_a_confirmed_pin_and_enough_located_photos(self):
+        prop = PropertyFactory(location_confirmed=False)
+        add_photos(prop)
+        with pytest.raises(ValidationError, match="confirm"):
+            checks.submit_property(prop.vendor, prop)
 
-    def test_photos_far_from_the_pin_are_refused(self, vendor):
-        photos = self.photos(vendor)
-        far = [geo(photos[0]), geo(photos[1]), geo(photos[2], metres_north=2000)]
+        prop = PropertyFactory()
+        add_photos(prop, n=2)
+        with pytest.raises(ValidationError, match="at least 3 photos"):
+            checks.submit_property(prop.vendor, prop)
+
+        prop = PropertyFactory()
+        add_photos(prop, n=2)
+        add_photos(prop, n=1, located=False)
+        with pytest.raises(ValidationError, match="location they were taken"):
+            checks.submit_property(prop.vendor, prop)
+
+    def test_photos_far_from_the_pin_are_refused(self):
+        prop = PropertyFactory()
+        add_photos(prop, n=2)
+        add_photos(prop, n=1, metres_north=2000)
         with pytest.raises(ValidationError, match="within 500 m"):
-            checks.submit_property(vendor, **PIN, pin_confirmed=True, photos=far)
+            checks.submit_property(prop.vendor, prop)
 
-    def test_pin_outside_india_is_refused(self, vendor):
-        photos = [geo(p) for p in self.photos(vendor)]
+    def test_pin_outside_india_is_refused(self):
+        prop = PropertyFactory(latitude=Decimal("51.5"), longitude=Decimal("-0.12"))
+        add_photos(prop)
         with pytest.raises(ValidationError):
-            checks.submit_property(
-                vendor, latitude=0.0, longitude=0.0, pin_confirmed=True, photos=photos
-            )
+            checks.submit_property(prop.vendor, prop)
 
-    @pytest.mark.parametrize(
-        "make",
-        [
-            lambda v: MediaFileFactory(),  # someone else's
-            lambda v: MediaFileFactory(owner=v, kind=Kind.DOCUMENT),
-            lambda v: MediaFileFactory(owner=v, status=MediaStatus.QUARANTINED),
-        ],
-        ids=["not-mine", "not-a-photo", "quarantined"],
-    )
-    def test_only_my_usable_photos(self, vendor, make):
-        photos = [*self.photos(vendor, n=2), make(vendor)]
-        with pytest.raises(ValidationError, match="No usable photo"):
-            checks.submit_property(
-                vendor, **PIN, pin_confirmed=True, photos=[geo(p) for p in photos]
-            )
+    def test_quarantined_photos_do_not_count(self):
+        prop = PropertyFactory()
+        photos = add_photos(prop)
+        photos[0].media.status = MediaStatus.QUARANTINED
+        photos[0].media.save()
+        with pytest.raises(ValidationError, match="at least 3 photos"):
+            checks.submit_property(prop.vendor, prop)
+
+    def test_only_the_owner_and_not_while_approved(self):
+        prop = PropertyFactory()
+        add_photos(prop)
+        with pytest.raises(ValidationError):
+            checks.submit_property(VendorFactory(), prop)
+        case = checks.submit_property(prop.vendor, prop)
+        decide(case.pk, Decision.APPROVE, reviewer=AdminUserFactory())
+        with pytest.raises(InvalidTransition):
+            checks.submit_property(prop.vendor, prop)
 
 
 class TestTalentChecks:

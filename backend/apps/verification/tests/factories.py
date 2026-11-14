@@ -41,12 +41,3 @@ def client_for(user) -> APIClient:
     client = APIClient()
     client.force_authenticate(user)
     return client
-
-
-def near_pin(media, metres_north: float = 20) -> dict:
-    """A photo `metres_north` of the pin (1 degree latitude is about 111 km)."""
-    return {
-        "media_id": str(media.pk),
-        "latitude": PIN["latitude"] + metres_north / 111_000,
-        "longitude": PIN["longitude"],
-    }

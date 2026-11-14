@@ -36,21 +36,13 @@ UNUSABLE_MEDIA = (MediaStatus.REJECTED, MediaStatus.QUARANTINED, MediaStatus.PEN
 
 
 @dataclass(frozen=True)
-class GeoPhoto:
-    media_id: str
-    latitude: float
-    longitude: float
-    captured_at: str = ""
-
-
-@dataclass(frozen=True)
 class Certificate:
     media_id: str
     title: str
 
 
-def _open_for_submission(user, check_type: str) -> VerificationCase:
-    case = locked_case(user, check_type)
+def _open_for_submission(user, check_type: str, *, prop=None) -> VerificationCase:
+    case = locked_case(user, check_type, prop=prop)
     if case.status not in RESUBMITTABLE:
         raise InvalidTransition(
             f"This check is {case.get_status_display().lower()}; it can't be resubmitted now."
@@ -112,31 +104,27 @@ def submit_business(user, *, pan: str, gstin: str = "", request=None) -> Verific
         return _submit(case, user=user, request=request)
 
 
-def submit_property(
-    user,
-    *,
-    latitude: float,
-    longitude: float,
-    pin_confirmed: bool,
-    photos: list[GeoPhoto],
-    request=None,
-) -> VerificationCase:
-    """Map pin the vendor confirmed, plus geo-tagged photos taken near it."""
-    profile = getattr(user, "vendor_profile", None)
-    if profile is None or profile.is_deleted or not profile.address.strip():
-        raise ValidationError({"address": ["Add your property address to your profile first."]})
-    if not pin_confirmed:
-        raise ValidationError({"pin_confirmed": ["Confirm the pin marks your property."]})
+def submit_property(user, prop, *, request=None) -> VerificationCase:
+    """A property's confirmed map pin, plus geo-tagged photos taken near it."""
+    if prop.vendor_id != user.pk or prop.is_deleted:
+        raise ValidationError({"property": ["No such property."]})
+    if not prop.address.strip():
+        raise ValidationError({"address": ["Add the property's address first."]})
+    if not prop.has_point or not prop.location_confirmed:
+        raise ValidationError({"location_confirmed": ["Place the map pin and confirm it."]})
+    latitude, longitude = float(prop.latitude), float(prop.longitude)
     validate_in_india(latitude, longitude)
-    if len(photos) < settings.VERIFICATION_MIN_PROPERTY_PHOTOS:
-        raise ValidationError(
-            {"photos": [f"Add at least {settings.VERIFICATION_MIN_PROPERTY_PHOTOS} photos."]}
-        )
+
+    minimum = settings.VERIFICATION_MIN_PROPERTY_PHOTOS
     max_m = settings.VERIFICATION_PHOTO_MAX_DISTANCE_M
+    photos = list(prop.photos.select_related("media").exclude(media__status__in=UNUSABLE_MEDIA))
+    if len(photos) < minimum:
+        raise ValidationError({"photos": [f"Add at least {minimum} photos of the property."]})
+    located = [p for p in photos if p.latitude is not None]
     far = [
-        p.media_id
-        for p in photos
-        if distance_m(latitude, longitude, p.latitude, p.longitude) > max_m
+        str(p.pk)
+        for p in located
+        if distance_m(latitude, longitude, float(p.latitude), float(p.longitude)) > max_m
     ]
     if far:
         raise ValidationError(
@@ -146,27 +134,35 @@ def submit_property(
                 ]
             }
         )
-    media = _own_media(user, [p.media_id for p in photos], Kind.PHOTO)
+    if len(located) < minimum:
+        raise ValidationError(
+            {"photos": [f"At least {minimum} photos need the location they were taken at."]}
+        )
 
     with transaction.atomic():
-        case = _open_for_submission(user, CheckType.PROPERTY)
-        case.subject_id = str(profile.pk)
+        case = _open_for_submission(user, CheckType.PROPERTY, prop=prop)
+        case.subject_id = str(prop.pk)
         case.details = {
             "pin": {"latitude": latitude, "longitude": longitude},
-            "address": profile.address,
-            "business_name": profile.business_name,
+            "name": prop.name,
+            "address": prop.address,
+            "city": prop.city,
+            "state": prop.state,
         }
-        for photo in photos:
+        for photo in located:
             VerificationDocument.objects.create(
                 case=case,
                 document_type=DocumentType.PROPERTY_PHOTO,
-                media=media[str(photo.media_id)],
+                media=photo.media,
                 metadata={
-                    "latitude": photo.latitude,
-                    "longitude": photo.longitude,
-                    "captured_at": photo.captured_at,
+                    "photo_id": str(photo.pk),
+                    "latitude": float(photo.latitude),
+                    "longitude": float(photo.longitude),
+                    "captured_at": photo.captured_at.isoformat() if photo.captured_at else "",
                     "distance_m": round(
-                        distance_m(latitude, longitude, photo.latitude, photo.longitude)
+                        distance_m(
+                            latitude, longitude, float(photo.latitude), float(photo.longitude)
+                        )
                     ),
                 },
             )
