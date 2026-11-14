@@ -51,12 +51,26 @@ def identity(*, phone: str | None, provider: str, provider_uid: str) -> Verified
     return VerifiedIdentity(phone=normalized, provider=provider, provider_uid=provider_uid)
 
 
+def _public_keys_only_credential():
+    """A firebase_admin credential that grants nothing: enough to check signatures."""
+    from firebase_admin import credentials
+    from google.auth.credentials import AnonymousCredentials
+
+    class PublicKeysOnly(credentials.Base):
+        def get_credential(self):
+            return AnonymousCredentials()
+
+    return PublicKeysOnly()
+
+
 class FirebaseTokenVerifier:
     """Verifies Firebase Auth ID tokens from phone (SMS OTP) sign-in.
 
-    Only Google's public signing certificates are fetched; no service-account key is
-    needed. The Firebase project is FIREBASE_PROJECT_ID, or the project of the runtime's
-    default credentials when that is unset.
+    Checking a token's signature only needs Google's public signing certificates, so
+    with a project id and no revocation check the verifier runs without any Google
+    credentials (a laptop works as well as Cloud Run). The revocation check calls the
+    Firebase Auth API and so uses the runtime's default credentials; they also supply
+    the project when FIREBASE_PROJECT_ID is unset.
     """
 
     provider = "firebase"
@@ -68,12 +82,17 @@ class FirebaseTokenVerifier:
         self.check_revoked = (
             settings.FIREBASE_CHECK_REVOKED if check_revoked is None else check_revoked
         )
-        name = f"barterly-auth-{project_id or 'default'}"
+        keys_only = bool(project_id) and not self.check_revoked
+        mode = "keys" if keys_only else "adc"
+        name = f"barterly-auth-{project_id or 'default'}-{mode}"
         try:
             self.app = firebase_admin.get_app(name)
         except ValueError:
             options = {"projectId": project_id} if project_id else None
-            self.app = firebase_admin.initialize_app(options=options, name=name)
+            credential = _public_keys_only_credential() if keys_only else None
+            self.app = firebase_admin.initialize_app(
+                credential=credential, options=options, name=name
+            )
 
     def verify(self, token: str) -> VerifiedIdentity:
         from firebase_admin import auth

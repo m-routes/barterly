@@ -1,0 +1,5697 @@
+openapi: 3.0.3
+info:
+  title: Barterly API
+  version: 0.1.0
+  description: Work-exchange marketplace for travel and hospitality in India.
+paths:
+  /api/v1/applications/{application_id}/:
+    get:
+      operationId: applications_retrieve
+      description: For the applicant, the gig's vendor, or an admin. Attachments have
+        short-lived signed URLs. Badges show the applicant's verification; contact
+        details are never included.
+      summary: One application
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - applications
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Application'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/applications/{application_id}/withdraw/:
+    post:
+      operationId: applications_withdraw
+      description: Allowed while the application is active, up to accepting an offer.
+      summary: Withdraw my application
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - applications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Withdraw'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Withdraw'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Withdraw'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Application'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/applications/mine/:
+    get:
+      operationId: applications_mine_list
+      summary: My applications (talent)
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - applications
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedApplicationListItemList'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/auth/exchange/:
+    post:
+      operationId: auth_exchange
+      description: Verifies the ID token from Firebase phone sign-in, creates the
+        user on first sign-in, and returns a short-lived access token and a refresh
+        token. Rate limited per IP and per phone number.
+      summary: Exchange an OTP provider ID token for API tokens
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExchangeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ExchangeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ExchangeRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExchangeResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/auth/logout/:
+    post:
+      operationId: auth_logout
+      description: |-
+        Revoke a refresh token. Holding the token is proof enough, so no access token is
+        needed (it may already have expired).
+      summary: Sign out by blacklisting the refresh token
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+        required: true
+      responses:
+        '204':
+          description: Signed out.
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/auth/refresh/:
+    post:
+      operationId: auth_refresh
+      description: 'Rotating refresh: the old refresh token is blacklisted once used.'
+      summary: Get a new access token (and a new refresh token)
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/geo/geocode/:
+    post:
+      operationId: geo_geocode
+      description: 'For a ''find on map'' button: call once when the vendor asks,
+        never on each keystroke (OpenStreetMap''s Nominatim policy forbids autocomplete).
+        Answers are cached. Use the point to place a pin the vendor then confirms
+        or moves.'
+      summary: Find an address on the map
+      tags:
+      - geo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeocodeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GeocodeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GeocodeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeocodeResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/gigs/:
+    get:
+      operationId: gigs_discover
+      description: Live gigs still taking applications that you're eligible for (languages,
+        minimum followers), filtered by your choices, then sorted. `best_fit` orders
+        by a 0-100 fit score (skills 30, reliability 25, ratings 20, audience quality
+        15, distance and availability 10); `fit.breakdown` explains it, and components
+        without data use a neutral 0.5. Distances use each property's approximate
+        location. Pass `next_cursor` back as `cursor` for the next page.
+      summary: Find gigs (talent)
+      parameters:
+      - in: query
+        name: city
+        schema:
+          type: string
+          maxLength: 80
+          minLength: 1
+      - in: query
+        name: compensation_model
+        schema:
+          type: array
+          items:
+            enum:
+            - volunteer
+            - barter
+            - hybrid
+            - paid
+            type: string
+            description: |-
+              * `volunteer` - Volunteer (work for stay)
+              * `barter` - Barter (content for stay)
+              * `hybrid` - Hybrid (stay plus stipend)
+              * `paid` - Paid
+      - in: query
+        name: latitude
+        schema:
+          type: number
+          format: double
+          maximum: 90
+          minimum: -90
+      - in: query
+        name: longitude
+        schema:
+          type: number
+          format: double
+          maximum: 180
+          minimum: -180
+      - in: query
+        name: min_stay
+        schema:
+          type: integer
+          maximum: 365
+          minimum: 1
+        description: 'How many days you can stay: hides gigs that need a longer minimum
+          stay.'
+      - in: query
+        name: q
+        schema:
+          type: string
+          maxLength: 200
+          minLength: 1
+        description: Keywords.
+      - in: query
+        name: radius_km
+        schema:
+          type: number
+          format: double
+          maximum: 1000
+          minimum: 1
+      - in: query
+        name: role
+        schema:
+          type: array
+          items:
+            enum:
+            - volunteer
+            - content_creator
+            - trip_leader
+            - specialist
+            type: string
+            description: |-
+              * `volunteer` - Volunteer
+              * `content_creator` - Content creator
+              * `trip_leader` - Trip leader
+              * `specialist` - Specialist
+      - in: query
+        name: sort
+        schema:
+          enum:
+          - best_fit
+          - newest
+          - start_date
+          - distance
+          type: string
+          default: best_fit
+          minLength: 1
+        description: |-
+          * `best_fit` - best_fit
+          * `newest` - newest
+          * `start_date` - start_date
+          * `distance` - distance
+      - in: query
+        name: start_from
+        schema:
+          type: string
+          format: date
+        description: Gigs starting on or after.
+      - in: query
+        name: start_to
+        schema:
+          type: string
+          format: date
+        description: Gigs starting on or before.
+      - in: query
+        name: stay_type
+        schema:
+          type: array
+          items:
+            enum:
+            - none
+            - dorm_bed
+            - shared_room
+            - private_room
+            - tent
+            type: string
+            description: |-
+              * `none` - No stay
+              * `dorm_bed` - Dorm bed
+              * `shared_room` - Shared room
+              * `private_room` - Private room
+              * `tent` - Tent / camping
+      - in: query
+        name: verified_hosts
+        schema:
+          type: boolean
+          nullable: true
+      - in: query
+        name: women_friendly
+        schema:
+          type: boolean
+          nullable: true
+      tags:
+      - discovery
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GigPage'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    post:
+      operationId: gigs_create
+      description: 'Drafts may be incomplete. The full rules apply on submit: at most
+        6 hours a day and 6 days a week, a start date in the future, at least 1 slot,
+        stay and meals for volunteer gigs, a deliverable for barter gigs, and a stipend
+        above zero for hybrid and paid gigs.'
+      summary: Start a gig (as a draft)
+      tags:
+      - gigs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Gig'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Gig'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Gig'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gig'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/gigs/{gig_id}/:
+    get:
+      operationId: gigs_retrieve
+      summary: One gig (its vendor or an admin)
+      parameters:
+      - in: path
+        name: gig_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - gigs
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gig'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    patch:
+      operationId: gigs_update
+      description: Draft, in-review, live and paused gigs can be edited. Changing
+        the pay, hours or dates of a live or paused gig sends it back to review.
+      summary: Edit a gig
+      parameters:
+      - in: path
+        name: gig_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - gigs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedGig'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedGig'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedGig'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gig'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/gigs/{gig_id}/applications/:
+    get:
+      operationId: gig_applications_list
+      description: Sorted by fit score by default. No contact details are shared.
+      summary: Applicants for my gig (vendor)
+      parameters:
+      - in: path
+        name: gig_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: query
+        name: min_score
+        schema:
+          type: integer
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: sort
+        schema:
+          type: string
+          enum:
+          - fit
+          - newest
+          - oldest
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: Comma list of statuses.
+      tags:
+      - applications
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedApplicationListItemList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    post:
+      operationId: gig_applications_create
+      description: 'Needs a complete profile, the gig''s verification level, the gig''s
+        languages and follower minimum, dates inside the gig that meet its minimum
+        stay, and an answer to every screening question. If anything fails, a 422
+        lists every reason in `details.reasons`. Attachments: up to 8 of your uploads
+        or https links.'
+      summary: Apply to a gig (talent)
+      parameters:
+      - in: path
+        name: gig_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - applications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Apply'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Apply'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Apply'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Application'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Blocked'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/gigs/{gig_id}/public/:
+    get:
+      operationId: gigs_public_retrieve
+      description: The description and screening questions of a gig talent can apply
+        to (live, still taking applications, property not removed). Other gigs are
+        404.
+      summary: A live gig, as talent see it
+      parameters:
+      - in: path
+        name: gig_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - gigs
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GigListing'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/gigs/{gig_id}/status/:
+    post:
+      operationId: gigs_status_change
+      description: 'Vendor: draft→in_review (submit), in_review→draft (withdraw),
+        live→paused, paused→live, live/paused/filled→closed, draft/closed→archived.
+        Admin: in_review→live (approve), in_review→draft (send back, with a reason),
+        pause, close, archive. Filled, auto-close and re-review happen on their own.'
+      summary: Change a gig's status
+      parameters:
+      - in: path
+        name: gig_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - gigs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusChange'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StatusChange'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StatusChange'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gig'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/gigs/admin/:
+    get:
+      operationId: gigs_admin_list
+      description: In-review gigs by default, oldest submission first.
+      summary: Gig review queue
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - archived
+          - closed
+          - draft
+          - filled
+          - in_review
+          - live
+          - paused
+      tags:
+      - gigs
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGigList'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/gigs/mine/:
+    get:
+      operationId: gigs_mine_list
+      summary: My gigs (vendor)
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - archived
+          - closed
+          - draft
+          - filled
+          - in_review
+          - live
+          - paused
+      tags:
+      - gigs
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGigList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/gigs/saved-searches/:
+    get:
+      operationId: saved_searches_list
+      summary: My saved searches
+      tags:
+      - discovery
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SavedSearch'
+          description: ''
+    post:
+      operationId: saved_searches_create
+      description: 'Alerts cover gigs published from now on: one notification per
+        run that finds new matches.'
+      summary: Save a search
+      tags:
+      - discovery
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SavedSearch'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SavedSearch'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SavedSearch'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedSearch'
+          description: ''
+  /api/v1/gigs/saved-searches/{search_id}/:
+    get:
+      operationId: saved_searches_retrieve
+      summary: A saved search
+      parameters:
+      - in: path
+        name: search_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - discovery
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedSearch'
+          description: ''
+    patch:
+      operationId: saved_searches_update
+      summary: Change a saved search
+      parameters:
+      - in: path
+        name: search_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - discovery
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSavedSearch'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSavedSearch'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSavedSearch'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedSearch'
+          description: ''
+    delete:
+      operationId: saved_searches_destroy
+      summary: Delete a saved search
+      parameters:
+      - in: path
+        name: search_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - discovery
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/health/:
+    get:
+      operationId: health_check
+      tags:
+      - system
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+          description: ''
+  /api/v1/me/:
+    get:
+      operationId: accounts_me
+      summary: The signed-in user
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/me/role/:
+    post:
+      operationId: accounts_me_role
+      description: Sets the role of a user who signed up by OTP. Allowed once; admin
+        roles are granted only in the Django admin.
+      summary: Choose vendor or talent (once)
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChooseRole'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChooseRole'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChooseRole'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/media/{media_id}/:
+    get:
+      operationId: media_retrieve
+      description: Owner (or a Barterly admin) only. `url` is null until the file
+        is ready.
+      summary: A file, with short-lived signed read URLs
+      parameters:
+      - in: path
+        name: media_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - media
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaFile'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/media/confirm/:
+    post:
+      operationId: media_confirm
+      description: Checks the stored file against what was declared (type, size, checksum,
+        file signature), records it, and starts processing (virus scan; resized copies
+        for images). Safe to repeat.
+      summary: Record an uploaded file
+      tags:
+      - media
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConfirmRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConfirmRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaFile'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/media/upload-url/:
+    post:
+      operationId: media_upload_url
+      description: 'Allowed: avatar and photo (jpeg, png, webp; 5 MB and 10 MB), video
+        (mp4, 100 MB), document (pdf, jpeg, png; 10 MB). PUT the file to `upload_url`
+        with exactly the returned `headers` before `expires_at`, then call /api/v1/media/confirm/.'
+      summary: Get a signed URL to upload one file
+      tags:
+      - media
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadUrlRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UploadUrlRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UploadUrlRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadUrlResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/profiles/skills/:
+    get:
+      operationId: profiles_skills_list
+      summary: Skills talent can pick
+      tags:
+      - profiles
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Skill'
+          description: ''
+  /api/v1/profiles/talent/me/:
+    get:
+      operationId: profiles_talent_me_retrieve
+      description: GET the signed-in user's profile; PATCH creates it on first save.
+      summary: Get my talent profile
+      tags:
+      - profiles
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TalentProfile'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    patch:
+      operationId: profiles_talent_me_update
+      description: Partial update; the first PATCH creates the profile (201). The
+        response says whether the profile is complete and which fields are missing.
+      summary: Create or update my talent profile
+      tags:
+      - profiles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTalentProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTalentProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTalentProfile'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TalentProfile'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TalentProfile'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/profiles/vendor/me/:
+    get:
+      operationId: profiles_vendor_me_retrieve
+      description: GET the signed-in user's profile; PATCH creates it on first save.
+      summary: Get my vendor profile
+      tags:
+      - profiles
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorProfile'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    patch:
+      operationId: profiles_vendor_me_update
+      description: Partial update; the first PATCH creates the profile (201). The
+        response says whether the profile is complete and which fields are missing.
+      summary: Create or update my vendor profile
+      tags:
+      - profiles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedVendorProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedVendorProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedVendorProfile'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorProfile'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorProfile'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/properties/:
+    get:
+      operationId: properties_list
+      summary: My properties
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - properties
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPropertyList'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    post:
+      operationId: properties_create
+      description: Without latitude/longitude the address is geocoded once (cached)
+        to suggest a pin; the vendor confirms or moves it with PATCH.
+      summary: Add a property
+      tags:
+      - properties
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Property'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Property'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Property'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/properties/{property_id}/:
+    get:
+      operationId: properties_retrieve
+      summary: One of my properties
+      parameters:
+      - in: path
+        name: property_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - properties
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    patch:
+      operationId: properties_update
+      description: Changing the name, address or pin of a verified property sends
+        it back to review and removes its verified status until approved again.
+      summary: Change a property
+      parameters:
+      - in: path
+        name: property_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - properties
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProperty'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProperty'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProperty'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    delete:
+      operationId: properties_destroy
+      description: Soft delete. Its verification is withdrawn.
+      summary: Remove a property
+      parameters:
+      - in: path
+        name: property_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - properties
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/properties/{property_id}/photos/:
+    post:
+      operationId: properties_photos_add
+      description: 'Upload through /api/v1/media/upload-url/ and /api/v1/media/confirm/
+        (kind ''photo'') first. Send where the photo was taken (EXIF or device location):
+        verification needs at least 3 photos taken within 500 m of the pin.'
+      summary: Add a photo
+      parameters:
+      - in: path
+        name: property_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - properties
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddPhoto'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AddPhoto'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AddPhoto'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Photo'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/properties/{property_id}/photos/{photo_id}/:
+    delete:
+      operationId: properties_photos_remove
+      description: The upload itself stays in your files.
+      summary: Remove a photo
+      parameters:
+      - in: path
+        name: photo_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: property_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - properties
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/properties/{property_id}/public/:
+    get:
+      operationId: properties_public_retrieve
+      description: 'No street address or exact pin: `approximate_location` is a fixed
+        point within about 1 km. `exact_location` is filled only for the owner and
+        admins (and, once bookings exist, guests with a confirmed booking).'
+      summary: A property's public page
+      parameters:
+      - in: path
+        name: property_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - properties
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicProperty'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/properties/{property_id}/verification/:
+    post:
+      operationId: properties_verification_submit
+      description: Needs the address, a confirmed pin in India, and at least 3 photos
+        taken within 500 m of it. The trust team reviews it; approval marks the property
+        verified.
+      summary: Submit a property for verification
+      parameters:
+      - in: path
+        name: property_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - properties
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/verification/admin/cases/:
+    get:
+      operationId: verification_admin_cases_list
+      summary: Review queue
+      parameters:
+      - in: query
+        name: check_type
+        schema:
+          type: string
+          enum:
+          - business_registration
+          - certificate
+          - id_selfie
+          - property
+          - reference
+          - social_account
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - approved
+          - changes_requested
+          - expired
+          - in_review
+          - not_started
+          - rejected
+          - submitted
+      - in: query
+        name: user
+        schema:
+          type: string
+        description: User id.
+      tags:
+      - verification
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminCaseList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/verification/admin/cases/{case_id}/:
+    get:
+      operationId: verification_admin_case_retrieve
+      summary: One case with its evidence
+      parameters:
+      - in: path
+        name: case_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - verification
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCase'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/verification/admin/cases/{case_id}/decision/:
+    post:
+      operationId: verification_admin_case_decide
+      description: start_review, approve, reject, request_changes (submitted or in-review
+        cases), or revoke (approved cases). Approving grants the badge; leaving approved
+        removes it. Every decision is audit-logged.
+      summary: Decide on a case
+      parameters:
+      - in: path
+        name: case_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - verification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Decision'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Decision'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Decision'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCase'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/verification/checks/business/:
+    post:
+      operationId: verification_business_submit
+      description: Formats are checked here (and that the GSTIN contains the PAN).
+        Only the last four characters are stored. Changing the business name or GSTIN
+        on an approved check sends it back to review.
+      summary: Submit PAN and GST for review
+      tags:
+      - verification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessCheck'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BusinessCheck'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BusinessCheck'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/verification/checks/certificates/:
+    post:
+      operationId: verification_certificates_submit
+      summary: Submit certificates (optional)
+      tags:
+      - verification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CertificatesCheck'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CertificatesCheck'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CertificatesCheck'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/verification/checks/id/:
+    post:
+      operationId: verification_id_start
+      description: Opens a session with the KYC provider. Run the provider's capture
+        flow with `client_token` (SDK) or `redirect_url` (hosted page); the result
+        arrives by webhook. Images never pass through Barterly. Starting again on
+        an approved check (new or changed ID) sends it back to review and removes
+        the ID badge until approved.
+      summary: Start an ID + selfie check
+      tags:
+      - verification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartIdCheck'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StartIdCheck'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StartIdCheck'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartIdCheckResponse'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/verification/checks/reference/:
+    post:
+      operationId: verification_reference_submit
+      summary: Submit one reference
+      tags:
+      - verification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReferenceCheck'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReferenceCheck'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReferenceCheck'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/verification/checks/social/:
+    post:
+      operationId: verification_social_submit
+      description: The response's `details.bio_code` must be in the account's bio
+        while the trust team checks it. Changing the handle on an approved check sends
+        it back to review.
+      summary: Submit the Instagram account on my profile
+      tags:
+      - verification
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/verification/me/:
+    get:
+      operationId: verification_me
+      description: Every check that applies to your role with its cases (none until
+        started; the property check has one per property), and your active badges.
+      summary: My checks and badges
+      tags:
+      - verification
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyVerification'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/verification/webhooks/kyc/:
+    post:
+      operationId: verification_kyc_webhook
+      description: Signed by the provider over the raw body; deliveries are de-duplicated
+        by idempotency key, so retries are safe. `outcome` is applied, duplicate,
+        pending, stale, ignored or unknown_reference.
+      summary: KYC provider result (webhook)
+      tags:
+      - verification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: true
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookResponse'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+components:
+  schemas:
+    AddPhoto:
+      type: object
+      properties:
+        media_id:
+          type: string
+          format: uuid
+          description: A confirmed upload of kind 'photo'.
+        caption:
+          type: string
+          maxLength: 200
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+        captured_at:
+          type: string
+          format: date-time
+      required:
+      - media_id
+    AdminCase:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        check_type:
+          allOf:
+          - $ref: '#/components/schemas/CheckTypeEnum'
+          readOnly: true
+        subject_type:
+          allOf:
+          - $ref: '#/components/schemas/SubjectTypeEnum'
+          readOnly: true
+        property_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/VerificationStatusEnum'
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+          description: Why it was rejected or what to change. Shown to the user.
+        details:
+          readOnly: true
+          description: 'Non-sensitive facts for the reviewer: pin, masked numbers,
+            reference contact.'
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        approved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminDocument'
+          readOnly: true
+        user_id:
+          type: string
+          format: uuid
+          readOnly: true
+        user_phone:
+          type: string
+          readOnly: true
+        user_role:
+          type: string
+          readOnly: true
+        reviewer_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+      required:
+      - approved_at
+      - check_type
+      - details
+      - documents
+      - expires_at
+      - id
+      - property_id
+      - reason
+      - reviewed_at
+      - reviewer_id
+      - status
+      - subject_type
+      - submitted_at
+      - user_id
+      - user_phone
+      - user_role
+    AdminDocument:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        document_type:
+          $ref: '#/components/schemas/VerificationDocumentTypeEnum'
+        status:
+          $ref: '#/components/schemas/VerificationDocumentStatusEnum'
+        masked_value:
+          type: string
+          description: Last four characters only.
+          maxLength: 4
+        media_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        metadata:
+          description: E.g. a photo's location or a certificate's title.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        provider:
+          type: string
+          default: ''
+          description: KYC provider name.
+          maxLength: 40
+        provider_reference:
+          type: string
+          default: ''
+          description: The provider's id for this check.
+          maxLength: 128
+      required:
+      - created_at
+      - document_type
+      - id
+      - media_id
+    AmenitiesEnum:
+      enum:
+      - air_conditioning
+      - breakfast
+      - cctv
+      - common_area
+      - female_dorm
+      - first_aid
+      - hot_water
+      - kitchen
+      - laundry
+      - lockers
+      - parking
+      - pet_friendly
+      - power_backup
+      - wifi
+      - workspace
+      type: string
+      description: |-
+        * `air_conditioning` - Air conditioning
+        * `breakfast` - Breakfast
+        * `cctv` - CCTV in common areas
+        * `common_area` - Common area
+        * `female_dorm` - Female-only dorm
+        * `first_aid` - First aid
+        * `hot_water` - Hot water
+        * `kitchen` - Shared kitchen
+        * `laundry` - Laundry
+        * `lockers` - Lockers
+        * `parking` - Parking
+        * `pet_friendly` - Pet friendly
+        * `power_backup` - Power backup
+        * `wifi` - Wi-Fi
+        * `workspace` - Workspace
+    Applicant:
+      type: object
+      description: |-
+        Who applied. Deliberately no phone, email, emergency contact, birth date or
+        social handle: contact happens on Barterly once there's a booking.
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        talent_type:
+          type: string
+        home_city:
+          type: string
+        bio:
+          type: string
+        languages:
+          type: array
+          items:
+            type: string
+        skills:
+          type: array
+          items:
+            type: string
+        instagram_followers:
+          type: integer
+          nullable: true
+        badges:
+          type: array
+          items:
+            type: string
+          description: Active badge kinds.
+      required:
+      - badges
+      - bio
+      - display_name
+      - home_city
+      - instagram_followers
+      - languages
+      - skills
+      - talent_type
+      - user_id
+    Application:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        gig:
+          type: string
+          format: uuid
+          readOnly: true
+        gig_title:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ApplicationStatusEnum'
+          readOnly: true
+        status_reason:
+          type: string
+          readOnly: true
+        pitch:
+          type: string
+          readOnly: true
+        answers:
+          readOnly: true
+          description: Answers to the gig's screening questions, in order.
+        proposed_start:
+          type: string
+          format: date
+          readOnly: true
+        proposed_end:
+          type: string
+          format: date
+          readOnly: true
+        applicant:
+          allOf:
+          - $ref: '#/components/schemas/Applicant'
+          readOnly: true
+        fit:
+          allOf:
+          - $ref: '#/components/schemas/Fit'
+          readOnly: true
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+          readOnly: true
+        applied_at:
+          type: string
+          format: date-time
+          readOnly: true
+        decided_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - answers
+      - applicant
+      - applied_at
+      - attachments
+      - decided_at
+      - fit
+      - gig
+      - gig_title
+      - id
+      - pitch
+      - proposed_end
+      - proposed_start
+      - status
+      - status_reason
+    ApplicationListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        gig:
+          type: string
+          format: uuid
+          readOnly: true
+        gig_title:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ApplicationStatusEnum'
+          readOnly: true
+        proposed_start:
+          type: string
+          format: date
+          readOnly: true
+        proposed_end:
+          type: string
+          format: date
+          readOnly: true
+        applicant:
+          allOf:
+          - $ref: '#/components/schemas/Applicant'
+          readOnly: true
+        fit:
+          allOf:
+          - $ref: '#/components/schemas/Fit'
+          readOnly: true
+        attachment_count:
+          type: integer
+          readOnly: true
+        applied_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - applicant
+      - applied_at
+      - attachment_count
+      - fit
+      - gig
+      - gig_title
+      - id
+      - proposed_end
+      - proposed_start
+      - status
+    ApplicationStatusEnum:
+      enum:
+      - applied
+      - withdrawn
+      - shortlisted
+      - interview
+      - offered
+      - declined
+      - rejected
+      - expired
+      type: string
+      description: |-
+        * `applied` - Applied
+        * `withdrawn` - Withdrawn
+        * `shortlisted` - Shortlisted
+        * `interview` - Interview
+        * `offered` - Offered
+        * `declined` - Declined
+        * `rejected` - Rejected
+        * `expired` - Expired
+    Apply:
+      type: object
+      properties:
+        pitch:
+          type: string
+          maxLength: 2000
+        answers:
+          type: array
+          items:
+            type: string
+            maxLength: 1000
+          description: One answer per screening question, in order.
+        proposed_start:
+          type: string
+          format: date
+        proposed_end:
+          type: string
+          format: date
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttachmentInput'
+      required:
+      - pitch
+      - proposed_end
+      - proposed_start
+    ApproximateLocation:
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        radius_m:
+          type: integer
+          description: The property is within this distance.
+      required:
+      - latitude
+      - longitude
+      - radius_m
+    Attachment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/AttachmentKindEnum'
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+          description: Signed and short-lived for uploads.
+        thumb_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+      required:
+      - id
+      - kind
+      - thumb_url
+      - title
+      - url
+    AttachmentInput:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/AttachmentKindEnum'
+        media_id:
+          type: string
+          format: uuid
+          description: Your upload (photo, video, document).
+        url:
+          type: string
+          format: uri
+          description: For kind 'link' only.
+          maxLength: 500
+        title:
+          type: string
+          maxLength: 120
+      required:
+      - kind
+    AttachmentKindEnum:
+      enum:
+      - photo
+      - video
+      - document
+      - link
+      type: string
+      description: |-
+        * `photo` - Photo
+        * `video` - Video
+        * `document` - Document
+        * `link` - Link
+    Badge:
+      type: object
+      properties:
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/BadgeKindEnum'
+          readOnly: true
+        granted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        grant_reason:
+          type: string
+          readOnly: true
+        case_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+      required:
+      - case_id
+      - grant_reason
+      - granted_at
+      - kind
+    BadgeKindEnum:
+      enum:
+      - id_verified
+      - property_verified
+      - licence_verified
+      - social_verified
+      - reference_checked
+      - trusted_member
+      type: string
+      description: |-
+        * `id_verified` - ID verified
+        * `property_verified` - Property verified
+        * `licence_verified` - Licence verified
+        * `social_verified` - Social verified
+        * `reference_checked` - Reference checked
+        * `trusted_member` - Trusted member
+    BlankEnum:
+      enum:
+      - ''
+    Blocked:
+      type: object
+      properties:
+        code:
+          type: string
+          default: application_blocked
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: {}
+          description: '{"reasons": [{"code", "message"}, ...]}'
+      required:
+      - details
+      - message
+    BusinessCheck:
+      type: object
+      properties:
+        pan:
+          type: string
+          description: 10 characters, e.g. ABCPE1234F.
+          maxLength: 10
+        gstin:
+          type: string
+          description: Optional. Defaults to the GSTIN on your profile.
+          maxLength: 15
+      required:
+      - pan
+    BusinessTypeEnum:
+      enum:
+      - hostel
+      - homestay
+      - guesthouse
+      - hotel
+      - resort
+      - cafe
+      - restaurant
+      - camp
+      - farm
+      - tour_operator
+      - coworking
+      - other
+      type: string
+      description: |-
+        * `hostel` - Hostel
+        * `homestay` - Homestay
+        * `guesthouse` - Guesthouse
+        * `hotel` - Hotel
+        * `resort` - Resort
+        * `cafe` - Café
+        * `restaurant` - Restaurant
+        * `camp` - Camp
+        * `farm` - Farm stay
+        * `tour_operator` - Tour operator
+        * `coworking` - Co-working / co-living
+        * `other` - Other
+    Case:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        check_type:
+          allOf:
+          - $ref: '#/components/schemas/CheckTypeEnum'
+          readOnly: true
+        subject_type:
+          allOf:
+          - $ref: '#/components/schemas/SubjectTypeEnum'
+          readOnly: true
+        property_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/VerificationStatusEnum'
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+          description: Why it was rejected or what to change. Shown to the user.
+        details:
+          readOnly: true
+          description: 'Non-sensitive facts for the reviewer: pin, masked numbers,
+            reference contact.'
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        approved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
+          readOnly: true
+      required:
+      - approved_at
+      - check_type
+      - details
+      - documents
+      - expires_at
+      - id
+      - property_id
+      - reason
+      - reviewed_at
+      - status
+      - subject_type
+      - submitted_at
+    CertificateItem:
+      type: object
+      properties:
+        media_id:
+          type: string
+          format: uuid
+          description: A confirmed upload of kind 'document'.
+        title:
+          type: string
+          maxLength: 120
+      required:
+      - media_id
+      - title
+    CertificatesCheck:
+      type: object
+      properties:
+        certificates:
+          type: array
+          items:
+            $ref: '#/components/schemas/CertificateItem'
+      required:
+      - certificates
+    CheckSummary:
+      type: object
+      properties:
+        check_type:
+          $ref: '#/components/schemas/CheckTypeEnum'
+        label:
+          type: string
+        required:
+          type: boolean
+          description: Needed for the trusted member badge.
+        badge:
+          $ref: '#/components/schemas/BadgeKindEnum'
+        cases:
+          type: array
+          items:
+            $ref: '#/components/schemas/Case'
+          description: Empty until started. The property check has one per property.
+      required:
+      - badge
+      - cases
+      - check_type
+      - label
+      - required
+    CheckTypeEnum:
+      enum:
+      - id_selfie
+      - business_registration
+      - property
+      - social_account
+      - certificate
+      - reference
+      type: string
+      description: |-
+        * `id_selfie` - Government ID and selfie
+        * `business_registration` - PAN and GST
+        * `property` - Property photos and map pin
+        * `social_account` - Linked social account
+        * `certificate` - Certificates
+        * `reference` - Reference
+    ChooseRole:
+      type: object
+      properties:
+        role:
+          $ref: '#/components/schemas/ChooseRoleRoleEnum'
+      required:
+      - role
+    ChooseRoleRoleEnum:
+      enum:
+      - vendor
+      - talent
+      type: string
+      description: |-
+        * `vendor` - Vendor
+        * `talent` - Talent
+    CompensationModelEnum:
+      enum:
+      - volunteer
+      - barter
+      - hybrid
+      - paid
+      type: string
+      description: |-
+        * `volunteer` - Volunteer (work for stay)
+        * `barter` - Barter (content for stay)
+        * `hybrid` - Hybrid (stay plus stipend)
+        * `paid` - Paid
+    Component:
+      type: object
+      properties:
+        value:
+          type: number
+          format: double
+          description: 0 to 1.
+        weight:
+          type: number
+          format: double
+        points:
+          type: number
+          format: double
+          description: What this component adds to the score.
+        neutral:
+          type: boolean
+          description: No data yet, so the neutral value was used.
+        reason:
+          type: string
+      required:
+      - neutral
+      - points
+      - reason
+      - value
+      - weight
+    ConfirmRequest:
+      type: object
+      properties:
+        media_id:
+          type: string
+          format: uuid
+      required:
+      - media_id
+    ContentTypeEnum:
+      enum:
+      - application/pdf
+      - image/jpeg
+      - image/png
+      - image/webp
+      - video/mp4
+      type: string
+      description: |-
+        * `application/pdf` - application/pdf
+        * `image/jpeg` - image/jpeg
+        * `image/png` - image/png
+        * `image/webp` - image/webp
+        * `video/mp4` - video/mp4
+    DatabaseEnum:
+      enum:
+      - ok
+      - unavailable
+      type: string
+      description: |-
+        * `ok` - ok
+        * `unavailable` - unavailable
+    Decision:
+      type: object
+      properties:
+        decision:
+          $ref: '#/components/schemas/DecisionEnum'
+        reason:
+          type: string
+          description: Required to reject, request changes or revoke. Shown to the
+            user.
+          maxLength: 1000
+      required:
+      - decision
+    DecisionEnum:
+      enum:
+      - start_review
+      - approve
+      - reject
+      - request_changes
+      - revoke
+      type: string
+      description: |-
+        * `start_review` - start_review
+        * `approve` - approve
+        * `reject` - reject
+        * `request_changes` - request_changes
+        * `revoke` - revoke
+    Deliverable:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/DeliverableTypeEnum'
+        quantity:
+          type: integer
+          maximum: 50
+          minimum: 1
+        notes:
+          type: string
+          maxLength: 300
+      required:
+      - quantity
+      - type
+    DeliverableTypeEnum:
+      enum:
+      - instagram_post
+      - instagram_reel
+      - instagram_story
+      - youtube_video
+      - blog_post
+      - photo_set
+      - mural
+      - other
+      type: string
+      description: |-
+        * `instagram_post` - Instagram post
+        * `instagram_reel` - Instagram reel
+        * `instagram_story` - Instagram story
+        * `youtube_video` - YouTube video
+        * `blog_post` - Blog post
+        * `photo_set` - Edited photo set
+        * `mural` - Mural / artwork
+        * `other` - Other
+    Document:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        document_type:
+          $ref: '#/components/schemas/VerificationDocumentTypeEnum'
+        status:
+          $ref: '#/components/schemas/VerificationDocumentStatusEnum'
+        masked_value:
+          type: string
+          description: Last four characters only.
+          maxLength: 4
+        media_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        metadata:
+          description: E.g. a photo's location or a certificate's title.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - document_type
+      - id
+      - media_id
+    Error:
+      type: object
+      description: Shape of every error response. Use it in extend_schema(responses=...).
+      properties:
+        code:
+          type: string
+          description: Stable machine-readable code, e.g. 'not_found'.
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: {}
+          description: Extra context. Field errors for 'validation_error'; otherwise
+            often empty.
+      required:
+      - code
+      - details
+      - message
+    ExactLocation:
+      type: object
+      properties:
+        address:
+          type: string
+        pincode:
+          type: string
+        latitude:
+          type: number
+          format: double
+          nullable: true
+        longitude:
+          type: number
+          format: double
+          nullable: true
+      required:
+      - address
+      - latitude
+      - longitude
+      - pincode
+    ExchangeRequest:
+      type: object
+      properties:
+        id_token:
+          type: string
+          description: The ID token the client got from Firebase phone (OTP) sign-in.
+          maxLength: 8192
+      required:
+      - id_token
+    ExchangeResponse:
+      type: object
+      properties:
+        access:
+          type: string
+          description: 'Short-lived JWT. Send as `Authorization: Bearer`.'
+        refresh:
+          type: string
+          description: Exchange at /api/v1/auth/refresh/ for new tokens.
+        is_new_user:
+          type: boolean
+        profile_complete:
+          type: boolean
+        needs_role:
+          type: boolean
+          description: True until the user picks vendor or talent at /api/v1/me/role/.
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+      - access
+      - is_new_user
+      - needs_role
+      - profile_complete
+      - refresh
+      - user
+    Fit:
+      type: object
+      properties:
+        score:
+          type: integer
+          description: 0 to 100.
+        breakdown:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Component'
+      required:
+      - breakdown
+      - score
+    GeocodeRequest:
+      type: object
+      properties:
+        query:
+          type: string
+          description: A full address.
+          maxLength: 300
+      required:
+      - query
+    GeocodeResponse:
+      type: object
+      properties:
+        found:
+          type: boolean
+        latitude:
+          type: number
+          format: double
+          nullable: true
+        longitude:
+          type: number
+          format: double
+          nullable: true
+        display_name:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postcode:
+          type: string
+      required:
+      - city
+      - display_name
+      - found
+      - latitude
+      - longitude
+      - postcode
+      - state
+    Gig:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        property:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 5000
+        role_template:
+          $ref: '#/components/schemas/RoleTemplateEnum'
+        compensation_model:
+          $ref: '#/components/schemas/CompensationModelEnum'
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        duration_days:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+          description: Instead of an end date, for flexible starts.
+        apply_by:
+          type: string
+          format: date
+          nullable: true
+        slots:
+          type: integer
+          maximum: 32767
+          minimum: 1
+        hours_per_day:
+          type: integer
+          maximum: 6
+          minimum: 1
+          nullable: true
+          description: 1 to 6.
+        days_per_week:
+          type: integer
+          maximum: 6
+          minimum: 1
+          nullable: true
+          description: '1 to 6: at least one day off.'
+        stay_type:
+          oneOf:
+          - $ref: '#/components/schemas/StayTypeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        meals:
+          oneOf:
+          - $ref: '#/components/schemas/MealsEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        wifi:
+          type: boolean
+        stipend_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: INR, above zero. Hybrid and paid only.
+        stipend_period:
+          oneOf:
+          - $ref: '#/components/schemas/StipendPeriodEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        deliverables:
+          type: array
+          items:
+            $ref: '#/components/schemas/Deliverable'
+        skills:
+          type: array
+          items:
+            type: string
+          description: Skill slugs (GET /api/v1/profiles/skills/). Used for the fit
+            score.
+        min_age:
+          type: integer
+          readOnly: true
+          description: Fixed at 18 for every gig.
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/LanguagesEnum'
+        min_followers:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        min_stay_days:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        screening_questions:
+          type: array
+          items:
+            type: string
+            maxLength: 300
+          maxItems: 5
+        required_verification:
+          allOf:
+          - $ref: '#/components/schemas/RequiredVerificationEnum'
+          description: |-
+            The badge talent need before they can apply.
+
+            * `none` - No verification needed
+            * `id_verified` - ID verified
+            * `trusted_member` - Trusted member
+        status:
+          allOf:
+          - $ref: '#/components/schemas/GigStatusEnum'
+          readOnly: true
+        status_reason:
+          type: string
+          readOnly: true
+          description: Why it was sent back or reopened. Shown to the vendor.
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        published_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        closed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - closed_at
+      - compensation_model
+      - created_at
+      - id
+      - min_age
+      - property
+      - published_at
+      - role_template
+      - status
+      - status_reason
+      - submitted_at
+      - title
+      - updated_at
+    GigCard:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        role_template:
+          allOf:
+          - $ref: '#/components/schemas/RoleTemplateEnum'
+          readOnly: true
+        compensation_model:
+          allOf:
+          - $ref: '#/components/schemas/CompensationModelEnum'
+          readOnly: true
+        start_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        duration_days:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Instead of an end date, for flexible starts.
+        apply_by:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        slots:
+          type: integer
+          readOnly: true
+        hours_per_day:
+          type: integer
+          readOnly: true
+          nullable: true
+        days_per_week:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: 'At most 6: everyone gets at least one day off.'
+        stay_type:
+          allOf:
+          - $ref: '#/components/schemas/StayTypeEnum'
+          readOnly: true
+        meals:
+          allOf:
+          - $ref: '#/components/schemas/MealsEnum'
+          readOnly: true
+        wifi:
+          type: boolean
+          readOnly: true
+        stipend_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+          description: INR. Hybrid and paid only.
+        stipend_period:
+          allOf:
+          - $ref: '#/components/schemas/StipendPeriodEnum'
+          readOnly: true
+        deliverables:
+          readOnly: true
+          description: 'Barter and hybrid only, e.g. [{"type": "instagram_reel", "quantity":
+            2}]'
+        skills:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        languages:
+          readOnly: true
+          description: ISO 639 codes.
+        min_followers:
+          type: integer
+          readOnly: true
+          nullable: true
+        min_stay_days:
+          type: integer
+          readOnly: true
+          nullable: true
+        required_verification:
+          allOf:
+          - $ref: '#/components/schemas/RequiredVerificationEnum'
+          readOnly: true
+          description: |-
+            The badge talent need before they can apply.
+
+            * `none` - No verification needed
+            * `id_verified` - ID verified
+            * `trusted_member` - Trusted member
+        published_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        property:
+          allOf:
+          - $ref: '#/components/schemas/GigPropertySummary'
+          readOnly: true
+        host_verified:
+          type: boolean
+          readOnly: true
+          description: The property is verified and the host's ID is verified.
+        distance_km:
+          type: number
+          format: double
+          nullable: true
+          readOnly: true
+        fit:
+          allOf:
+          - $ref: '#/components/schemas/Fit'
+          readOnly: true
+      required:
+      - apply_by
+      - compensation_model
+      - days_per_week
+      - deliverables
+      - distance_km
+      - duration_days
+      - end_date
+      - fit
+      - host_verified
+      - hours_per_day
+      - id
+      - languages
+      - meals
+      - min_followers
+      - min_stay_days
+      - property
+      - published_at
+      - required_verification
+      - role_template
+      - skills
+      - slots
+      - start_date
+      - stay_type
+      - stipend_amount
+      - stipend_period
+      - title
+      - wifi
+    GigListing:
+      type: object
+      description: |-
+        A live gig as talent see it before applying: the work, the terms and the
+        screening questions. No review notes or internal timestamps; the property is
+        an id (its public view is GET /api/v1/properties/{id}/public/).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        property:
+          type: string
+          format: uuid
+        title:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        role_template:
+          allOf:
+          - $ref: '#/components/schemas/RoleTemplateEnum'
+          readOnly: true
+        compensation_model:
+          allOf:
+          - $ref: '#/components/schemas/CompensationModelEnum'
+          readOnly: true
+        start_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        duration_days:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Instead of an end date, for flexible starts.
+        apply_by:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        slots:
+          type: integer
+          readOnly: true
+        hours_per_day:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: 1 to 6.
+        days_per_week:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: '1 to 6: at least one day off.'
+        stay_type:
+          allOf:
+          - $ref: '#/components/schemas/StayTypeEnum'
+          readOnly: true
+        meals:
+          allOf:
+          - $ref: '#/components/schemas/MealsEnum'
+          readOnly: true
+        wifi:
+          type: boolean
+          readOnly: true
+        stipend_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+          description: INR, above zero. Hybrid and paid only.
+        stipend_period:
+          allOf:
+          - $ref: '#/components/schemas/StipendPeriodEnum'
+          readOnly: true
+        deliverables:
+          type: array
+          items:
+            $ref: '#/components/schemas/Deliverable'
+        skills:
+          type: array
+          items:
+            type: string
+          description: Skill slugs (GET /api/v1/profiles/skills/). Used for the fit
+            score.
+        min_age:
+          type: integer
+          readOnly: true
+          description: Fixed at 18 for every gig.
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/LanguagesEnum'
+        min_followers:
+          type: integer
+          readOnly: true
+          nullable: true
+        min_stay_days:
+          type: integer
+          readOnly: true
+          nullable: true
+        screening_questions:
+          type: array
+          items:
+            type: string
+            maxLength: 300
+          maxItems: 5
+        required_verification:
+          allOf:
+          - $ref: '#/components/schemas/RequiredVerificationEnum'
+          readOnly: true
+          description: |-
+            The badge talent need before they can apply.
+
+            * `none` - No verification needed
+            * `id_verified` - ID verified
+            * `trusted_member` - Trusted member
+        published_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - apply_by
+      - compensation_model
+      - days_per_week
+      - description
+      - duration_days
+      - end_date
+      - hours_per_day
+      - id
+      - meals
+      - min_age
+      - min_followers
+      - min_stay_days
+      - property
+      - published_at
+      - required_verification
+      - role_template
+      - slots
+      - start_date
+      - stay_type
+      - stipend_amount
+      - stipend_period
+      - title
+      - wifi
+    GigPage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/GigCard'
+        next_cursor:
+          type: string
+          nullable: true
+        next:
+          type: string
+          format: uri
+          nullable: true
+      required:
+      - next
+      - next_cursor
+      - results
+    GigPropertySummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        property_type:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        women_friendly:
+          type: boolean
+        verified:
+          type: boolean
+        approximate_location:
+          type: object
+          additionalProperties: {}
+          nullable: true
+        cover_thumb_url:
+          type: string
+          format: uri
+          nullable: true
+      required:
+      - approximate_location
+      - city
+      - cover_thumb_url
+      - id
+      - name
+      - property_type
+      - state
+      - verified
+      - women_friendly
+    GigStatusEnum:
+      enum:
+      - draft
+      - in_review
+      - live
+      - paused
+      - filled
+      - closed
+      - archived
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `in_review` - In review
+        * `live` - Live
+        * `paused` - Paused
+        * `filled` - Filled
+        * `closed` - Closed
+        * `archived` - Archived
+    Health:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/HealthStatusEnum'
+        database:
+          $ref: '#/components/schemas/DatabaseEnum'
+      required:
+      - database
+      - status
+    HealthStatusEnum:
+      enum:
+      - ok
+      - degraded
+      type: string
+      description: |-
+        * `ok` - ok
+        * `degraded` - degraded
+    IdDocumentTypeEnum:
+      enum:
+      - aadhaar
+      - passport
+      - driving_licence
+      - voter_id
+      type: string
+      description: |-
+        * `aadhaar` - Aadhaar
+        * `passport` - Passport
+        * `driving_licence` - Driving licence
+        * `voter_id` - Voter ID
+    KindEnum:
+      enum:
+      - avatar
+      - photo
+      - video
+      - document
+      type: string
+      description: |-
+        * `avatar` - Profile photo
+        * `photo` - Photo
+        * `video` - Video
+        * `document` - Document
+    KycSession:
+      type: object
+      properties:
+        reference:
+          type: string
+        client_token:
+          type: string
+          description: Pass to the provider's SDK.
+        redirect_url:
+          type: string
+          format: uri
+          description: Or open the provider's hosted page.
+        expires_in_seconds:
+          type: integer
+      required:
+      - client_token
+      - expires_in_seconds
+      - redirect_url
+      - reference
+    LanguagesEnum:
+      enum:
+      - ar
+      - as
+      - bn
+      - de
+      - en
+      - es
+      - fr
+      - gu
+      - he
+      - hi
+      - it
+      - ja
+      - kn
+      - ko
+      - kok
+      - ml
+      - mr
+      - ne
+      - nl
+      - or
+      - pa
+      - pt
+      - ru
+      - ta
+      - te
+      - ur
+      - zh
+      type: string
+      description: |-
+        * `ar` - Arabic
+        * `as` - Assamese
+        * `bn` - Bengali
+        * `de` - German
+        * `en` - English
+        * `es` - Spanish
+        * `fr` - French
+        * `gu` - Gujarati
+        * `he` - Hebrew
+        * `hi` - Hindi
+        * `it` - Italian
+        * `ja` - Japanese
+        * `kn` - Kannada
+        * `ko` - Korean
+        * `kok` - Konkani
+        * `ml` - Malayalam
+        * `mr` - Marathi
+        * `ne` - Nepali
+        * `nl` - Dutch
+        * `or` - Odia
+        * `pa` - Punjabi
+        * `pt` - Portuguese
+        * `ru` - Russian
+        * `ta` - Tamil
+        * `te` - Telugu
+        * `ur` - Urdu
+        * `zh` - Chinese
+    MealsEnum:
+      enum:
+      - none
+      - breakfast
+      - two_meals
+      - all_meals
+      type: string
+      description: |-
+        * `none` - No meals
+        * `breakfast` - Breakfast
+        * `two_meals` - Two meals a day
+        * `all_meals` - All meals
+    MediaFile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/KindEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/MediaFileStatusEnum'
+          readOnly: true
+        content_type:
+          type: string
+          readOnly: true
+        size_bytes:
+          type: integer
+          readOnly: true
+          description: Declared at upload, checked on confirm.
+        checksum_md5:
+          type: string
+          readOnly: true
+          description: Hex MD5 of the stored bytes (from Cloud Storage).
+        scan_status:
+          allOf:
+          - $ref: '#/components/schemas/ScanStatusEnum'
+          readOnly: true
+        rejection_reason:
+          type: string
+          readOnly: true
+        url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+          description: Signed, short-lived; null until ready.
+        variants:
+          type: object
+          additionalProperties:
+            type: string
+            format: uri
+          readOnly: true
+          description: Signed URLs for resized copies (images only).
+        url_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - checksum_md5
+      - content_type
+      - created_at
+      - id
+      - kind
+      - rejection_reason
+      - scan_status
+      - size_bytes
+      - status
+      - url
+      - url_expires_at
+      - variants
+    MediaFileStatusEnum:
+      enum:
+      - pending_upload
+      - processing
+      - ready
+      - rejected
+      - quarantined
+      type: string
+      description: |-
+        * `pending_upload` - Waiting for upload
+        * `processing` - Processing
+        * `ready` - Ready
+        * `rejected` - Rejected
+        * `quarantined` - Quarantined
+    MyVerification:
+      type: object
+      properties:
+        checks:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckSummary'
+        badges:
+          type: array
+          items:
+            $ref: '#/components/schemas/Badge'
+          description: Active badges.
+        trusted_member:
+          type: boolean
+      required:
+      - badges
+      - checks
+      - trusted_member
+    PaginatedAdminCaseList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminCase'
+    PaginatedApplicationListItemList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApplicationListItem'
+    PaginatedGigList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Gig'
+    PaginatedPropertyList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Property'
+    PatchedGig:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        property:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 5000
+        role_template:
+          $ref: '#/components/schemas/RoleTemplateEnum'
+        compensation_model:
+          $ref: '#/components/schemas/CompensationModelEnum'
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        duration_days:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+          description: Instead of an end date, for flexible starts.
+        apply_by:
+          type: string
+          format: date
+          nullable: true
+        slots:
+          type: integer
+          maximum: 32767
+          minimum: 1
+        hours_per_day:
+          type: integer
+          maximum: 6
+          minimum: 1
+          nullable: true
+          description: 1 to 6.
+        days_per_week:
+          type: integer
+          maximum: 6
+          minimum: 1
+          nullable: true
+          description: '1 to 6: at least one day off.'
+        stay_type:
+          oneOf:
+          - $ref: '#/components/schemas/StayTypeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        meals:
+          oneOf:
+          - $ref: '#/components/schemas/MealsEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        wifi:
+          type: boolean
+        stipend_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: INR, above zero. Hybrid and paid only.
+        stipend_period:
+          oneOf:
+          - $ref: '#/components/schemas/StipendPeriodEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        deliverables:
+          type: array
+          items:
+            $ref: '#/components/schemas/Deliverable'
+        skills:
+          type: array
+          items:
+            type: string
+          description: Skill slugs (GET /api/v1/profiles/skills/). Used for the fit
+            score.
+        min_age:
+          type: integer
+          readOnly: true
+          description: Fixed at 18 for every gig.
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/LanguagesEnum'
+        min_followers:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        min_stay_days:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        screening_questions:
+          type: array
+          items:
+            type: string
+            maxLength: 300
+          maxItems: 5
+        required_verification:
+          allOf:
+          - $ref: '#/components/schemas/RequiredVerificationEnum'
+          description: |-
+            The badge talent need before they can apply.
+
+            * `none` - No verification needed
+            * `id_verified` - ID verified
+            * `trusted_member` - Trusted member
+        status:
+          allOf:
+          - $ref: '#/components/schemas/GigStatusEnum'
+          readOnly: true
+        status_reason:
+          type: string
+          readOnly: true
+          description: Why it was sent back or reopened. Shown to the vendor.
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        published_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        closed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedProperty:
+      type: object
+      description: 'The owner''s view: everything, including the exact address and
+        pin.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 150
+        property_type:
+          $ref: '#/components/schemas/PropertyTypeEnum'
+        address:
+          type: string
+          description: Street address. Never shown publicly.
+          maxLength: 500
+        city:
+          type: string
+          maxLength: 80
+        state:
+          $ref: '#/components/schemas/StateEnum'
+        pincode:
+          oneOf:
+          - type: string
+            pattern: ^[1-9][0-9]{5}$
+            maxLength: 6
+          - type: string
+            maxLength: 0
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        location_confirmed:
+          type: boolean
+          description: Send true once the vendor has checked the pin. Moving the pin
+            or changing the address resets it unless sent again.
+        amenities:
+          type: array
+          items:
+            $ref: '#/components/schemas/AmenitiesEnum'
+          description: Amenity codes.
+        house_rules:
+          type: array
+          items:
+            type: string
+            maxLength: 200
+          maxItems: 20
+        women_friendly:
+          type: boolean
+          description: 'Vendor''s claim: female staff or dorms, safe for solo women.'
+        verification_status:
+          allOf:
+          - $ref: '#/components/schemas/VerificationStatusEnum'
+          readOnly: true
+          description: |-
+            Mirrors the property's verification case.
+
+            * `not_started` - Not started
+            * `submitted` - Submitted
+            * `in_review` - In review
+            * `approved` - Approved
+            * `rejected` - Rejected
+            * `changes_requested` - Changes requested
+            * `expired` - Expired
+        photos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Photo'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedSavedSearch:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 80
+        params:
+          description: The same filters as GET /api/v1/gigs/.
+        alerts_enabled:
+          type: boolean
+        last_checked_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Gigs published after this are new for the next alert run.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedTalentProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        display_name:
+          type: string
+          maxLength: 120
+        bio:
+          type: string
+          maxLength: 2000
+        talent_type:
+          oneOf:
+          - $ref: '#/components/schemas/TalentTypeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        skills:
+          type: array
+          items:
+            type: string
+          description: Skill slugs from GET /api/v1/profiles/skills/.
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/LanguagesEnum'
+          description: ISO 639 codes, e.g. ['en', 'hi'].
+          maxItems: 10
+        home_city:
+          type: string
+          maxLength: 80
+        emergency_contact_name:
+          type: string
+          maxLength: 80
+        emergency_contact_phone:
+          type: string
+          description: E.164
+          maxLength: 16
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        instagram_handle:
+          description: With or without the @.
+          oneOf:
+          - type: string
+            pattern: ^[A-Za-z0-9._]{1,30}$
+            maxLength: 31
+          - type: string
+            maxLength: 0
+        instagram_followers:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          description: Self-reported; checked during social verification. Used for
+            gig eligibility.
+        profile_complete:
+          type: boolean
+          readOnly: true
+        missing_fields:
+          type: array
+          items:
+            type: string
+          readOnly: true
+          description: Fields still empty that stop the profile counting as complete.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedVendorProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        business_name:
+          type: string
+          maxLength: 150
+        business_type:
+          oneOf:
+          - $ref: '#/components/schemas/BusinessTypeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        contact_name:
+          type: string
+          maxLength: 80
+        city:
+          type: string
+          maxLength: 80
+        state:
+          oneOf:
+          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        about:
+          type: string
+          maxLength: 3000
+        address:
+          type: string
+          maxLength: 500
+        gstin:
+          type: string
+          description: 15-character GSTIN
+          maxLength: 15
+        website:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        profile_complete:
+          type: boolean
+          readOnly: true
+        missing_fields:
+          type: array
+          items:
+            type: string
+          readOnly: true
+          description: Fields still empty that stop the profile counting as complete.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    Photo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        media_id:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          type: string
+          readOnly: true
+        position:
+          type: integer
+          readOnly: true
+        caption:
+          type: string
+          readOnly: true
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          readOnly: true
+          nullable: true
+          description: From EXIF or the device.
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          readOnly: true
+          nullable: true
+        captured_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+          description: Signed, short-lived; null until ready.
+        thumb_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+      required:
+      - caption
+      - captured_at
+      - id
+      - latitude
+      - longitude
+      - media_id
+      - position
+      - status
+      - thumb_url
+      - url
+    Property:
+      type: object
+      description: 'The owner''s view: everything, including the exact address and
+        pin.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 150
+        property_type:
+          $ref: '#/components/schemas/PropertyTypeEnum'
+        address:
+          type: string
+          description: Street address. Never shown publicly.
+          maxLength: 500
+        city:
+          type: string
+          maxLength: 80
+        state:
+          $ref: '#/components/schemas/StateEnum'
+        pincode:
+          oneOf:
+          - type: string
+            pattern: ^[1-9][0-9]{5}$
+            maxLength: 6
+          - type: string
+            maxLength: 0
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        location_confirmed:
+          type: boolean
+          description: Send true once the vendor has checked the pin. Moving the pin
+            or changing the address resets it unless sent again.
+        amenities:
+          type: array
+          items:
+            $ref: '#/components/schemas/AmenitiesEnum'
+          description: Amenity codes.
+        house_rules:
+          type: array
+          items:
+            type: string
+            maxLength: 200
+          maxItems: 20
+        women_friendly:
+          type: boolean
+          description: 'Vendor''s claim: female staff or dorms, safe for solo women.'
+        verification_status:
+          allOf:
+          - $ref: '#/components/schemas/VerificationStatusEnum'
+          readOnly: true
+          description: |-
+            Mirrors the property's verification case.
+
+            * `not_started` - Not started
+            * `submitted` - Submitted
+            * `in_review` - In review
+            * `approved` - Approved
+            * `rejected` - Rejected
+            * `changes_requested` - Changes requested
+            * `expired` - Expired
+        photos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Photo'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address
+      - city
+      - created_at
+      - id
+      - name
+      - photos
+      - property_type
+      - state
+      - updated_at
+      - verification_status
+    PropertyTypeEnum:
+      enum:
+      - hostel
+      - homestay
+      - cafe
+      - hotel
+      - trek_operator
+      type: string
+      description: |-
+        * `hostel` - Hostel
+        * `homestay` - Homestay
+        * `cafe` - Café
+        * `hotel` - Hotel
+        * `trek_operator` - Trek operator
+    PublicPhoto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        caption:
+          type: string
+          readOnly: true
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        thumb_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+      required:
+      - caption
+      - id
+      - thumb_url
+      - url
+    PublicProperty:
+      type: object
+      description: What anyone may see. No street address or exact point unless allowed.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        property_type:
+          allOf:
+          - $ref: '#/components/schemas/PropertyTypeEnum'
+          readOnly: true
+        city:
+          type: string
+          readOnly: true
+        state:
+          allOf:
+          - $ref: '#/components/schemas/StateEnum'
+          readOnly: true
+        amenities:
+          readOnly: true
+        house_rules:
+          readOnly: true
+        women_friendly:
+          type: boolean
+          readOnly: true
+          description: 'Vendor''s claim: female staff or dorms, safe for solo women.'
+        verified:
+          type: boolean
+          readOnly: true
+        approximate_location:
+          allOf:
+          - $ref: '#/components/schemas/ApproximateLocation'
+          nullable: true
+          readOnly: true
+        exact_location:
+          allOf:
+          - $ref: '#/components/schemas/ExactLocation'
+          nullable: true
+          readOnly: true
+          description: Only for the owner, admins, and (once bookings exist) confirmed
+            guests.
+        photos:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicPhoto'
+          readOnly: true
+      required:
+      - amenities
+      - approximate_location
+      - city
+      - exact_location
+      - house_rules
+      - id
+      - name
+      - photos
+      - property_type
+      - state
+      - verified
+      - women_friendly
+    ReferenceCheck:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 80
+        phone:
+          type: string
+          description: Indian mobile number.
+          maxLength: 20
+        relationship:
+          type: string
+          description: E.g. 'Hostel manager in Goa'.
+          maxLength: 80
+      required:
+      - name
+      - phone
+      - relationship
+    RefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+      required:
+      - refresh
+    RequiredVerificationEnum:
+      enum:
+      - none
+      - id_verified
+      - trusted_member
+      type: string
+      description: |-
+        * `none` - No verification needed
+        * `id_verified` - ID verified
+        * `trusted_member` - Trusted member
+    RoleTemplateEnum:
+      enum:
+      - volunteer
+      - content_creator
+      - trip_leader
+      - specialist
+      type: string
+      description: |-
+        * `volunteer` - Volunteer
+        * `content_creator` - Content creator
+        * `trip_leader` - Trip leader
+        * `specialist` - Specialist
+    SavedSearch:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 80
+        params:
+          description: The same filters as GET /api/v1/gigs/.
+        alerts_enabled:
+          type: boolean
+        last_checked_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Gigs published after this are new for the next alert run.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - last_checked_at
+      - name
+      - params
+    ScanStatusEnum:
+      enum:
+      - pending
+      - clean
+      - infected
+      - skipped
+      - error
+      type: string
+      description: |-
+        * `pending` - Not scanned yet
+        * `clean` - Clean
+        * `infected` - Infected
+        * `skipped` - No scanner configured
+        * `error` - Scan failed
+    Skill:
+      type: object
+      properties:
+        slug:
+          type: string
+          maxLength: 60
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          maxLength: 60
+      required:
+      - name
+      - slug
+    StartIdCheck:
+      type: object
+      properties:
+        document_type:
+          $ref: '#/components/schemas/IdDocumentTypeEnum'
+      required:
+      - document_type
+    StartIdCheckResponse:
+      type: object
+      properties:
+        case:
+          $ref: '#/components/schemas/Case'
+        session:
+          $ref: '#/components/schemas/KycSession'
+      required:
+      - case
+      - session
+    StateEnum:
+      enum:
+      - Andhra Pradesh
+      - Arunachal Pradesh
+      - Assam
+      - Bihar
+      - Chhattisgarh
+      - Goa
+      - Gujarat
+      - Haryana
+      - Himachal Pradesh
+      - Jharkhand
+      - Karnataka
+      - Kerala
+      - Madhya Pradesh
+      - Maharashtra
+      - Manipur
+      - Meghalaya
+      - Mizoram
+      - Nagaland
+      - Odisha
+      - Punjab
+      - Rajasthan
+      - Sikkim
+      - Tamil Nadu
+      - Telangana
+      - Tripura
+      - Uttar Pradesh
+      - Uttarakhand
+      - West Bengal
+      - Andaman and Nicobar Islands
+      - Chandigarh
+      - Dadra and Nagar Haveli and Daman and Diu
+      - Delhi
+      - Jammu and Kashmir
+      - Ladakh
+      - Lakshadweep
+      - Puducherry
+      type: string
+      description: |-
+        * `Andhra Pradesh` - Andhra Pradesh
+        * `Arunachal Pradesh` - Arunachal Pradesh
+        * `Assam` - Assam
+        * `Bihar` - Bihar
+        * `Chhattisgarh` - Chhattisgarh
+        * `Goa` - Goa
+        * `Gujarat` - Gujarat
+        * `Haryana` - Haryana
+        * `Himachal Pradesh` - Himachal Pradesh
+        * `Jharkhand` - Jharkhand
+        * `Karnataka` - Karnataka
+        * `Kerala` - Kerala
+        * `Madhya Pradesh` - Madhya Pradesh
+        * `Maharashtra` - Maharashtra
+        * `Manipur` - Manipur
+        * `Meghalaya` - Meghalaya
+        * `Mizoram` - Mizoram
+        * `Nagaland` - Nagaland
+        * `Odisha` - Odisha
+        * `Punjab` - Punjab
+        * `Rajasthan` - Rajasthan
+        * `Sikkim` - Sikkim
+        * `Tamil Nadu` - Tamil Nadu
+        * `Telangana` - Telangana
+        * `Tripura` - Tripura
+        * `Uttar Pradesh` - Uttar Pradesh
+        * `Uttarakhand` - Uttarakhand
+        * `West Bengal` - West Bengal
+        * `Andaman and Nicobar Islands` - Andaman and Nicobar Islands
+        * `Chandigarh` - Chandigarh
+        * `Dadra and Nagar Haveli and Daman and Diu` - Dadra and Nagar Haveli and Daman and Diu
+        * `Delhi` - Delhi
+        * `Jammu and Kashmir` - Jammu and Kashmir
+        * `Ladakh` - Ladakh
+        * `Lakshadweep` - Lakshadweep
+        * `Puducherry` - Puducherry
+    StatusChange:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/GigStatusEnum'
+        reason:
+          type: string
+          description: Required when an admin sends a gig back. Shown to the vendor.
+          maxLength: 500
+      required:
+      - status
+    StayTypeEnum:
+      enum:
+      - none
+      - dorm_bed
+      - shared_room
+      - private_room
+      - tent
+      type: string
+      description: |-
+        * `none` - No stay
+        * `dorm_bed` - Dorm bed
+        * `shared_room` - Shared room
+        * `private_room` - Private room
+        * `tent` - Tent / camping
+    StipendPeriodEnum:
+      enum:
+      - total
+      - per_week
+      - per_month
+      type: string
+      description: |-
+        * `total` - For the whole gig
+        * `per_week` - Per week
+        * `per_month` - Per month
+    SubjectTypeEnum:
+      enum:
+      - user
+      - property
+      - social_account
+      type: string
+      description: |-
+        * `user` - User
+        * `property` - Property
+        * `social_account` - Social account
+    TalentProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        display_name:
+          type: string
+          maxLength: 120
+        bio:
+          type: string
+          maxLength: 2000
+        talent_type:
+          oneOf:
+          - $ref: '#/components/schemas/TalentTypeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        skills:
+          type: array
+          items:
+            type: string
+          description: Skill slugs from GET /api/v1/profiles/skills/.
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/LanguagesEnum'
+          description: ISO 639 codes, e.g. ['en', 'hi'].
+          maxItems: 10
+        home_city:
+          type: string
+          maxLength: 80
+        emergency_contact_name:
+          type: string
+          maxLength: 80
+        emergency_contact_phone:
+          type: string
+          description: E.164
+          maxLength: 16
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        instagram_handle:
+          description: With or without the @.
+          oneOf:
+          - type: string
+            pattern: ^[A-Za-z0-9._]{1,30}$
+            maxLength: 31
+          - type: string
+            maxLength: 0
+        instagram_followers:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          description: Self-reported; checked during social verification. Used for
+            gig eligibility.
+        profile_complete:
+          type: boolean
+          readOnly: true
+        missing_fields:
+          type: array
+          items:
+            type: string
+          readOnly: true
+          description: Fields still empty that stop the profile counting as complete.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - missing_fields
+      - profile_complete
+      - updated_at
+    TalentTypeEnum:
+      enum:
+      - artist
+      - photo_video
+      - content_creator
+      - musician
+      - wellness
+      - culinary
+      - hospitality
+      - teacher
+      - tech
+      - outdoor
+      - other
+      type: string
+      description: |-
+        * `artist` - Artist / muralist
+        * `photo_video` - Photographer / videographer
+        * `content_creator` - Content creator / social media
+        * `musician` - Musician / performer
+        * `wellness` - Yoga / wellness
+        * `culinary` - Chef / barista
+        * `hospitality` - Hospitality / front desk
+        * `teacher` - Teacher / workshop host
+        * `tech` - Tech / design
+        * `outdoor` - Outdoor / trek guide
+        * `other` - Other
+    TokenPair:
+      type: object
+      properties:
+        access:
+          type: string
+          description: 'Short-lived JWT. Send as `Authorization: Bearer`.'
+        refresh:
+          type: string
+          description: Exchange at /api/v1/auth/refresh/ for new tokens.
+      required:
+      - access
+      - refresh
+    UploadUrlRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/KindEnum'
+        content_type:
+          $ref: '#/components/schemas/ContentTypeEnum'
+        size_bytes:
+          type: integer
+          minimum: 1
+        checksum_md5:
+          description: Optional hex MD5. If sent, Cloud Storage rejects a body that
+            doesn't match.
+          oneOf:
+          - type: string
+            pattern: ^[0-9a-fA-F]{32}$
+          - type: string
+            maxLength: 0
+      required:
+      - content_type
+      - kind
+      - size_bytes
+    UploadUrlResponse:
+      type: object
+      properties:
+        media_id:
+          type: string
+          format: uuid
+        upload_url:
+          type: string
+          format: uri
+        method:
+          type: string
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+          description: Send exactly these headers with the upload.
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - expires_at
+      - headers
+      - media_id
+      - method
+      - upload_url
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+          description: Login identifier, stored in E.164 (e.g. +919876543210).
+        email:
+          type: string
+          format: email
+          readOnly: true
+          nullable: true
+        role:
+          readOnly: true
+          description: |-
+            "" until the user picks vendor or talent at /api/v1/me/role/.
+
+            * `vendor` - Vendor
+            * `talent` - Talent
+            * `admin` - Admin
+          oneOf:
+          - $ref: '#/components/schemas/UserRoleEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        is_active:
+          type: boolean
+          readOnly: true
+          description: Unset instead of deleting accounts. Changes are audit-logged.
+        profile_complete:
+          type: boolean
+          readOnly: true
+          description: True once the user has a role and the matching profile.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - email
+      - id
+      - is_active
+      - phone
+      - profile_complete
+      - role
+    UserRoleEnum:
+      enum:
+      - vendor
+      - talent
+      - admin
+      type: string
+      description: |-
+        * `vendor` - Vendor
+        * `talent` - Talent
+        * `admin` - Admin
+    VendorProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        business_name:
+          type: string
+          maxLength: 150
+        business_type:
+          oneOf:
+          - $ref: '#/components/schemas/BusinessTypeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        contact_name:
+          type: string
+          maxLength: 80
+        city:
+          type: string
+          maxLength: 80
+        state:
+          oneOf:
+          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        about:
+          type: string
+          maxLength: 3000
+        address:
+          type: string
+          maxLength: 500
+        gstin:
+          type: string
+          description: 15-character GSTIN
+          maxLength: 15
+        website:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        profile_complete:
+          type: boolean
+          readOnly: true
+        missing_fields:
+          type: array
+          items:
+            type: string
+          readOnly: true
+          description: Fields still empty that stop the profile counting as complete.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - missing_fields
+      - profile_complete
+      - updated_at
+    VerificationDocumentStatusEnum:
+      enum:
+      - pending
+      - verified
+      - failed
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `verified` - Verified
+        * `failed` - Failed
+    VerificationDocumentTypeEnum:
+      enum:
+      - aadhaar
+      - passport
+      - driving_licence
+      - voter_id
+      - selfie
+      - pan
+      - gstin
+      - property_photo
+      - certificate
+      type: string
+      description: |-
+        * `aadhaar` - Aadhaar
+        * `passport` - Passport
+        * `driving_licence` - Driving licence
+        * `voter_id` - Voter ID
+        * `selfie` - Selfie
+        * `pan` - PAN
+        * `gstin` - GSTIN
+        * `property_photo` - Property photo
+        * `certificate` - Certificate
+    VerificationStatusEnum:
+      enum:
+      - not_started
+      - submitted
+      - in_review
+      - approved
+      - rejected
+      - changes_requested
+      - expired
+      type: string
+      description: |-
+        * `not_started` - Not started
+        * `submitted` - Submitted
+        * `in_review` - In review
+        * `approved` - Approved
+        * `rejected` - Rejected
+        * `changes_requested` - Changes requested
+        * `expired` - Expired
+    WebhookResponse:
+      type: object
+      properties:
+        outcome:
+          type: string
+      required:
+      - outcome
+    Withdraw:
+      type: object
+      properties:
+        reason:
+          type: string
+          maxLength: 500
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

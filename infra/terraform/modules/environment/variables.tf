@@ -117,3 +117,16 @@ variable "db_pool_max_size" {
   type        = number
   default     = 4
 }
+
+variable "firebase_web" {
+  description = <<-EOT
+    Firebase web app config for phone sign-in on the web console (Firebase console ->
+    Project settings -> Your apps). Public values, not secrets. Empty = sign-in shows
+    "not available".
+  EOT
+  type = object({
+    api_key = string
+    app_id  = string
+  })
+  default = { api_key = "", app_id = "" }
+}

@@ -160,6 +160,22 @@ resource "google_cloud_run_v2_service" "web" {
         name  = "BARTERLY_ENV"
         value = local.env
       }
+
+      # Phone sign-in (Firebase web SDK). Read at request time by the login page.
+      env {
+        name  = "FIREBASE_PROJECT_ID"
+        value = var.project_id
+      }
+
+      env {
+        name  = "FIREBASE_WEB_API_KEY"
+        value = var.firebase_web.api_key
+      }
+
+      env {
+        name  = "FIREBASE_WEB_APP_ID"
+        value = var.firebase_web.app_id
+      }
     }
   }
 
