@@ -8,6 +8,7 @@ from rest_framework.test import APIClient
 from apps.accounts.tests.factories import AdminUserFactory, TalentFactory, VendorFactory
 from apps.gigs.constants import GigStatus
 from apps.gigs.tests.factories import GigFactory, in_days
+from apps.profiles.tests.factories import SkillFactory
 from apps.properties.tests.factories import PropertyFactory
 from apps.verification.tests.factories import client_for
 
@@ -31,6 +32,7 @@ def new_gig(prop, **overrides):
         "stay_type": "private_room",
         "meals": "breakfast",
         "deliverables": [{"type": "instagram_reel", "quantity": 6, "notes": "Vertical, 30s"}],
+        "skills": [SkillFactory(slug="photography").slug],
         "languages": ["en", "hi"],
         "min_followers": 5000,
         "screening_questions": ["Link your best travel reel."],
@@ -45,6 +47,7 @@ def test_vendor_creates_submits_and_admin_approves():
     assert created.status_code == 201, created.json()
     body = created.json()
     assert body["status"] == "draft" and body["min_age"] == 18
+    assert body["skills"] == ["photography"]
     assert body["deliverables"] == [
         {"type": "instagram_reel", "quantity": 6, "notes": "Vertical, 30s"}
     ]
@@ -111,8 +114,10 @@ def test_access():
         ).status_code
         == 404
     )
-    assert client_for(TalentFactory()).get(f"{BASE}/").status_code == 403
-    assert APIClient().get(f"{BASE}/").status_code == 401
+    assert client_for(TalentFactory()).get(f"{BASE}/mine/").status_code == 403
+    assert client_for(TalentFactory()).post(f"{BASE}/", {}, format="json").status_code == 403
+    assert client_for(gig.vendor).get(f"{BASE}/").status_code == 403  # discovery is for talent
+    assert APIClient().get(f"{BASE}/mine/").status_code == 401
     admin = client_for(AdminUserFactory())
     assert admin.get(f"{BASE}/{gig.pk}/").status_code == 200
     assert admin.patch(f"{BASE}/{gig.pk}/", {"title": "x"}, format="json").status_code == 403
@@ -122,7 +127,7 @@ def test_access():
 def test_list_filters_by_status():
     gig = GigFactory()
     GigFactory(property=PropertyFactory(vendor=gig.vendor), status=GigStatus.LIVE)
-    body = client_for(gig.vendor).get(f"{BASE}/", {"status": "live"}).json()
+    body = client_for(gig.vendor).get(f"{BASE}/mine/", {"status": "live"}).json()
     assert [g["status"] for g in body["results"]] == ["live"]
 
 
@@ -138,6 +143,9 @@ def test_every_endpoint_is_in_the_openapi_schema(tmp_path):
     paths = yaml.safe_load(out.read_text())["paths"]
     assert {p for p in paths if p.startswith("/api/v1/gigs/")} == {
         "/api/v1/gigs/",
+        "/api/v1/gigs/mine/",
+        "/api/v1/gigs/saved-searches/",
+        "/api/v1/gigs/saved-searches/{search_id}/",
         "/api/v1/gigs/admin/",
         "/api/v1/gigs/{gig_id}/",
         "/api/v1/gigs/{gig_id}/status/",

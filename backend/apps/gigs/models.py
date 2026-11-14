@@ -9,6 +9,8 @@ every gig, so it is a constant (apps.gigs.constants.MIN_AGE_YEARS), not a column
 import uuid
 
 from django.conf import settings
+from django.contrib.postgres.indexes import GinIndex
+from django.contrib.postgres.search import SearchVector, SearchVectorField
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
@@ -76,6 +78,12 @@ class Gig(TimeStampedModel):
         help_text='Barter and hybrid only, e.g. [{"type": "instagram_reel", "quantity": 2}]',
     )
 
+    skills = models.ManyToManyField(
+        "profiles.Skill",
+        blank=True,
+        related_name="gigs",
+        help_text="Skills the vendor hopes for; used for the fit score, never as a filter.",
+    )
     languages = models.JSONField(default=list, blank=True, help_text="ISO 639 codes.")
     min_followers = models.PositiveIntegerField(null=True, blank=True)
     min_stay_days = models.PositiveSmallIntegerField(null=True, blank=True)
@@ -90,6 +98,9 @@ class Gig(TimeStampedModel):
     submitted_at = models.DateTimeField(null=True, blank=True)
     published_at = models.DateTimeField(null=True, blank=True)
     closed_at = models.DateTimeField(null=True, blank=True)
+    search_vector = SearchVectorField(
+        null=True, editable=False, help_text="Title (A) and description (B); kept in step on save."
+    )
 
     class Meta:
         ordering = ["-created_at"]
@@ -97,6 +108,7 @@ class Gig(TimeStampedModel):
             models.Index(fields=["status", "apply_by"], name="gig_status_apply_by_idx"),
             models.Index(fields=["vendor", "status"], name="gig_vendor_status_idx"),
             models.Index(fields=["property", "status"], name="gig_property_status_idx"),
+            GinIndex(fields=["search_vector"], name="gig_search_vector_idx"),
         ]
         constraints = [
             models.CheckConstraint(condition=Q(slots__gte=1), name="gig_slots_at_least_one"),
@@ -121,3 +133,12 @@ class Gig(TimeStampedModel):
 
     def __str__(self) -> str:
         return self.title
+
+
+SEARCH_CONFIG = "english"
+
+
+def search_vector_expression():
+    return SearchVector("title", weight="A", config=SEARCH_CONFIG) + SearchVector(
+        "description", weight="B", config=SEARCH_CONFIG
+    )

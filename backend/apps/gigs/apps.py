@@ -6,3 +6,6 @@ class GigsConfig(AppConfig):
     name = "apps.gigs"
     label = "gigs"
     verbose_name = "Gigs"
+
+    def ready(self) -> None:
+        from apps.gigs import signals  # noqa: F401 (connects receivers)

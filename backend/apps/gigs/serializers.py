@@ -10,6 +10,7 @@ from apps.gigs.constants import (
 )
 from apps.gigs.models import Gig
 from apps.profiles.constants import LANGUAGES
+from apps.profiles.models import Skill
 from apps.properties.models import Property
 
 
@@ -29,6 +30,13 @@ class GigSerializer(serializers.ModelSerializer):
         child=serializers.CharField(max_length=300),
         max_length=MAX_SCREENING_QUESTIONS,
         required=False,
+    )
+    skills = serializers.SlugRelatedField(
+        many=True,
+        slug_field="slug",
+        queryset=Skill.objects.filter(is_active=True),
+        required=False,
+        help_text="Skill slugs (GET /api/v1/profiles/skills/). Used for the fit score.",
     )
     min_age = serializers.SerializerMethodField(help_text="Fixed at 18 for every gig.")
 
@@ -54,6 +62,7 @@ class GigSerializer(serializers.ModelSerializer):
             "stipend_amount",
             "stipend_period",
             "deliverables",
+            "skills",
             "min_age",
             "languages",
             "min_followers",

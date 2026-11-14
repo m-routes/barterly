@@ -4,8 +4,9 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.common.permissions import IsAdminRole, IsVendor
+from apps.common.permissions import IsAdminRole, IsTalent, IsVendor
 from apps.common.serializers import ErrorSerializer
+from apps.discovery.views import DISCOVER_SCHEMA, discover
 from apps.gigs.constants import GigStatus
 from apps.gigs.models import Gig
 from apps.gigs.serializers import GigSerializer, StatusChangeSerializer
@@ -35,18 +36,22 @@ class PlanLimitError(exceptions.PermissionDenied):
 
 
 def _gigs():
-    return Gig.objects.select_related("property")
+    return Gig.objects.select_related("property").prefetch_related("skills")
 
 
-@extend_schema_view(
-    get=extend_schema(
-        operation_id="gigs_list",
-        summary="My gigs",
-        parameters=[OpenApiParameter("status", enum=GigStatus.values, required=False)],
-        responses={200: GigSerializer(many=True), **ERRORS},
-        tags=TAG,
-    ),
-    post=extend_schema(
+class GigCollectionView(generics.GenericAPIView):
+    """GET: talent discover live gigs. POST: a vendor starts a gig."""
+
+    serializer_class = GigSerializer
+
+    def get_permissions(self):
+        return [IsTalent()] if self.request.method == "GET" else [IsVendor()]
+
+    @DISCOVER_SCHEMA
+    def get(self, request: Request) -> Response:
+        return discover(request)
+
+    @extend_schema(
         operation_id="gigs_create",
         summary="Start a gig (as a draft)",
         description=(
@@ -58,9 +63,15 @@ def _gigs():
         request=GigSerializer,
         responses={201: GigSerializer, **ERRORS},
         tags=TAG,
-    ),
-)
-class GigListCreateView(generics.ListCreateAPIView):
+    )
+    def post(self, request: Request) -> Response:
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        gig = create_gig(request.user, serializer.validated_data, request=request)
+        return Response(self.get_serializer(gig).data, status=status.HTTP_201_CREATED)
+
+
+class MyGigsView(generics.ListAPIView):
     permission_classes = [IsVendor]
     serializer_class = GigSerializer
 
@@ -69,11 +80,15 @@ class GigListCreateView(generics.ListCreateAPIView):
         wanted = self.request.query_params.get("status")
         return qs.filter(status=wanted) if wanted else qs
 
-    def create(self, request: Request, *args, **kwargs) -> Response:
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        gig = create_gig(request.user, serializer.validated_data, request=request)
-        return Response(self.get_serializer(gig).data, status=status.HTTP_201_CREATED)
+    @extend_schema(
+        operation_id="gigs_mine_list",
+        summary="My gigs (vendor)",
+        parameters=[OpenApiParameter("status", enum=GigStatus.values, required=False)],
+        responses={200: GigSerializer(many=True), **ERRORS},
+        tags=TAG,
+    )
+    def get(self, request: Request, *args, **kwargs) -> Response:
+        return super().get(request, *args, **kwargs)
 
 
 @extend_schema_view(
