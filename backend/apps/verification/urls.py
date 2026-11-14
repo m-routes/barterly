@@ -8,7 +8,6 @@ urlpatterns = [
     path("verification/me/", views.MyVerificationView.as_view(), name="me"),
     path("verification/checks/id/", views.StartIdCheckView.as_view(), name="id-start"),
     path("verification/checks/business/", views.BusinessCheckView.as_view(), name="business"),
-    path("verification/checks/property/", views.PropertyCheckView.as_view(), name="property"),
     path("verification/checks/social/", views.SocialCheckView.as_view(), name="social"),
     path(
         "verification/checks/certificates/",

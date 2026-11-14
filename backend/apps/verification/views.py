@@ -25,7 +25,6 @@ from apps.verification.serializers import (
     CertificatesCheckSerializer,
     DecisionSerializer,
     MyVerificationSerializer,
-    PropertyCheckSerializer,
     ReferenceCheckSerializer,
     StartIdCheckResponseSerializer,
     StartIdCheckSerializer,
@@ -68,7 +67,7 @@ def _with_documents(queryset):
     )
 
 
-def _run(fn, *args, **kwargs):
+def run_service(fn, *args, **kwargs):
     """Call a service, turning its domain errors into API errors."""
     try:
         return fn(*args, **kwargs)
@@ -82,7 +81,7 @@ def _run(fn, *args, **kwargs):
         raise KycUnavailable from exc
 
 
-def _case_response(case, code=status.HTTP_200_OK) -> Response:
+def case_response(case, code=status.HTTP_200_OK) -> Response:
     case = _with_documents(VerificationCase.objects).get(pk=case.pk)
     return Response(CaseSerializer(case).data, status=code)
 
@@ -102,17 +101,18 @@ class MyVerificationView(APIView):
         operation_id="verification_me",
         summary="My checks and badges",
         description=(
-            "Every check that applies to your role, with its case (null until started), "
-            "and your active badges."
+            "Every check that applies to your role with its cases (none until started; the "
+            "property check has one per property), and your active badges."
         ),
         responses={200: MyVerificationSerializer, 401: ErrorSerializer},
         tags=TAG,
     )
     def get(self, request: Request) -> Response:
         user = request.user
-        cases = {
-            c.check_type: c for c in _with_documents(VerificationCase.objects.filter(user=user))
-        }
+        cases: dict[str, list[VerificationCase]] = {}
+        mine = _with_documents(VerificationCase.objects.filter(user=user)).order_by("created_at")
+        for case in mine:
+            cases.setdefault(case.check_type, []).append(case)
         badges = list(
             Badge.objects.filter(user=user, revoked_at__isnull=True).select_related("case")
         )
@@ -122,7 +122,7 @@ class MyVerificationView(APIView):
                 "label": CheckType(check_type).label,
                 "required": rule.required,
                 "badge": rule.badge,
-                "case": cases.get(check_type),
+                "cases": cases.get(check_type, []),
             }
             for check_type, rule in CHECKS.get(user.role, {}).items()
         ]
@@ -160,7 +160,7 @@ class StartIdCheckView(APIView):
     def post(self, request: Request) -> Response:
         serializer = StartIdCheckSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        case, session = _run(
+        case, session = run_service(
             kyc.start_id_check,
             request.user,
             document_type=serializer.validated_data["document_type"],
@@ -189,51 +189,10 @@ class BusinessCheckView(APIView):
     def post(self, request: Request) -> Response:
         serializer = BusinessCheckSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        case = _run(
+        case = run_service(
             checks.submit_business, request.user, **serializer.validated_data, request=request
         )
-        return _case_response(case)
-
-
-class PropertyCheckView(APIView):
-    permission_classes = [IsVendor]
-
-    @extend_schema(
-        operation_id="verification_property_submit",
-        summary="Submit the map pin and geo-tagged property photos",
-        description=(
-            "Needs the property address on the vendor profile, a confirmed pin in India, "
-            "and at least 3 of your uploaded photos taken within 500 m of the pin. "
-            "Changing the address or business name on an approved check sends it back "
-            "to review."
-        ),
-        request=PropertyCheckSerializer,
-        responses={200: CaseSerializer, **_SUBMIT_ERRORS},
-        tags=TAG,
-    )
-    def post(self, request: Request) -> Response:
-        serializer = PropertyCheckSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-        photos = [
-            checks.GeoPhoto(
-                media_id=str(p["media_id"]),
-                latitude=p["latitude"],
-                longitude=p["longitude"],
-                captured_at=p["captured_at"].isoformat() if p.get("captured_at") else "",
-            )
-            for p in data["photos"]
-        ]
-        case = _run(
-            checks.submit_property,
-            request.user,
-            latitude=data["latitude"],
-            longitude=data["longitude"],
-            pin_confirmed=data["pin_confirmed"],
-            photos=photos,
-            request=request,
-        )
-        return _case_response(case)
+        return case_response(case)
 
 
 class SocialCheckView(APIView):
@@ -252,7 +211,7 @@ class SocialCheckView(APIView):
         tags=TAG,
     )
     def post(self, request: Request) -> Response:
-        return _case_response(_run(checks.submit_social, request.user, request=request))
+        return case_response(run_service(checks.submit_social, request.user, request=request))
 
 
 class CertificatesCheckView(APIView):
@@ -272,8 +231,10 @@ class CertificatesCheckView(APIView):
             checks.Certificate(media_id=str(c["media_id"]), title=c["title"])
             for c in serializer.validated_data["certificates"]
         ]
-        return _case_response(
-            _run(checks.submit_certificates, request.user, certificates=certs, request=request)
+        return case_response(
+            run_service(
+                checks.submit_certificates, request.user, certificates=certs, request=request
+            )
         )
 
 
@@ -290,8 +251,8 @@ class ReferenceCheckView(APIView):
     def post(self, request: Request) -> Response:
         serializer = ReferenceCheckSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        return _case_response(
-            _run(
+        return case_response(
+            run_service(
                 checks.submit_reference, request.user, **serializer.validated_data, request=request
             )
         )
@@ -423,7 +384,7 @@ class AdminDecisionView(APIView):
         if not VerificationCase.objects.filter(pk=case_id).exists():
             raise exceptions.NotFound("No such case.")
         try:
-            case = _run(
+            case = run_service(
                 decide,
                 case_id,
                 serializer.validated_data["decision"],

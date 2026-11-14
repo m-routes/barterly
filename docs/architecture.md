@@ -59,6 +59,8 @@ Surfaces: the vendor console (web), the talent app (mobile) and the admin consol
 | `accounts` | Custom `User` (`AUTH_USER_MODEL = "accounts.User"`), sign-in (OTP token exchange, JWT refresh and logout), audited role and status changes, `/api/v1/me/` |
 | `profiles` | `TalentProfile` and `VendorProfile` (one per user, role must match, soft-deleted), curated `Skill` list, `/api/v1/profiles/{vendor,talent}/me/` |
 | `media` | `MediaFile` records for uploads to the private bucket, signed upload/read URLs, the `media.process` task (virus scan hook, image resizing) |
+| `geo` | Distance helpers (haversine, bounding box), the `Geocoder` interface with Nominatim and a fake, and the database cache of every geocoding answer |
+| `properties` | `Property` (location as lat/lng columns, approximate public point) and `PropertyPhoto`, owner CRUD, the public view, submitting a property for verification |
 | `verification` | Verification cases per check, evidence (provider references and masked numbers only), badges, the KYC provider interface and webhook, re-verification on profile edits, the review API |
 
 ### Users and permissions
@@ -110,6 +112,26 @@ Three interfaces keep the pieces swappable, each named by a code setting:
 - `MEDIA_VIRUS_SCANNER`: `NoopVirusScanner` for now, which marks files `skipped`. Set `MEDIA_REQUIRE_SCAN=1` once a real scanner is in, and only `clean` files are served.
 - `TASK_QUEUE_CLASS`: `InlineTaskQueue` runs tasks inside the confirm request. A Cloud Tasks queue would enqueue an HTTP task to an internal endpoint that verifies the task's OIDC token and calls `run_task(name, payload)`. Tasks are idempotent, so retries are safe.
 
+### Properties and location
+
+A vendor can have several properties (`hostel`, `homestay`, `cafe`, `hotel`, `trek_operator`). Each has an address, a map pin, amenities (fixed codes), house rules, a `women_friendly` flag and photos. `verification_status` mirrors the property's verification case, and changes go through the case so they're audit-logged.
+
+**No PostGIS.** Production is Cloud SQL Postgres 16. PostGIS is available there, but GeoDjango would need GDAL and GEOS in the image, CI and every laptop. Location is stored as `latitude`/`longitude` decimal columns with a composite index instead. `Property.objects.within_radius(lat, lng, metres)` filters on a bounding box the index can serve, then on the exact haversine distance computed in SQL, nearest first. Moving to a `PointField` with a GiST index later only changes that one method.
+
+**Exact and approximate location.** The street address and exact pin go only to the owner and admins, and once bookings exist, to guests with a confirmed booking (`can_see_exact_location`). Everyone else sees `approximate_location`. That point is 300–900 m from the real one, in a direction seeded from `SECRET_KEY` and the property id. It's stored and stable, so repeated requests can't be averaged back to the real spot. Public "nearby" queries must use it too (`within_radius(public=True)`, the default), because ordering by the real distance would leak the pin.
+
+**Pin flow.** Creating a property, or changing its address without sending a pin, geocodes the address once to suggest a pin. The vendor then confirms or moves it (`location_confirmed`). Moving the pin or changing the address clears the confirmation unless the same request confirms it again.
+
+**Geocoding.** `apps.geo.services.geocode()` normalizes the query and returns the cached `GeocodeResult` when there is one. Hits are kept forever; "not found" is asked again after 30 days. Otherwise it calls the `GEOCODER` (a code setting). `NominatimGeocoder` follows the OpenStreetMap usage policy:
+- an identifying `NOMINATIM_USER_AGENT` and optional `NOMINATIM_EMAIL`;
+- at most one request per second across every instance, through a slot in the shared Postgres cache;
+- results limited to India;
+- a 5-second timeout.
+
+We never geocode on each keystroke: only on save, or when a vendor presses "find on map" (`POST /api/v1/geo/geocode/`, 30 an hour per vendor). Tests use `FakeGeocoder`.
+
+**Photos.** Upload through the signed flow (`/api/v1/media/upload-url/`, then `/confirm/`, kind `photo`), then `POST /api/v1/properties/{id}/photos/ {media_id, latitude?, longitude?, captured_at?}`. There's a limit of 20 per property. `POST /api/v1/properties/{id}/verification/` needs at least 3 photos taken within 500 m of the confirmed pin. The public page lists only photos that are ready to serve.
+
 ### Verification
 
 Each user has one `VerificationCase` per check, kept across attempts. Statuses: `not_started → submitted → in_review → approved | rejected | changes_requested`, plus `expired`. The allowed moves are in `apps.verification.constants.TRANSITIONS`, and anything else returns 409.
@@ -118,7 +140,7 @@ Each user has one `VerificationCase` per check, kept across attempts. Statuses: 
 | --- | --- | --- | --- |
 | both | `id_selfie` | KYC provider: ID plus selfie, result by webhook | `id_verified` |
 | vendor | `business_registration` | PAN format, GSTIN format, GSTIN contains the PAN; then a reviewer | `licence_verified` |
-| vendor | `property` | Confirmed map pin in India, at least 3 own photos taken within 500 m of it; then a reviewer | `property_verified` |
+| vendor | `property` (one case per property) | Confirmed map pin in India, at least 3 own photos taken within 500 m of it; then a reviewer | `property_verified` (held while any property is approved) |
 | talent | `social_account` | Instagram handle from the profile; the reviewer looks for `details.bio_code` in its bio | `social_verified` |
 | talent | `certificate` (optional) | Own document uploads; then a reviewer | `licence_verified` |
 | talent | `reference` | One contact (not the user's own number); a reviewer calls them | `reference_checked` |
@@ -131,7 +153,7 @@ Each user has one `VerificationCase` per check, kept across attempts. Statuses: 
 
 **Webhook.** `POST /api/v1/verification/webhooks/kyc/` has no user auth. The provider signs the raw body (HMAC-SHA256 with `KYC_WEBHOOK_SECRET`, timestamp within 5 minutes), and a bad signature returns 401. Each delivery's idempotency key is stored, so a repeat is acknowledged and skipped. A result for an older attempt, or one arriving after a reviewer decided, changes nothing. `manage.py sync_kyc_results` polls the provider for checks whose webhook never came.
 
-**Re-verification.** Profile saves are watched through model signals, so the API, the admin and scripts all trigger it. Changing a verified field moves an approved case back to `in_review` and revokes its badge until a reviewer approves again. The watched fields are the property address and business name (property check), the business name and GSTIN (business check), and the Instagram handle (social check). Starting a new ID check on an approved case does the same for the ID badge.
+**Re-verification.** Profile saves are watched through model signals, so the API, the admin and scripts all trigger it. Changing a verified field moves an approved case back to `in_review` and revokes its badge until a reviewer approves again. The watched fields are a property's name, address, city, state and pin (that property's case), the business name and GSTIN (business check), and the Instagram handle (social check). Starting a new ID check on an approved case does the same for the ID badge.
 
 **Review.** Admins use `GET /api/v1/verification/admin/cases/?status=submitted` (oldest first), then `POST …/cases/{id}/decision/ {decision, reason}`. The decision is one of `start_review`, `approve`, `reject`, `request_changes`, or `revoke` for an approved case. The Django admin is read-only. `manage.py expire_verifications` expires approved cases after their validity (ID 2 years; business, property and reference 1 year; social 6 months) and should run daily.
 

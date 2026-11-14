@@ -27,6 +27,7 @@ class DocumentSerializer(serializers.ModelSerializer):
 
 class CaseSerializer(serializers.ModelSerializer):
     documents = DocumentSerializer(many=True, read_only=True)
+    property_id = serializers.UUIDField(read_only=True, allow_null=True)
 
     class Meta:
         model = VerificationCase
@@ -34,6 +35,7 @@ class CaseSerializer(serializers.ModelSerializer):
             "id",
             "check_type",
             "subject_type",
+            "property_id",
             "status",
             "reason",
             "details",
@@ -60,7 +62,9 @@ class CheckSummarySerializer(serializers.Serializer):
     label = serializers.CharField()
     required = serializers.BooleanField(help_text="Needed for the trusted member badge.")
     badge = serializers.ChoiceField(choices=BadgeKind.choices)
-    case = CaseSerializer(allow_null=True, help_text="Null until the check is started.")
+    cases = CaseSerializer(
+        many=True, help_text="Empty until started. The property check has one per property."
+    )
 
 
 class MyVerificationSerializer(serializers.Serializer):
@@ -96,32 +100,6 @@ class BusinessCheckSerializer(serializers.Serializer):
         allow_blank=True,
         help_text="Optional. Defaults to the GSTIN on your profile.",
     )
-
-
-class GeoPhotoSerializer(serializers.Serializer):
-    media_id = serializers.UUIDField(help_text="A confirmed upload of kind 'photo'.")
-    latitude = serializers.FloatField(min_value=-90, max_value=90)
-    longitude = serializers.FloatField(min_value=-180, max_value=180)
-    captured_at = serializers.DateTimeField(required=False)
-
-
-class PropertyCheckSerializer(serializers.Serializer):
-    latitude = serializers.FloatField(min_value=-90, max_value=90, help_text="Map pin.")
-    longitude = serializers.FloatField(min_value=-180, max_value=180, help_text="Map pin.")
-    pin_confirmed = serializers.BooleanField(
-        help_text="The vendor confirmed the pin marks the property."
-    )
-    photos = GeoPhotoSerializer(
-        many=True,
-        max_length=10,
-        help_text="Where each photo was taken (from its EXIF or the device's location).",
-    )
-
-    def validate_photos(self, value):
-        ids = [p["media_id"] for p in value]
-        if len(set(ids)) != len(ids):
-            raise serializers.ValidationError("Each photo once, please.")
-        return value
 
 
 class CertificateItemSerializer(serializers.Serializer):

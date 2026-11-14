@@ -117,7 +117,7 @@ CHECKS: dict[str, dict[str, CheckRule]] = {
             BadgeKind.PROPERTY_VERIFIED,
             True,
             365,
-            watched_fields=("address", "business_name"),
+            # Watched on the Property itself: see PROPERTY_WATCHED_FIELDS.
         ),
     },
     Role.TALENT: {
@@ -133,6 +133,9 @@ CHECKS: dict[str, dict[str, CheckRule]] = {
         CheckType.REFERENCE: CheckRule(SubjectType.USER, BadgeKind.REFERENCE_CHECKED, True, 365),
     },
 }
+
+# Property fields whose change sends that property's approved case back to review.
+PROPERTY_WATCHED_FIELDS = ("name", "address", "city", "state", "latitude", "longitude")
 
 # Badges a user needs, by role, to also be a trusted member.
 TRUSTED_MEMBER_REQUIRES: dict[str, frozenset[str]] = {

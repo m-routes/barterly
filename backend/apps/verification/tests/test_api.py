@@ -12,11 +12,9 @@ from apps.verification.models import VerificationCase
 from apps.verification.providers.base import KycOutcome, KycResult
 from apps.verification.providers.fake import FakeKycProvider
 from apps.verification.tests.factories import (
-    PIN,
     CaseFactory,
     MediaFileFactory,
     client_for,
-    near_pin,
 )
 
 pytestmark = pytest.mark.django_db
@@ -47,7 +45,7 @@ class TestMe:
             CheckType.BUSINESS,
             CheckType.PROPERTY,
         ]
-        assert all(c["case"] is None and c["required"] for c in body["checks"])
+        assert all(c["cases"] == [] and c["required"] for c in body["checks"])
         assert body["badges"] == [] and body["trusted_member"] is False
 
     def test_talent_certificates_are_optional(self):
@@ -83,7 +81,7 @@ class TestIdCheck:
 
         me = client_for(vendor).get(f"{BASE}/me/").json()
         assert [b["kind"] for b in me["badges"]] == ["id_verified"]
-        id_case = me["checks"][0]["case"]
+        [id_case] = me["checks"][0]["cases"]
         assert id_case["status"] == CaseStatus.APPROVED
         assert id_case["documents"][0]["masked_value"] == "4321"
         assert "provider_reference" not in id_case["documents"][0]
@@ -136,20 +134,6 @@ class TestVendorChecks:
         bad = client_for(vendor).post(f"{BASE}/checks/business/", {"pan": "nope"}, format="json")
         assert bad.status_code == 400
 
-    def test_property(self):
-        vendor = VendorProfileFactory(address="Old Manali Road").user
-        photos = [near_pin(MediaFileFactory(owner=vendor)) for _ in range(3)]
-        payload = {**PIN, "pin_confirmed": True, "photos": photos}
-        response = client_for(vendor).post(f"{BASE}/checks/property/", payload, format="json")
-        assert response.status_code == 200, response.json()
-        assert len(response.json()["documents"]) == 3
-
-        dupes = {**payload, "photos": [photos[0]] * 3}
-        assert (
-            client_for(vendor).post(f"{BASE}/checks/property/", dupes, format="json").status_code
-            == 400
-        )
-
     def test_talent_cannot_use_vendor_checks(self):
         response = client_for(TalentFactory()).post(
             f"{BASE}/checks/business/", {"pan": "ABCPE1234F"}, format="json"
@@ -196,7 +180,7 @@ class TestReview:
     def test_queue_detail_and_decisions(self):
         admin = AdminUserFactory()
         oldest = CaseFactory(check_type=CheckType.BUSINESS)
-        CaseFactory(check_type=CheckType.PROPERTY, status=CaseStatus.APPROVED)
+        CaseFactory(check_type=CheckType.REFERENCE, status=CaseStatus.APPROVED)
         client = client_for(admin)
 
         queue = client.get(f"{BASE}/admin/cases/", {"status": "submitted"}).json()
@@ -251,7 +235,6 @@ def test_every_endpoint_is_in_the_openapi_schema(tmp_path):
         "/api/v1/verification/me/",
         "/api/v1/verification/checks/id/",
         "/api/v1/verification/checks/business/",
-        "/api/v1/verification/checks/property/",
         "/api/v1/verification/checks/social/",
         "/api/v1/verification/checks/certificates/",
         "/api/v1/verification/checks/reference/",

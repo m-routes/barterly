@@ -37,7 +37,15 @@ class VerificationCase(TimeStampedModel):
     subject_id = models.CharField(
         max_length=100,
         blank=True,
-        help_text="What was verified: a profile id for a property, 'instagram:<handle>', ...",
+        help_text="What was verified: a property id, 'instagram:<handle>', ...",
+    )
+    property = models.ForeignKey(
+        "properties.Property",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="verification_cases",
+        help_text="Set for property checks: each property is verified on its own.",
     )
     status = models.CharField(
         max_length=20, choices=CaseStatus.choices, default=CaseStatus.NOT_STARTED
@@ -69,7 +77,19 @@ class VerificationCase(TimeStampedModel):
         ordering = ["-updated_at"]
         constraints = [
             models.UniqueConstraint(
-                fields=["user", "check_type"], name="verification_case_one_per_check"
+                fields=["user", "check_type"],
+                condition=Q(property__isnull=True),
+                name="verification_case_one_per_check",
+            ),
+            models.UniqueConstraint(
+                fields=["property"],
+                condition=Q(property__isnull=False),
+                name="verification_case_one_per_property",
+            ),
+            models.CheckConstraint(
+                condition=Q(check_type=CheckType.PROPERTY, property__isnull=False)
+                | (~Q(check_type=CheckType.PROPERTY) & Q(property__isnull=True)),
+                name="verification_case_property_iff_property_check",
             ),
             models.CheckConstraint(
                 condition=Q(status__in=CaseStatus.values), name="verification_case_status_valid"

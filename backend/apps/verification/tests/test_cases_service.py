@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from apps.accounts.tests.factories import AdminUserFactory, TalentFactory, VendorFactory
 from apps.common.models import AuditLog
+from apps.properties.tests.factories import PropertyFactory
 from apps.verification.constants import BadgeKind, CaseStatus, CheckType, DocumentType
 from apps.verification.models import Badge, VerificationDocument
 from apps.verification.services.cases import (
@@ -23,19 +24,30 @@ from apps.verification.tests.factories import CaseFactory, MediaFileFactory
 pytestmark = pytest.mark.django_db
 
 
-def approve(user, check_type, reviewer=None):
-    case = CaseFactory(user=user, check_type=check_type, status=CaseStatus.SUBMITTED)
+def approve(user, check_type, reviewer=None, prop=None):
+    if check_type == CheckType.PROPERTY:
+        prop = prop or PropertyFactory(vendor=user)
+        case = CaseFactory(user=user, check_type=check_type, property=prop, subject_type="property")
+    else:
+        case = CaseFactory(user=user, check_type=check_type, status=CaseStatus.SUBMITTED)
     return decide(case.pk, Decision.APPROVE, reviewer=reviewer or AdminUserFactory())
 
 
 def test_locked_case_is_created_once_per_check_and_role_checked():
     vendor = VendorFactory()
     with transaction.atomic():
-        first = locked_case(vendor, CheckType.PROPERTY)
-        again = locked_case(vendor, CheckType.PROPERTY)
+        first = locked_case(vendor, CheckType.BUSINESS)
+        again = locked_case(vendor, CheckType.BUSINESS)
     assert first.pk == again.pk
     assert first.status == CaseStatus.NOT_STARTED
-    assert first.subject_type == "property"
+    prop_a, prop_b = PropertyFactory(vendor=vendor), PropertyFactory(vendor=vendor)
+    with transaction.atomic():
+        case_a = locked_case(vendor, CheckType.PROPERTY, prop=prop_a)
+        case_b = locked_case(vendor, CheckType.PROPERTY, prop=prop_b)
+    assert case_a.pk != case_b.pk
+    assert case_a.subject_type == "property" and case_a.subject_id == str(prop_a.pk)
+    with pytest.raises(ValueError), transaction.atomic():
+        locked_case(vendor, CheckType.PROPERTY)
     with pytest.raises(CheckNotAvailable), transaction.atomic():
         locked_case(vendor, CheckType.REFERENCE)
 
@@ -82,7 +94,7 @@ def test_decisions_only_on_waiting_cases():
     case = CaseFactory(status=CaseStatus.NOT_STARTED)
     with pytest.raises(InvalidTransition):
         decide(case.pk, Decision.APPROVE, reviewer=reviewer)
-    case = CaseFactory(status=CaseStatus.SUBMITTED, check_type=CheckType.PROPERTY)
+    case = CaseFactory(status=CaseStatus.SUBMITTED, check_type=CheckType.BUSINESS)
     case = decide(case.pk, Decision.START_REVIEW, reviewer=reviewer)
     assert case.status == CaseStatus.IN_REVIEW and case.reviewer == reviewer
     case = decide(case.pk, Decision.REQUEST_CHANGES, reviewer=reviewer, reason="Blurry photos.")
@@ -107,6 +119,26 @@ def test_trusted_member_follows_the_required_badges():
     assert BadgeKind.TRUSTED_MEMBER not in kinds
     trusted = Badge.objects.get(user=vendor, kind=BadgeKind.TRUSTED_MEMBER)
     assert "property_verified" in trusted.revoke_reason
+
+
+def test_property_badge_stays_while_another_property_is_verified():
+    vendor = VendorFactory()
+    first = approve(vendor, CheckType.PROPERTY)
+    second = approve(vendor, CheckType.PROPERTY)
+    assert first.property.verification_status == CaseStatus.APPROVED
+
+    decide(first.pk, Decision.REVOKE, reviewer=AdminUserFactory(), reason="Closed down.")
+    first.property.refresh_from_db()
+    assert first.property.verification_status == CaseStatus.REJECTED
+    assert BadgeKind.PROPERTY_VERIFIED in active_badge_kinds(vendor)
+
+    decide(second.pk, Decision.REVOKE, reviewer=AdminUserFactory(), reason="Closed down.")
+    assert BadgeKind.PROPERTY_VERIFIED not in active_badge_kinds(vendor)
+
+
+def test_property_cases_need_their_property():
+    with pytest.raises(IntegrityError), transaction.atomic():
+        CaseFactory(check_type=CheckType.PROPERTY, subject_type="property")
 
 
 def test_optional_certificates_are_not_needed_for_trusted_talent():

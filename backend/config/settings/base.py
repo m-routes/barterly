@@ -23,6 +23,8 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.profiles",
     "apps.media",
+    "apps.geo",
+    "apps.properties",
     "apps.verification",
 ]
 
@@ -98,6 +100,8 @@ REST_FRAMEWORK = {
         "auth_exchange_phone": env_str("THROTTLE_AUTH_EXCHANGE_PHONE", "10/hour"),
         "media_upload": env_str("THROTTLE_MEDIA_UPLOAD", "120/hour"),
         "kyc_start": env_str("THROTTLE_KYC_START", "5/day"),
+        "geocode": env_str("THROTTLE_GEOCODE", "30/hour"),
+        "property_public": env_str("THROTTLE_PROPERTY_PUBLIC", "600/hour"),
     },
     # Proxies in front of Django that append to X-Forwarded-For. 0 = use REMOTE_ADDR.
     "NUM_PROXIES": env_int("TRUSTED_PROXY_COUNT", 0),
@@ -176,3 +180,13 @@ KYC_PROVIDER = "apps.verification.providers.external.ExternalKycProvider"
 KYC_WEBHOOK_SECRET = env_str("KYC_WEBHOOK_SECRET", "")
 VERIFICATION_MIN_PROPERTY_PHOTOS = env_int("VERIFICATION_MIN_PROPERTY_PHOTOS", 3)
 VERIFICATION_PHOTO_MAX_DISTANCE_M = env_int("VERIFICATION_PHOTO_MAX_DISTANCE_M", 500)
+
+# Geocoding (apps.geo). Nominatim's usage policy: identify the app, at most one request
+# per second (enforced across instances through the shared cache), cache every answer.
+GEOCODER = "apps.geo.geocoders.NominatimGeocoder"
+NOMINATIM_URL = env_str("NOMINATIM_URL", "https://nominatim.openstreetmap.org")
+NOMINATIM_USER_AGENT = env_str(
+    "NOMINATIM_USER_AGENT", "Barterly/0.1 (+https://github.com/m-routes/barterly)"
+)
+NOMINATIM_EMAIL = env_str("NOMINATIM_EMAIL", "")
+GEOCODER_TIMEOUT_SECONDS = env_int("GEOCODER_TIMEOUT_SECONDS", 5)
