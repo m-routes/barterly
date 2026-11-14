@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "apps.gigs",
     "apps.discovery",
     "apps.notifications",
+    "apps.applications",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -155,6 +156,8 @@ SPECTACULAR_SETTINGS = {
         "KindEnum": "apps.media.policy.Kind",
         "GigStatusEnum": "apps.gigs.constants.GigStatus",
         "DeliverableTypeEnum": "apps.gigs.constants.DeliverableType",
+        "ApplicationStatusEnum": "apps.applications.constants.ApplicationStatus",
+        "AttachmentKindEnum": "apps.applications.models.AttachmentKind",
     },
 }
 

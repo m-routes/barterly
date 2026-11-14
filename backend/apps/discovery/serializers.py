@@ -67,6 +67,7 @@ class GigCardSerializer(serializers.ModelSerializer):
             "languages",
             "min_followers",
             "min_stay_days",
+            "required_verification",
             "published_at",
             "property",
             "host_verified",

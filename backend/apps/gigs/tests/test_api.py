@@ -149,4 +149,5 @@ def test_every_endpoint_is_in_the_openapi_schema(tmp_path):
         "/api/v1/gigs/admin/",
         "/api/v1/gigs/{gig_id}/",
         "/api/v1/gigs/{gig_id}/status/",
+        "/api/v1/gigs/{gig_id}/applications/",
     }

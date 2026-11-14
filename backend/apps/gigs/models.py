@@ -22,6 +22,7 @@ from apps.gigs.constants import (
     CompensationModel,
     GigStatus,
     Meals,
+    RequiredVerification,
     RoleTemplate,
     StayType,
     StipendPeriod,
@@ -88,6 +89,12 @@ class Gig(TimeStampedModel):
     min_followers = models.PositiveIntegerField(null=True, blank=True)
     min_stay_days = models.PositiveSmallIntegerField(null=True, blank=True)
     screening_questions = models.JSONField(default=list, blank=True)
+    required_verification = models.CharField(
+        max_length=20,
+        choices=RequiredVerification.choices,
+        default=RequiredVerification.ID_VERIFIED,
+        help_text="The badge talent need before they can apply.",
+    )
 
     status = models.CharField(max_length=20, choices=GigStatus.choices, default=GigStatus.DRAFT)
     status_reason = models.CharField(

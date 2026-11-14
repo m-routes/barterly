@@ -68,6 +68,7 @@ class GigSerializer(serializers.ModelSerializer):
             "min_followers",
             "min_stay_days",
             "screening_questions",
+            "required_verification",
             "status",
             "status_reason",
             "submitted_at",
