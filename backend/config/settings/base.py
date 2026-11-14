@@ -23,6 +23,13 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.profiles",
     "apps.media",
+    "apps.geo",
+    "apps.properties",
+    "apps.verification",
+    "apps.gigs",
+    "apps.discovery",
+    "apps.notifications",
+    "apps.applications",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -96,6 +103,9 @@ REST_FRAMEWORK = {
         "auth_exchange_ip": env_str("THROTTLE_AUTH_EXCHANGE_IP", "60/hour"),
         "auth_exchange_phone": env_str("THROTTLE_AUTH_EXCHANGE_PHONE", "10/hour"),
         "media_upload": env_str("THROTTLE_MEDIA_UPLOAD", "120/hour"),
+        "kyc_start": env_str("THROTTLE_KYC_START", "5/day"),
+        "geocode": env_str("THROTTLE_GEOCODE", "30/hour"),
+        "property_public": env_str("THROTTLE_PROPERTY_PUBLIC", "600/hour"),
     },
     # Proxies in front of Django that append to X-Forwarded-For. 0 = use REMOTE_ADDR.
     "NUM_PROXIES": env_int("TRUSTED_PROXY_COUNT", 0),
@@ -136,6 +146,19 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Work-exchange marketplace for travel and hospitality in India.",
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    # Stable names where two apps use the same field name (status, kind, ...).
+    "ENUM_NAME_OVERRIDES": {
+        "VerificationStatusEnum": "apps.verification.constants.CaseStatus",
+        "VerificationDocumentStatusEnum": "apps.verification.constants.DocumentStatus",
+        "VerificationDocumentTypeEnum": "apps.verification.constants.DocumentType",
+        "IdDocumentTypeEnum": "apps.verification.constants.ID_DOCUMENT_CHOICES",
+        "BadgeKindEnum": "apps.verification.constants.BadgeKind",
+        "KindEnum": "apps.media.policy.Kind",
+        "GigStatusEnum": "apps.gigs.constants.GigStatus",
+        "DeliverableTypeEnum": "apps.gigs.constants.DeliverableType",
+        "ApplicationStatusEnum": "apps.applications.constants.ApplicationStatus",
+        "AttachmentKindEnum": "apps.applications.models.AttachmentKind",
+    },
 }
 
 # Structured JSON logs (one object per line, with request_id). LOG_FORMAT=plain for
@@ -157,3 +180,38 @@ MEDIA_READ_URL_SECONDS = env_int("MEDIA_READ_URL_SECONDS", 300)
 MEDIA_MAX_PENDING_UPLOADS = env_int("MEDIA_MAX_PENDING_UPLOADS", 20)
 # Serve only files a virus scanner passed. Off until a real scanner is wired up.
 MEDIA_REQUIRE_SCAN = env_bool("MEDIA_REQUIRE_SCAN", False)
+
+# Verification (apps.verification). The KYC provider is a code setting like the token
+# verifier: deployed services use the real provider (a stub until one is chosen, which
+# answers 503), never the fake. The webhook secret comes from Secret Manager.
+KYC_PROVIDER = "apps.verification.providers.external.ExternalKycProvider"
+KYC_WEBHOOK_SECRET = env_str("KYC_WEBHOOK_SECRET", "")
+VERIFICATION_MIN_PROPERTY_PHOTOS = env_int("VERIFICATION_MIN_PROPERTY_PHOTOS", 3)
+VERIFICATION_PHOTO_MAX_DISTANCE_M = env_int("VERIFICATION_PHOTO_MAX_DISTANCE_M", 500)
+
+# Geocoding (apps.geo). Nominatim's usage policy: identify the app, at most one request
+# per second (enforced across instances through the shared cache), cache every answer.
+GEOCODER = "apps.geo.geocoders.NominatimGeocoder"
+NOMINATIM_URL = env_str("NOMINATIM_URL", "https://nominatim.openstreetmap.org")
+NOMINATIM_USER_AGENT = env_str(
+    "NOMINATIM_USER_AGENT", "Barterly/0.1 (+https://github.com/m-routes/barterly)"
+)
+NOMINATIM_EMAIL = env_str("NOMINATIM_EMAIL", "")
+GEOCODER_TIMEOUT_SECONDS = env_int("GEOCODER_TIMEOUT_SECONDS", 5)
+
+# Gigs (apps.gigs): how many live gigs a vendor's plan allows. Unlimited for now.
+GIG_PLAN_POLICY = "apps.gigs.plans.UnlimitedPlanPolicy"
+
+# Discovery (apps.discovery). Fit-score weights: they needn't add to 100 (they are
+# scaled), but keeping them at 100 makes each one read as "points".
+DISCOVERY_FIT_WEIGHTS = {
+    "skill_match": 30,
+    "reliability": 25,
+    "ratings": 20,
+    "audience_quality": 15,
+    "distance_availability": 10,
+}
+DISCOVERY_DISTANCE_ZERO_KM = env_int("DISCOVERY_DISTANCE_ZERO_KM", 300)
+DISCOVERY_PAGE_SIZE = env_int("DISCOVERY_PAGE_SIZE", 20)
+# best_fit scores the newest matching gigs in Python; this caps how many.
+DISCOVERY_MAX_CANDIDATES = env_int("DISCOVERY_MAX_CANDIDATES", 1000)

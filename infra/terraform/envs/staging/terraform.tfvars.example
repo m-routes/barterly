@@ -2,3 +2,6 @@ project_id   = "barterly-prod-123456"
 state_bucket = "barterly-prod-123456-tfstate"
 api_domains  = ["api.staging.barterly.in"]
 web_domains  = ["staging.barterly.in"]
+
+# Firebase console -> Project settings -> Your apps -> Web app. Public values.
+# firebase_web = { api_key = "AIza...", app_id = "1:123456789:web:abc123" }

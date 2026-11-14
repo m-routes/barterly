@@ -1,12 +1,19 @@
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from apps.accounts.models import User
+from apps.accounts.models import Role, User
 from apps.accounts.services.auth import SELF_SERVICE_ROLES
 from apps.profiles.services import is_profile_complete
 
 
 class UserSerializer(serializers.ModelSerializer):
+    # Declared so the schema says what the API sends: "" until a role is chosen.
+    role = serializers.ChoiceField(
+        choices=Role.choices,
+        allow_blank=True,
+        read_only=True,
+        help_text='"" until the user picks vendor or talent at /api/v1/me/role/.',
+    )
     profile_complete = serializers.SerializerMethodField(
         help_text="True once the user has a role and the matching profile."
     )
