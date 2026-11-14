@@ -52,19 +52,21 @@ def test_role_change_in_admin_is_audited(admin_client):
 
     user.refresh_from_db()
     assert user.role == Role.VENDOR and not user.is_active
-    entry = AuditLog.objects.get()
-    assert entry.action == "user.updated"
+    entry = AuditLog.objects.get(action="user.updated")
     assert entry.actor == admin_client.superuser
     assert entry.before == {"role": "talent", "is_active": True}
     assert entry.after == {"role": "vendor", "is_active": False}
 
 
-def test_non_audited_edit_in_admin_logs_nothing(admin_client):
+def test_other_edits_in_admin_log_only_the_admin_change(admin_client):
     user = TalentFactory()
     url = reverse("admin:accounts_user_change", args=[user.pk])
     response = admin_client.post(url, change_payload(user, email="new@example.com"))
     assert response.status_code == 302, response.content
-    assert not AuditLog.objects.exists()
+    # Every admin action is audited, but there's no role or status change to record.
+    entry = AuditLog.objects.get()
+    assert entry.action == "admin.changed" and entry.actor == admin_client.superuser
+    assert "Email" in entry.after["summary"]
 
 
 def test_audit_log_admin_is_read_only(admin_client):

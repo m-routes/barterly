@@ -260,6 +260,21 @@ Each user has one `VerificationCase` per check, kept across attempts. Statuses: 
 
 Money and status changes write an `AuditLog` entry through `apps.common.services.audit.log_action()`, in the same transaction as the change. Each entry records the actor, a dotted action (`user.role_changed`), the target's type and id, JSON before/after, the client IP and the request id. Entries are append-only: updates and deletes raise, and the admin is read-only. Users with audit history can't be hard-deleted (`PROTECT`); deactivate them. Role and `is_active` changes go through `apps.accounts.services.users` (and the admin's save hook), which audit them.
 
+### Back office (`apps/backoffice`)
+
+Staff work in the Django admin at `/admin/`, served by `BarterlyAdminSite`, which adds review queues. Decisions go through the same services as the API, so they are checked, keep badges in step and write AuditLog rows.
+
+- **Roles.** `super_admin`, `ops`, `trust`, `finance` and `support` are auth groups whose permissions are exactly the lists in `apps/backoffice/roles.py`. They are re-synced after every migrate, so hand edits to a group don't stick. Give or take a role with `manage.py grant_admin_role <phone> <role> [--remove]`; it makes the account a staff admin and is audited. Vendor and talent accounts can't be given a role. Changing someone's groups in the user admin is audited as `user.admin_roles_changed`.
+  - ops: approves gigs, reads accounts, gigs, properties and applications, and reads the audit log.
+  - trust: decides verification cases, reads verification records and KYC events, and reads the audit log.
+  - finance: reads users, gigs, applications and the audit log.
+  - support: read-only lookups, including verification records; no actions and no audit log.
+  - super_admin: everything above, plus user and role management.
+- **Verification queue** (`/admin/queues/verification/`, needs `review_verification`). Cases waiting for a decision, oldest first, filterable by status and check. Cases waiting more than 48 hours are flagged overdue. The detail page shows the case facts, masked documents, the user's badges and other checks, and the case's audit history. Approve, request changes, reject and revoke all need a reason; starting a review doesn't.
+- **Gig approval queue** (`/admin/queues/gigs/`, needs `review_gigs`). Gigs in review, oldest first, each with its rule report (`rules.gig_rules`). The report runs `check_complete`, the same check that guards going live, so a flagged gig can't be approved. The page also shows warnings that aren't rule breaks: an unverified property, a host without a verified ID, or a stay-only gig over 30 hours a week. Sending back needs a note for the vendor.
+- **Audit log viewer** (`/admin/common/auditlog/`, needs `view_audit_log`). Read-only, with filters by area (`verification.*`, `gig.*` and so on), by who acted (system, admins, or vendors and talent), by action, object type and date, and search by object id, request id or actor phone.
+- **Every admin action is audited.** Each add, change or delete in the Django admin writes an `admin.added`, `admin.changed` or `admin.deleted` row (from Django's LogEntry), on top of the specific rows the services write.
+
 ### Errors, pagination, docs
 
 - Every API error has the shape `{"code", "message", "details"}`: `validation_error` with field errors in `details`, plus `not_found`, `permission_denied`, `not_authenticated`, `throttled` (`details.retry_after_seconds`) and `server_error`. Unhandled exceptions are logged, sent to Sentry if it's on, and returned as a JSON 500. Unknown `/api/` URLs also return the JSON 404. `ErrorSerializer` documents the shape in OpenAPI.
