@@ -13,8 +13,10 @@ Barterly is a monorepo with three apps that share one API.
 │   ├── uv.lock         locked dependencies
 │   └── docker-compose.yml  local Postgres 16
 ├── web/                Next.js (App Router) vendor console, TypeScript strict
-│   ├── src/app/        routes and layouts
-│   ├── src/lib/        shared, framework-free logic
+│   ├── src/app/        routes and layouts; api/v1/[...path] forwards to the API
+│   ├── src/components/ UI kit (fields, buttons, states, toasts) and route guards
+│   ├── src/lib/        API client, session, validation; lib/server/ is server-only
+│   ├── openapi/        schema.yaml exported from the backend (source of the client types)
 │   ├── Dockerfile      Next.js standalone server, non-root
 │   └── e2e/            Playwright tests
 ├── mobile/             Flutter talent app
@@ -270,6 +272,35 @@ Money and status changes write an `AuditLog` entry through `apps.common.services
 - Sentry is off unless `SENTRY_ENABLED=1` and `SENTRY_DSN` are set (the DSN goes in Secret Manager). It doesn't send PII.
 - `apps.accounts.services.user_model_switch` runs from `release` and switches a database that was first migrated with Django's built-in user model. It acts only when the old user tables are empty, and does nothing otherwise. Delete it once staging and production have been switched.
 
+## Web console
+
+Next.js 16 App Router with Cache Components. Pages: `/` (landing), `/login`, `/start` (sends a signed-in person to the right place), `/onboarding/role`, `/onboarding/vendor`, `/talent` (talent are pointed at the mobile app) and `/console/*` (Dashboard, Gigs, Applicants, Talent search, Agreements, Payments, Analytics; unbuilt sections show an empty state).
+
+**Calling the API.** The browser only talks to its own origin. `src/app/api/v1/[...path]/route.ts` forwards `/api/v1/*` to `API_URL`, so the API needs no CORS.
+- The JWTs live in httpOnly, SameSite=Lax cookies (`barterly_access`, `barterly_refresh`) that expire with their tokens. Browser JavaScript never sees a token.
+- The forwarder turns the access cookie into `Authorization: Bearer`. It handles exchange, refresh and logout itself: it sets and clears the cookies and strips the tokens from the response.
+- POST, PATCH, PUT and DELETE must come from this site's own origin.
+
+**Typed client.** `src/lib/api/client.ts` is openapi-fetch over types generated from `web/openapi/schema.yaml`. After changing the API, run `npm run api:generate` in `web/` and commit both files. Backend CI fails if the schema file is stale, and web CI fails if the types are.
+- **401 handling:** on a 401 the client refreshes once and replays the request. Refreshes are shared within a tab and serialised across tabs with a Web Lock, because refresh tokens rotate and a reused one is blacklisted.
+- **Global error handler:** server errors, 429, 403 and network failures become toasts (with the request id). An expired session sends the person to `/login?next=…`. Validation errors stay with the form that caused them.
+
+**Access.** `src/proxy.ts` redirects signed-out visitors away from the signed-in pages, and signed-in visitors away from `/login`. It only checks that the cookie exists. `RequireRole` then checks the role from `/api/v1/me/`:
+- No role yet goes to `/onboarding/role`.
+- A vendor with an incomplete profile goes to `/onboarding/vendor`.
+- Anyone with the wrong role sees an explanation.
+
+The API authorizes every call regardless.
+
+**Sign-in.** Firebase phone OTP with an invisible reCAPTCHA (`@firebase/app` and `@firebase/auth` only, loaded on demand). The Firebase ID token is exchanged once, and then the Firebase session is dropped. Config comes from `FIREBASE_PROJECT_ID`, `FIREBASE_WEB_API_KEY` and `FIREBASE_WEB_APP_ID` at request time. Terraform sets them from `firebase_web` in each environment's tfvars.
+
+**Design.** The tokens are in `src/app/globals.css`:
+- Colours: ground `#FBF8F3`, ink `#1F2A24`, accent `#0F6B5C`.
+- Type: Space Grotesk headings, Inter body.
+- Layout is mobile first. Every control is at least 44 px tall, and the colour pairs meet WCAG 2.1 AA (ratios are listed in the file).
+
+Forms use react-hook-form with zod. Every screen has loading, empty and error states (`src/components/ui/states.tsx`).
+
 ## Commands
 
 | Task | backend/ | web/ | mobile/ |
@@ -298,7 +329,7 @@ The backend needs Postgres: `docker compose up -d db` from `backend/`, and `DJAN
 Each workflow runs on pushes to `main` and on pull requests, filtered by path so it runs only when its folder or its own workflow file changes.
 
 - **backend.yml**: `lint` (ruff check + format check); `test` with a Postgres 16 service (Django check, `makemigrations --check`, migrate, OpenAPI validation, pytest with coverage, an 85% gate on `apps/*/services/*`); `audit` (pip-audit on the locked dependencies).
-- **web.yml**: ESLint, Prettier check, `tsc`, Vitest, `next build`, `npm audit`, Playwright on Chromium.
+- **web.yml**: ESLint, Prettier check, generated API types up to date, `tsc`, Vitest, `next build`, `npm audit`, Playwright on Chromium.
 - **infra.yml**: `terraform fmt -check`, `terraform validate` for every root, shellcheck on the scripts.
 - **backend.yml** / **web.yml** also build the Docker image and check that it runs as non-root.
 - **mobile.yml**: `dart format` check, `flutter analyze --fatal-infos`, `flutter test`. Integration tests need a device and are not run in CI yet.

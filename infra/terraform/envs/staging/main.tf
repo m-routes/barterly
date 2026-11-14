@@ -43,6 +43,8 @@ module "environment" {
   api_domains = var.api_domains
   web_domains = var.web_domains
 
+  firebase_web = var.firebase_web
+
   api_min_instances   = 0
   web_min_instances   = 0
   deletion_protection = false
