@@ -1,0 +1,22 @@
+{% extends "admin/base_site.html" %}
+{% block extrastyle %}{{ block.super }}
+<style>
+  .bo-filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin: 0 0 16px; }
+  .bo-filters label { display: block; font-weight: 600; margin-bottom: 4px; }
+  .bo-flag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-weight: 600; font-size: 0.85em; }
+  .bo-flag--bad { background: #fbeaea; color: #8a1f24; }
+  .bo-flag--ok { background: #ddf0ea; color: #0b4f43; }
+  .bo-flag--warn { background: #fbe9cf; color: #6b3f05; }
+  .bo-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+  .bo-card { border: 1px solid var(--hairline-color); border-radius: 6px; padding: 12px 16px; margin-bottom: 16px; }
+  .bo-card h2 { margin-top: 0; }
+  .bo-card dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; }
+  .bo-card dt { font-weight: 600; }
+  .bo-card dd { margin: 0; overflow-wrap: anywhere; }
+  .bo-rules td, .bo-rules th { vertical-align: top; }
+  .bo-actions textarea { width: 100%; box-sizing: border-box; }
+  .bo-actions .submit-row { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 0; background: none; border: 0; }
+  @media (max-width: 1024px) { .bo-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+{% block breadcrumbs %}<div class="breadcrumbs"><a href="{% url 'admin:index' %}">Home</a> &rsaquo; {{ title }}</div>{% endblock %}

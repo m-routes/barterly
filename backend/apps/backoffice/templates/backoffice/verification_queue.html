@@ -1,0 +1,40 @@
+{% extends "backoffice/base.html" %}
+{% block content %}
+<form method="get" class="bo-filters">
+  <div>
+    <label for="bo-status">Status</label>
+    <select id="bo-status" name="status">
+      {% for value, label in statuses %}<option value="{{ value }}"{% if value == status %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="bo-check">Check</label>
+    <select id="bo-check" name="check">
+      <option value="">All checks</option>
+      {% for value, label in checks %}<option value="{{ value }}"{% if value == check %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div><input type="submit" value="Filter"></div>
+</form>
+<p>Oldest first. Cases waiting more than {{ target_hours }} hours are marked overdue.</p>
+<div class="results">
+<table id="result_list">
+  <thead><tr><th scope="col">Check</th><th scope="col">User</th><th scope="col">Status</th><th scope="col">Submitted</th><th scope="col">Waiting</th><th scope="col">Reviewer</th></tr></thead>
+  <tbody>
+  {% for row in rows %}
+    <tr>
+      <th scope="row"><a href="{% url 'admin:verification_case' row.case.pk %}">{{ row.case.get_check_type_display }}{% if row.case.property %}: {{ row.case.property.name }}{% endif %}</a></th>
+      <td>{{ row.case.user.phone }} ({{ row.case.user.get_role_display }})</td>
+      <td>{{ row.case.get_status_display }}</td>
+      <td>{{ row.case.submitted_at|date:"j M Y, H:i"|default:"–" }}</td>
+      <td>{% if row.waiting %}{{ row.case.submitted_at|timesince }}{% if row.overdue %} <span class="bo-flag bo-flag--bad">Overdue</span>{% endif %}{% else %}–{% endif %}</td>
+      <td>{{ row.case.reviewer.phone|default:"–" }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6">Nothing here. The queue is clear.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% with query="status="|add:status|add:"&check="|add:check %}{% include "backoffice/pager.html" %}{% endwith %}
+{% endblock %}

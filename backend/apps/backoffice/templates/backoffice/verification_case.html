@@ -1,0 +1,61 @@
+{% extends "backoffice/base.html" %}
+{% block breadcrumbs %}<div class="breadcrumbs"><a href="{% url 'admin:index' %}">Home</a> &rsaquo; <a href="{% url 'admin:verification_queue' %}">Verification queue</a> &rsaquo; {{ title }}</div>{% endblock %}
+{% block content %}
+<div class="bo-grid">
+  <div>
+    <div class="bo-card">
+      <h2>Case</h2>
+      <dl>
+        <dt>Check</dt><dd>{{ case.get_check_type_display }}</dd>
+        <dt>Status</dt><dd>{{ case.get_status_display }}</dd>
+        <dt>User</dt><dd><a href="{% url 'admin:accounts_user_change' case.user.pk %}">{{ case.user.phone }}</a> ({{ case.user.get_role_display }})</dd>
+        {% if case.property %}<dt>Property</dt><dd><a href="{% url 'admin:properties_property_change' case.property.pk %}">{{ case.property.name }}</a>, {{ case.property.city }} · pin {{ case.property.latitude }}, {{ case.property.longitude }}</dd>{% endif %}
+        <dt>Submitted</dt><dd>{{ case.submitted_at|date:"j M Y, H:i"|default:"–" }}</dd>
+        <dt>Reviewer</dt><dd>{{ case.reviewer.phone|default:"–" }}</dd>
+        {% if case.reason %}<dt>Reason given</dt><dd>{{ case.reason }}</dd>{% endif %}
+        {% for key, value in details %}<dt>{{ key }}</dt><dd>{{ value }}</dd>{% endfor %}
+      </dl>
+    </div>
+    <div class="bo-card">
+      <h2>Documents</h2>
+      {% if documents %}
+      <table>
+        <thead><tr><th scope="col">Type</th><th scope="col">Status</th><th scope="col">Last 4</th><th scope="col">Provider</th></tr></thead>
+        <tbody>{% for doc in documents %}<tr><td>{{ doc.get_document_type_display }}</td><td>{{ doc.get_status_display }}</td><td>{{ doc.masked_value|default:"–" }}</td><td>{{ doc.provider|default:"–" }}</td></tr>{% endfor %}</tbody>
+      </table>
+      {% else %}<p>No documents on this case.</p>{% endif %}
+    </div>
+    {% include "backoffice/history.html" %}
+  </div>
+  <div>
+    <div class="bo-card bo-actions">
+      <h2>Decision</h2>
+      {% if can_decide or can_revoke %}
+      <form method="post">{% csrf_token %}
+        {% if form.non_field_errors %}<ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        <label for="id_reason"><strong>Reason</strong> (required, except to start a review)</label>
+        {{ form.reason.errors }}{{ form.reason }}
+        <div class="submit-row">
+          {% if can_decide %}
+          {% if case.status == "submitted" %}<button type="submit" name="decision" value="start_review">Start review</button>{% endif %}
+          <button type="submit" name="decision" value="approve" class="default">Approve</button>
+          <button type="submit" name="decision" value="request_changes">Request changes</button>
+          <button type="submit" name="decision" value="reject" class="deletelink">Reject</button>
+          {% else %}
+          <button type="submit" name="decision" value="revoke" class="deletelink">Revoke approval</button>
+          {% endif %}
+        </div>
+      </form>
+      {% else %}<p>This case isn't waiting for a decision.</p>{% endif %}
+    </div>
+    <div class="bo-card">
+      <h2>Badges</h2>
+      {% for badge in badges %}<span class="bo-flag bo-flag--ok">{{ badge.get_kind_display }}</span> {% empty %}<p>None.</p>{% endfor %}
+    </div>
+    <div class="bo-card">
+      <h2>Other checks</h2>
+      {% for other in other_checks %}<p><a href="{% url 'admin:verification_case' other.pk %}">{{ other.get_check_type_display }}</a>: {{ other.get_status_display }}</p>{% empty %}<p>None.</p>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

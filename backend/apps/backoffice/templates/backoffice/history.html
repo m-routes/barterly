@@ -1,0 +1,18 @@
+<div class="bo-card">
+  <h2>History</h2>
+  {% if history %}
+  <table>
+    <thead><tr><th scope="col">When</th><th scope="col">What</th><th scope="col">Who</th><th scope="col">Reason</th></tr></thead>
+    <tbody>
+    {% for item in history %}
+      <tr>
+        <td>{{ item.entry.created_at|date:"j M Y, H:i" }}</td>
+        <td>{{ item.entry.action }}</td>
+        <td>{% if item.entry.actor %}{{ item.entry.actor.phone }}{% else %}System{% endif %}</td>
+        <td>{{ item.note }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p>No audit entries yet.</p>{% endif %}
+</div>

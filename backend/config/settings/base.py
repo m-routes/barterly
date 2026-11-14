@@ -9,7 +9,7 @@ from config.settings.env import env_bool, env_float, env_int, env_str
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
+    "apps.backoffice.apps.BarterlyAdminConfig",  # django.contrib.admin, Barterly site
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "apps.discovery",
     "apps.notifications",
     "apps.applications",
+    "apps.backoffice.apps.BackofficeConfig",
 ]
 
 AUTH_USER_MODEL = "accounts.User"

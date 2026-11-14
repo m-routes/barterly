@@ -1,0 +1,14 @@
+{% extends "admin/index.html" %}
+{% block content %}
+{% if queues %}
+<div class="module" id="bo-queues">
+  <table>
+    <caption>Back office</caption>
+    {% for label, url_name, perm in queues %}
+    <tr><th scope="row"><a href="{% url url_name %}">{{ label }}</a></th><td></td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+{{ block.super }}
+{% endblock %}

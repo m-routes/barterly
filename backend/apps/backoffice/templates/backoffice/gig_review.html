@@ -1,0 +1,59 @@
+{% extends "backoffice/base.html" %}
+{% block breadcrumbs %}<div class="breadcrumbs"><a href="{% url 'admin:index' %}">Home</a> &rsaquo; <a href="{% url 'admin:gig_queue' %}">Gig approval queue</a> &rsaquo; {{ title }}</div>{% endblock %}
+{% block content %}
+<div class="bo-grid">
+  <div>
+    <div class="bo-card">
+      <h2>Gig</h2>
+      <dl>
+        <dt>Status</dt><dd>{{ gig.get_status_display }}</dd>
+        <dt>Vendor</dt><dd><a href="{% url 'admin:accounts_user_change' gig.vendor.pk %}">{{ gig.vendor.phone }}</a></dd>
+        <dt>Property</dt><dd>{{ gig.property.name }}, {{ gig.property.city }} ({{ gig.property.get_verification_status_display }})</dd>
+        <dt>Role</dt><dd>{{ gig.get_role_template_display }}</dd>
+        <dt>Pay model</dt><dd>{{ gig.get_compensation_model_display }}</dd>
+        <dt>Dates</dt><dd>{{ gig.start_date|default:"–" }} to {{ gig.end_date|default:"–" }}{% if gig.duration_days %} ({{ gig.duration_days }} days){% endif %}; apply by {{ gig.apply_by|default:"–" }}</dd>
+        <dt>Work</dt><dd>{{ gig.hours_per_day|default:"–" }} hours a day, {{ gig.days_per_week|default:"–" }} days a week</dd>
+        <dt>Stay and meals</dt><dd>{{ gig.get_stay_type_display|default:"–" }}, {{ gig.get_meals_display|default:"–" }}{% if gig.wifi %}, Wi-Fi{% endif %}</dd>
+        {% if gig.stipend_amount %}<dt>Stipend</dt><dd>₹{{ gig.stipend_amount }} {{ gig.get_stipend_period_display }}</dd>{% endif %}
+        {% if gig.deliverables %}<dt>Deliverables</dt><dd>{% for d in gig.deliverables %}{{ d.quantity }} × {{ d.type }}{% if not forloop.last %}, {% endif %}{% endfor %}</dd>{% endif %}
+        <dt>Description</dt><dd>{{ gig.description|linebreaksbr }}</dd>
+        {% if gig.screening_questions %}<dt>Questions</dt><dd>{% for q in gig.screening_questions %}{{ q }}<br>{% endfor %}</dd>{% endif %}
+      </dl>
+    </div>
+    {% include "backoffice/history.html" %}
+  </div>
+  <div>
+    <div class="bo-card">
+      <h2>Rules</h2>
+      <table class="bo-rules">
+        <thead><tr><th scope="col">Rule</th><th scope="col">This gig</th><th scope="col">Result</th></tr></thead>
+        <tbody>
+        {% for row in report.rows %}
+          <tr>
+            <td>{{ row.rule }}</td>
+            <td>{{ row.value }}</td>
+            <td>{% if row.broken %}<span class="bo-flag bo-flag--bad">Broken</span>{% for p in row.problems %}<br>{{ p }}{% endfor %}{% else %}<span class="bo-flag bo-flag--ok">OK</span>{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% for p in report.other_problems %}<p><span class="bo-flag bo-flag--bad">Broken</span> {{ p }}</p>{% endfor %}
+      {% for w in report.warnings %}<p><span class="bo-flag bo-flag--warn">Check</span> {{ w }}</p>{% endfor %}
+    </div>
+    <div class="bo-card bo-actions">
+      <h2>Decision</h2>
+      {% if can_decide %}
+      <form method="post">{% csrf_token %}
+        {% if form.non_field_errors %}<ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        <label for="id_reason"><strong>Note to the vendor</strong> (required to send back)</label>
+        {{ form.reason.errors }}{{ form.reason }}
+        <div class="submit-row">
+          <button type="submit" name="decision" value="approve" class="default"{% if report.breaks %} disabled title="Fix the broken rules first"{% endif %}>Approve</button>
+          <button type="submit" name="decision" value="send_back">Send back</button>
+        </div>
+      </form>
+      {% else %}<p>This gig isn't waiting for review ({{ gig.get_status_display }}).</p>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

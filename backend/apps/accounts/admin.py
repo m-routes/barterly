@@ -5,6 +5,7 @@ from django.db import transaction
 
 from apps.accounts.models import User
 from apps.accounts.services.users import AUDITED_FIELDS, audit_user_change
+from apps.common.services.audit import log_action
 
 
 class UserCreateForm(AdminUserCreationForm):
@@ -54,3 +55,18 @@ class UserAdmin(DjangoUserAdmin):
             super().save_model(request, obj, form, change)
             if change:
                 audit_user_change(obj, before, actor=request.user, request=request)
+
+    def save_related(self, request, form, formsets, change):
+        # Group membership is what gives staff their admin role: audit it too.
+        before = sorted(g.name for g in form.initial.get("groups", []) or [])
+        super().save_related(request, form, formsets, change)
+        after = sorted(form.instance.groups.values_list("name", flat=True))
+        if change and before != after:
+            log_action(
+                actor=request.user,
+                action="user.admin_roles_changed",
+                obj=form.instance,
+                before={"groups": before},
+                after={"groups": after},
+                request=request,
+            )
