@@ -15,6 +15,12 @@ abstract final class BarterlyColors {
   static const accentSoft = Color(0xFFE2EFEB);
   static const onAccent = Color(0xFFFFFFFF);
   static const border = Color(0xFFE3DCCF);
+
+  /// Outline of unselected chips and secondary buttons (design canvas).
+  static const chipBorder = Color(0xFFD5CEC0);
+
+  /// Text and icons on [accentSoft] (design canvas): 8.3:1.
+  static const onAccentSoft = Color(0xFF0B4F43);
   static const fieldBorder = Color(0xFF7E847B);
   static const danger = Color(0xFFA4262C);
   static const dangerSoft = Color(0xFFFBEAEA);

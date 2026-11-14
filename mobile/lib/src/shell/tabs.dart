@@ -2,45 +2,13 @@ import 'package:barterly/src/auth/session.dart';
 import 'package:barterly/src/profile/talent_profile.dart';
 import 'package:barterly/src/providers.dart';
 import 'package:barterly/src/theme/tokens.dart';
-import 'package:barterly/src/widgets/brand.dart';
 import 'package:barterly/src/widgets/states.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// The four tabs. Only Discover and Profile have content so far.
-
-class DiscoverTab extends StatelessWidget {
-  const new({super.key});
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const BrandMark()),
-    body: const EmptyState(
-      icon: Icons.travel_explore_outlined,
-      title: 'Gigs are on their way',
-      message:
-          'Soon you’ll find hostels, cafés and tours looking for your skills '
-          'here. Your profile is ready for when they arrive.',
-    ),
-  );
-}
-
-class TripsTab extends StatelessWidget {
-  const new({super.key});
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('My trips')),
-    body: const EmptyState(
-      icon: Icons.luggage_outlined,
-      title: 'No trips yet',
-      message:
-          'When a host accepts you, your stay, dates and agreement show up '
-          'here.',
-    ),
-  );
-}
+/// The Wallet and Profile tabs. Discover and My trips live in discover/ and
+/// apply/.
 
 class WalletTab extends StatelessWidget {
   const new({super.key});
@@ -129,7 +97,16 @@ class _ProfileSummary extends ConsumerWidget {
           icon: const Icon(Icons.edit_outlined),
           label: const Text('Edit profile'),
         ),
-        const SizedBox(height: BarterlySpace.xl),
+        const SizedBox(height: BarterlySpace.md),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.verified_user_outlined),
+          title: const Text('Verification and badges'),
+          subtitle: const Text('ID, selfie and Instagram'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push('/profile/verification'),
+        ),
+        const SizedBox(height: BarterlySpace.md),
         const Divider(),
         ListTile(
           contentPadding: EdgeInsets.zero,

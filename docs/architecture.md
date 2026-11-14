@@ -312,7 +312,7 @@ Flutter 3.47 with Riverpod 3, go_router 18 and Dio. Material comes from the stan
 
 **Layers.** Screens never call the API directly.
 - Screens use Riverpod providers (`lib/src/providers.dart`).
-- The providers wrap repositories: `AuthRepository` and `ProfileRepository`.
+- The providers wrap repositories: `AuthRepository`, `ProfileRepository`, `GigsRepository`, `ApplicationsRepository` (with `MediaUploader`) and `VerificationRepository`.
 - The repositories use one Dio client.
 - Tests override the providers, or swap in a fake HTTP adapter, so no screen needs a network.
 
@@ -339,6 +339,18 @@ Flutter 3.47 with Riverpod 3, go_router 18 and Dio. Material comes from the stan
 - An emergency contact whose number isn't the user's own.
 
 Field errors from the API are shown on the matching fields.
+
+**Discover.** `GET /api/v1/gigs/` with filter chips (pay model), a search box and a filter sheet (sort, role, stay, city, dates, how long you can stay, verified hosts, saved searches). Pages load with the keyset cursor as you scroll.
+- The map uses flutter_map with OpenStreetMap tiles. Each gig sits at its property's approximate point with its radius drawn; the API never sends the exact one before booking. Nearby gigs cluster on a grid (`clusterByGrid`). "Search this area" sets a point and radius, which also enables the distance sort.
+- OSM tile policy: the credit "© OpenStreetMap contributors" is always on the map and opens the copyright page; tiles are requested with the app's User-Agent (`in.barterly.barterly`) and no prefetching. Set `MAP_TILE_URL` (a `--dart-define`) to move to another tile server before traffic grows.
+
+**Gig and apply.** The gig screen uses the discover card, plus `GET /api/v1/gigs/{id}/public/` for the description and screening questions (live gigs only; a gig that stopped taking applications shows its card fields). Applying uploads each photo or video (`upload-url` → PUT to the signed URL without the API token → `confirm`), then posts the pitch, dates, answers and attachments (up to 8, or https links). A 422 `application_blocked` lists every reason. The agreement checkbox is checked in the app only: the apply API has no field for it.
+
+**Offline.**
+- The last first page of discover is kept on the device (shared_preferences). Without a network the feed shows it under an offline banner, with the time it was saved, and refreshes when the network returns.
+- An application sent offline, or cut off mid-send, goes into an outbox kept on the device, with picked files copied to app storage. It is sent when connectivity returns (or on "Send now" in My trips). Uploads that finished are remembered so a retry doesn't repeat them. If the API refuses it, it stays in My trips with the reasons.
+
+**Verification.** `/profile/verification` lists the checks from `GET /api/v1/verification/me/` with their status and the active badges. The ID and selfie check opens the KYC provider's hosted page (`redirect_url`, https only) in the in-app browser (SFSafariViewController / Custom Tabs); the status refreshes when the app comes back. Linking Instagram saves the handle on the profile, submits the social check and shows the code to put in the bio.
 
 **Crash reporting.** Sentry starts only when `SENTRY_DSN` is set. Reports carry the account id, never the phone number, and personal data is off (`sendDefaultPii = false`).
 

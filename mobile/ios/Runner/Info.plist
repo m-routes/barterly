@@ -77,5 +77,11 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Barterly uses the camera to add photos and videos of your work to applications.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Barterly records sound with intro videos you add to applications.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Barterly lets you pick photos and videos of your work for applications.</string>
 </dict>
 </plist>

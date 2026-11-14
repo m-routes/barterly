@@ -1,10 +1,15 @@
+import 'package:barterly/src/apply/apply_screen.dart';
+import 'package:barterly/src/apply/my_applications_screen.dart';
 import 'package:barterly/src/auth/login_screen.dart';
 import 'package:barterly/src/auth/onboarding_screens.dart';
 import 'package:barterly/src/auth/session.dart';
 import 'package:barterly/src/auth/user.dart';
+import 'package:barterly/src/discover/discover_screen.dart';
+import 'package:barterly/src/discover/gig_detail_screen.dart';
 import 'package:barterly/src/profile/profile_setup_screen.dart';
 import 'package:barterly/src/shell/app_shell.dart';
 import 'package:barterly/src/shell/tabs.dart';
+import 'package:barterly/src/verification/verification_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -20,6 +25,9 @@ abstract final class Routes {
   static const wallet = '/wallet';
   static const profile = '/profile';
   static const editProfile = '/profile/edit';
+  static const verification = '/profile/verification';
+  static String gig(String id) => '/discover/gig/$id';
+  static String apply(String id) => '/discover/gig/$id/apply';
 
   /// Screens that only make sense before the person is fully in.
   static const Set<String> gates = {splash, login, join, wrongApp, setup};
@@ -72,13 +80,30 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: Routes.discover,
-                builder: (_, _) => const DiscoverTab(),
+                builder: (_, _) => const DiscoverScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'gig/:id',
+                    builder: (_, state) =>
+                        GigDetailScreen(gigId: state.pathParameters['id']!),
+                    routes: [
+                      GoRoute(
+                        path: 'apply',
+                        builder: (_, state) =>
+                            ApplyScreen(gigId: state.pathParameters['id']!),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(path: Routes.trips, builder: (_, _) => const TripsTab()),
+              GoRoute(
+                path: Routes.trips,
+                builder: (_, _) => const MyApplicationsScreen(),
+              ),
             ],
           ),
           StatefulShellBranch(
@@ -98,6 +123,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'edit',
                     builder: (_, _) => const ProfileSetupScreen(editing: true),
+                  ),
+                  GoRoute(
+                    path: 'verification',
+                    builder: (_, _) => const VerificationScreen(),
                   ),
                 ],
               ),

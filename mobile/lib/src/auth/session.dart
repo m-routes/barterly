@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:barterly/src/api/api_error.dart';
 import 'package:barterly/src/auth/user.dart';
+import 'package:barterly/src/platform/device_keys.dart';
 import 'package:barterly/src/providers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -79,7 +80,22 @@ class SessionController extends Notifier<SessionState> {
   }
 
   Future<void> signOut() async {
+    final current = state;
     await ref.read(authRepositoryProvider).signOut();
+    if (current is SignedIn) await _forget(current.user.id);
     state = const SignedOut();
+  }
+
+  /// Drops what the device kept for this account (offline feed, unsent
+  /// applications), so the next person on this phone can't see it.
+  Future<void> _forget(String userId) async {
+    final store = ref.read(keyValueStoreProvider);
+    for (final key in DeviceKeys.forUser(userId)) {
+      try {
+        await store.remove(key);
+      } on Object {
+        // Storage unavailable: nothing more to do.
+      }
+    }
   }
 }

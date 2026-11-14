@@ -36,7 +36,8 @@ void main() {
         findsOneWidget,
       );
     }
-    expect(find.text('Gigs are on their way'), findsOneWidget);
+    expect(find.text('Gigs for you'), findsOneWidget);
+    expect(find.text('No gigs right now'), findsOneWidget);
   });
 
   testWidgets('My trips and Wallet show empty states', (tester) async {
@@ -48,6 +49,7 @@ void main() {
     await tester.tap(find.text('My trips'));
     await tester.pumpAndSettle();
     expect(find.text('No trips yet'), findsOneWidget);
+    expect(find.text('Find a gig'), findsOneWidget);
     await tester.tap(find.text('Wallet'));
     await tester.pumpAndSettle();
     expect(find.text('Nothing here yet'), findsOneWidget);
