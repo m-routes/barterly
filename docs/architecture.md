@@ -61,6 +61,7 @@ Surfaces: the vendor console (web), the talent app (mobile) and the admin consol
 | `media` | `MediaFile` records for uploads to the private bucket, signed upload/read URLs, the `media.process` task (virus scan hook, image resizing) |
 | `geo` | Distance helpers (haversine, bounding box), the `Geocoder` interface with Nominatim and a fake, and the database cache of every geocoding answer |
 | `properties` | `Property` (location as lat/lng columns, approximate public point) and `PropertyPhoto`, owner CRUD, the public view, submitting a property for verification |
+| `gigs` | `Gig` (role template, compensation model, dates, hours, stay, meals, stipend, deliverables, eligibility, screening questions), the business rules, the status machine and review, plan limits, auto-close |
 | `verification` | Verification cases per check, evidence (provider references and masked numbers only), badges, the KYC provider interface and webhook, re-verification on profile edits, the review API |
 
 ### Users and permissions
@@ -131,6 +132,36 @@ A vendor can have several properties (`hostel`, `homestay`, `cafe`, `hotel`, `tr
 We never geocode on each keystroke: only on save, or when a vendor presses "find on map" (`POST /api/v1/geo/geocode/`, 30 an hour per vendor). Tests use `FakeGeocoder`.
 
 **Photos.** Upload through the signed flow (`/api/v1/media/upload-url/`, then `/confirm/`, kind `photo`), then `POST /api/v1/properties/{id}/photos/ {media_id, latitude?, longitude?, captured_at?}`. There's a limit of 20 per property. `POST /api/v1/properties/{id}/verification/` needs at least 3 photos taken within 500 m of the confirmed pin. The public page lists only photos that are ready to serve.
+
+### Gigs
+
+A gig belongs to one of the vendor's properties. It has a role template (`volunteer`, `content_creator`, `trip_leader`, `specialist`) and a compensation model (`volunteer`, `barter`, `hybrid`, `paid`).
+
+**Rules** (`apps.gigs.rules`, run by the services whatever the caller):
+- At most 6 hours a day and 6 days a week (at least one day off).
+- At least 1 slot.
+- A start date in the future; apply-by on or before the start; an end date after the start, or a duration.
+- Volunteer gigs state the stay and the meals.
+- Barter gigs list at least one deliverable.
+- Hybrid and paid gigs have a stipend above zero and say its period. A stipend only on hybrid and paid gigs; deliverables only on barter and hybrid.
+- Eligibility is a fixed minimum age of 18, plus optional languages, minimum followers and minimum stay. Up to 5 screening questions.
+
+Drafts may be incomplete but never wrong. The full rules apply on submit and on every edit of a gig past draft, and all problems are reported together as field errors. A few rules are also database constraints, as a backstop.
+
+**Status machine.** `apps.gigs.constants.TRANSITIONS` lists every allowed `(from, to)` move and who may make it (vendor, admin or system):
+- **Vendor:** submits a draft (draft → in_review), withdraws it (in_review → draft), pauses, resumes, closes and archives.
+- **Admin:** approves (in_review → live), or sends back to draft with a reason the vendor sees.
+- **System:** reopens review, fills, and auto-closes.
+
+Every change writes an audit row `gig.<status>`. Its `after.by` records whether the vendor, an admin or the system made it. Stipend changes also write `gig.compensation_changed`.
+
+**Re-review.** Editing a live or paused gig's pay (`compensation_model`, `stipend_*`), hours (`hours_per_day`, `days_per_week`) or dates sends it back to `in_review`. Other edits keep it live. Filled, closed and archived gigs can't be edited.
+
+**Plan limits.** `GIG_PLAN_POLICY` names a `PlanPolicy` that returns the vendor's `Plan(max_live_gigs)`. It's checked when a gig goes live, either approved or resumed. `UnlimitedPlanPolicy` is used for now.
+
+**Jobs and hooks.**
+- `manage.py close_expired_gigs` closes live and paused gigs whose apply-by date has passed. It should run daily.
+- `on_confirmed_bookings_changed(gig_id, confirmed)` is for bookings (Phase 3). It marks a live gig `filled` when confirmed bookings reach its slots, and reopens it if one is cancelled before applications close.
 
 ### Verification
 
