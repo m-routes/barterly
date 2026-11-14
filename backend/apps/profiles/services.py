@@ -3,16 +3,23 @@
 from apps.accounts.models import Role
 from apps.profiles.models import TalentProfile, VendorProfile
 
-_PROFILE_FOR_ROLE = {Role.VENDOR: VendorProfile, Role.TALENT: TalentProfile}
+PROFILE_MODEL_FOR_ROLE = {Role.VENDOR: VendorProfile, Role.TALENT: TalentProfile}
+
+
+def get_profile(user):
+    """The user's live (not soft-deleted) profile for their role, or None."""
+    model = PROFILE_MODEL_FOR_ROLE.get(user.role)
+    if model is None:
+        return None
+    return model.objects.filter(user=user).first()
 
 
 def is_profile_complete(user) -> bool:
-    """True once the user has a role and, for vendor or talent, a live profile.
+    """True once the user has a role and a live profile with every required field.
 
-    Admins have no marketplace profile, so theirs is always complete. Soft-deleted
-    profiles don't count.
+    Admins have no marketplace profile, so theirs is always complete.
     """
     if user.role == Role.ADMIN:
         return True
-    model = _PROFILE_FOR_ROLE.get(user.role)
-    return model is not None and model.objects.filter(user=user).exists()
+    profile = get_profile(user)
+    return profile is not None and profile.is_complete

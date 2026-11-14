@@ -57,7 +57,8 @@ Surfaces: the vendor console (web), the talent app (mobile) and the admin consol
 | `core` | Health check, the retrying DB backend, the `release` command |
 | `common` | `TimeStampedModel`, `SoftDeleteModel`, `AuditLog` + `log_action()`, the error format, pagination, request-id middleware, JSON logging, permission classes |
 | `accounts` | Custom `User` (`AUTH_USER_MODEL = "accounts.User"`), sign-in (OTP token exchange, JWT refresh and logout), audited role and status changes, `/api/v1/me/` |
-| `profiles` | `TalentProfile` and `VendorProfile` (one per user, role must match, soft-deleted) |
+| `profiles` | `TalentProfile` and `VendorProfile` (one per user, role must match, soft-deleted), curated `Skill` list, `/api/v1/profiles/{vendor,talent}/me/` |
+| `media` | `MediaFile` records for uploads to the private bucket, signed upload/read URLs, the `media.process` task (virus scan hook, image resizing) |
 
 ### Users and permissions
 
@@ -75,6 +76,38 @@ Surfaces: the vendor console (web), the talent app (mobile) and the admin consol
 The exchange is rate limited per IP (60/hour, counted before verification) and per phone (10/hour, after verification, keyed on a hash). Counters live in the Postgres cache table that the `release` command creates, so they hold across instances. Behind Cloud Run, the client IP is the last `X-Forwarded-For` hop (`TRUSTED_PROXY_COUNT=1`).
 
 The token check sits behind `apps.accounts.auth.verifiers.TokenVerifier` (`verify(token) -> VerifiedIdentity(phone, provider, provider_uid)`). `FirebaseTokenVerifier` is the only one wired up; to change OTP provider, add a verifier and point `AUTH_TOKEN_VERIFIER` (a code setting, not an env var) at it. Tests use `apps.accounts.tests.fakes.FakeTokenVerifier` (tokens look like `fake-otp:+919876543210`) and never call Firebase.
+
+### Profiles
+
+- `GET` / `PATCH /api/v1/profiles/vendor/me/` (vendors) and `/api/v1/profiles/talent/me/` (talent). The first `PATCH` creates the profile (201); later ones are partial updates. `GET` before that is 404 `profile_not_found`. A profile an admin soft-deleted isn't recreated (409 `profile_removed`).
+- Every response has `profile_complete` and `missing_fields`. Vendor needs business name, business type, contact name, city, state (from the list of Indian states and UTs) and about; GSTIN and website are optional and validated. Talent needs display name, bio, talent type, at least one skill, languages (ISO 639 codes such as `en`, `hi`), home city, an emergency contact (name and phone, not their own number) and a date of birth showing they are 18 or older (counted in IST).
+- Skills are a table admins curate (Django admin -> Skills, seeded with a starter list); clients list them at `GET /api/v1/profiles/skills/` and send slugs. `GET /api/v1/me/` uses the same completeness rule.
+
+### Uploads
+
+Files never get public URLs. The media bucket enforces public access prevention, and the API hands out short-lived signed URLs:
+
+1. `POST /api/v1/media/upload-url/ {kind, content_type, size_bytes, checksum_md5?}` checks the policy and returns a signed `PUT` URL (15 minutes) plus the headers the client must send. The URL is bound to the content type and to sizes up to the declared size (`x-goog-content-length-range`), and to the MD5 when given, so Cloud Storage itself refuses anything else.
+2. The client `PUT`s the file.
+3. `POST /api/v1/media/confirm/ {media_id}` checks the stored object (type, exact size, MD5, and the file's first bytes against the declared type), records it with its checksum, and runs processing. A failed check deletes the object (422 `upload_rejected`).
+4. `GET /api/v1/media/{id}/` (owner or admin) returns the record with 5-minute signed read URLs once the file is `ready`.
+
+| Kind | Types | Max |
+| --- | --- | --- |
+| `avatar` | jpeg, png, webp | 5 MB |
+| `photo` | jpeg, png, webp | 10 MB |
+| `video` | mp4 | 100 MB |
+| `document` | pdf, jpeg, png | 10 MB |
+
+Users can have 20 unfinished uploads at once and request 120 upload URLs an hour. Status changes (`media.confirmed`, `.ready`, `.rejected`, `.quarantined`) are audit-logged.
+
+Processing is the `media.process` task (`apps.media.services.processing`). It runs the virus scanner, deletes and quarantines infected files, and writes WebP copies of images (`thumb` 320 px, `medium` 1280 px; rotation applied, EXIF dropped). Images Pillow can't read, including decompression bombs, are rejected.
+
+Three interfaces keep the pieces swappable, each named by a code setting:
+
+- `MEDIA_STORAGE_CLASS`: `GCSMediaStorage` signs through IAM `signBlob` on Cloud Run. Tests use `apps.media.tests.fakes.InMemoryMediaStorage`.
+- `MEDIA_VIRUS_SCANNER`: `NoopVirusScanner` for now, which marks files `skipped`. Set `MEDIA_REQUIRE_SCAN=1` once a real scanner is in, and only `clean` files are served.
+- `TASK_QUEUE_CLASS`: `InlineTaskQueue` runs tasks inside the confirm request. A Cloud Tasks queue would enqueue an HTTP task to an internal endpoint that verifies the task's OIDC token and calls `run_task(name, payload)`. Tasks are idempotent, so retries are safe.
 
 ### Audit log
 

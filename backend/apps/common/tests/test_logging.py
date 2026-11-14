@@ -98,11 +98,11 @@ def test_json_formatter_replaces_request_object_with_method_and_path():
 def test_django_4xx_warnings_carry_the_response_request_id(client, caplog):
     with caplog.at_level(logging.WARNING, logger="django.request"):
         response = client.get("/api/v1/me/", HTTP_X_REQUEST_ID="trace-me-12345")
-    assert response.status_code == 403
+    assert response.status_code == 401
 
     [record] = [r for r in caplog.records if r.name == "django.request"]
     RequestIDFilter().filter(record)  # what the console handler does in production
     payload = json.loads(JsonFormatter().format(record))
     assert payload["request_id"] == response["X-Request-ID"] == "trace-me-12345"
     assert payload["path"] == "/api/v1/me/"
-    assert payload["status_code"] == 403
+    assert payload["status_code"] == 401
