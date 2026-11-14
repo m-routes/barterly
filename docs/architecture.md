@@ -59,6 +59,7 @@ Surfaces: the vendor console (web), the talent app (mobile) and the admin consol
 | `accounts` | Custom `User` (`AUTH_USER_MODEL = "accounts.User"`), sign-in (OTP token exchange, JWT refresh and logout), audited role and status changes, `/api/v1/me/` |
 | `profiles` | `TalentProfile` and `VendorProfile` (one per user, role must match, soft-deleted), curated `Skill` list, `/api/v1/profiles/{vendor,talent}/me/` |
 | `media` | `MediaFile` records for uploads to the private bucket, signed upload/read URLs, the `media.process` task (virus scan hook, image resizing) |
+| `verification` | Verification cases per check, evidence (provider references and masked numbers only), badges, the KYC provider interface and webhook, re-verification on profile edits, the review API |
 
 ### Users and permissions
 
@@ -108,6 +109,31 @@ Three interfaces keep the pieces swappable, each named by a code setting:
 - `MEDIA_STORAGE_CLASS`: `GCSMediaStorage` signs through IAM `signBlob` on Cloud Run. Tests use `apps.media.tests.fakes.InMemoryMediaStorage`.
 - `MEDIA_VIRUS_SCANNER`: `NoopVirusScanner` for now, which marks files `skipped`. Set `MEDIA_REQUIRE_SCAN=1` once a real scanner is in, and only `clean` files are served.
 - `TASK_QUEUE_CLASS`: `InlineTaskQueue` runs tasks inside the confirm request. A Cloud Tasks queue would enqueue an HTTP task to an internal endpoint that verifies the task's OIDC token and calls `run_task(name, payload)`. Tasks are idempotent, so retries are safe.
+
+### Verification
+
+Each user has one `VerificationCase` per check, kept across attempts. Statuses: `not_started → submitted → in_review → approved | rejected | changes_requested`, plus `expired`. The allowed moves are in `apps.verification.constants.TRANSITIONS`, and anything else returns 409.
+
+| Role | Check | How it is checked | Badge |
+| --- | --- | --- | --- |
+| both | `id_selfie` | KYC provider: ID plus selfie, result by webhook | `id_verified` |
+| vendor | `business_registration` | PAN format, GSTIN format, GSTIN contains the PAN; then a reviewer | `licence_verified` |
+| vendor | `property` | Confirmed map pin in India, at least 3 own photos taken within 500 m of it; then a reviewer | `property_verified` |
+| talent | `social_account` | Instagram handle from the profile; the reviewer looks for `details.bio_code` in its bio | `social_verified` |
+| talent | `certificate` (optional) | Own document uploads; then a reviewer | `licence_verified` |
+| talent | `reference` | One contact (not the user's own number); a reviewer calls them | `reference_checked` |
+
+`trusted_member` is granted while a user holds every required badge for their role and revoked as soon as one goes. Badges are granted and revoked with a reason; revoked rows stay as history. Every case status change and every badge change is audit-logged (`verification.case.<status>`, `verification.badge.granted|revoked`).
+
+**What we store.** Provider reference ids, statuses and the last four characters of a number. ID images and selfies go straight from the app to the provider. A check constraint stops an ID document row from pointing at an upload; only property photos and certificates may.
+
+**KYC provider.** `KycProvider` (`start_check`, `get_result`, `verify_webhook`) is named by the code setting `KYC_PROVIDER`. Deployed services use `ExternalKycProvider`, a documented stub that answers 503 until a real provider is wired in (see `providers/external.py`). Local runs and tests use `FakeKycProvider`. To finish a check locally, run `uv run python manage.py fake_kyc_result <reference> approved`.
+
+**Webhook.** `POST /api/v1/verification/webhooks/kyc/` has no user auth. The provider signs the raw body (HMAC-SHA256 with `KYC_WEBHOOK_SECRET`, timestamp within 5 minutes), and a bad signature returns 401. Each delivery's idempotency key is stored, so a repeat is acknowledged and skipped. A result for an older attempt, or one arriving after a reviewer decided, changes nothing. `manage.py sync_kyc_results` polls the provider for checks whose webhook never came.
+
+**Re-verification.** Profile saves are watched through model signals, so the API, the admin and scripts all trigger it. Changing a verified field moves an approved case back to `in_review` and revokes its badge until a reviewer approves again. The watched fields are the property address and business name (property check), the business name and GSTIN (business check), and the Instagram handle (social check). Starting a new ID check on an approved case does the same for the ID badge.
+
+**Review.** Admins use `GET /api/v1/verification/admin/cases/?status=submitted` (oldest first), then `POST …/cases/{id}/decision/ {decision, reason}`. The decision is one of `start_review`, `approve`, `reject`, `request_changes`, or `revoke` for an approved case. The Django admin is read-only. `manage.py expire_verifications` expires approved cases after their validity (ID 2 years; business, property and reference 1 year; social 6 months) and should run daily.
 
 ### Audit log
 

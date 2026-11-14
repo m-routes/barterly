@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.profiles",
     "apps.media",
+    "apps.verification",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -96,6 +97,7 @@ REST_FRAMEWORK = {
         "auth_exchange_ip": env_str("THROTTLE_AUTH_EXCHANGE_IP", "60/hour"),
         "auth_exchange_phone": env_str("THROTTLE_AUTH_EXCHANGE_PHONE", "10/hour"),
         "media_upload": env_str("THROTTLE_MEDIA_UPLOAD", "120/hour"),
+        "kyc_start": env_str("THROTTLE_KYC_START", "5/day"),
     },
     # Proxies in front of Django that append to X-Forwarded-For. 0 = use REMOTE_ADDR.
     "NUM_PROXIES": env_int("TRUSTED_PROXY_COUNT", 0),
@@ -136,6 +138,15 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Work-exchange marketplace for travel and hospitality in India.",
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    # Stable names where two apps use the same field name (status, kind, ...).
+    "ENUM_NAME_OVERRIDES": {
+        "VerificationStatusEnum": "apps.verification.constants.CaseStatus",
+        "VerificationDocumentStatusEnum": "apps.verification.constants.DocumentStatus",
+        "VerificationDocumentTypeEnum": "apps.verification.constants.DocumentType",
+        "IdDocumentTypeEnum": "apps.verification.constants.ID_DOCUMENT_CHOICES",
+        "BadgeKindEnum": "apps.verification.constants.BadgeKind",
+        "KindEnum": "apps.media.policy.Kind",
+    },
 }
 
 # Structured JSON logs (one object per line, with request_id). LOG_FORMAT=plain for
@@ -157,3 +168,11 @@ MEDIA_READ_URL_SECONDS = env_int("MEDIA_READ_URL_SECONDS", 300)
 MEDIA_MAX_PENDING_UPLOADS = env_int("MEDIA_MAX_PENDING_UPLOADS", 20)
 # Serve only files a virus scanner passed. Off until a real scanner is wired up.
 MEDIA_REQUIRE_SCAN = env_bool("MEDIA_REQUIRE_SCAN", False)
+
+# Verification (apps.verification). The KYC provider is a code setting like the token
+# verifier: deployed services use the real provider (a stub until one is chosen, which
+# answers 503), never the fake. The webhook secret comes from Secret Manager.
+KYC_PROVIDER = "apps.verification.providers.external.ExternalKycProvider"
+KYC_WEBHOOK_SECRET = env_str("KYC_WEBHOOK_SECRET", "")
+VERIFICATION_MIN_PROPERTY_PHOTOS = env_int("VERIFICATION_MIN_PROPERTY_PHOTOS", 3)
+VERIFICATION_PHOTO_MAX_DISTANCE_M = env_int("VERIFICATION_PHOTO_MAX_DISTANCE_M", 500)
