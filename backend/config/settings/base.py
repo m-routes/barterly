@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "apps.geo",
     "apps.properties",
     "apps.verification",
+    "apps.gigs",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -150,6 +151,8 @@ SPECTACULAR_SETTINGS = {
         "IdDocumentTypeEnum": "apps.verification.constants.ID_DOCUMENT_CHOICES",
         "BadgeKindEnum": "apps.verification.constants.BadgeKind",
         "KindEnum": "apps.media.policy.Kind",
+        "GigStatusEnum": "apps.gigs.constants.GigStatus",
+        "DeliverableTypeEnum": "apps.gigs.constants.DeliverableType",
     },
 }
 
@@ -190,3 +193,6 @@ NOMINATIM_USER_AGENT = env_str(
 )
 NOMINATIM_EMAIL = env_str("NOMINATIM_EMAIL", "")
 GEOCODER_TIMEOUT_SECONDS = env_int("GEOCODER_TIMEOUT_SECONDS", 5)
+
+# Gigs (apps.gigs): how many live gigs a vendor's plan allows. Unlimited for now.
+GIG_PLAN_POLICY = "apps.gigs.plans.UnlimitedPlanPolicy"
