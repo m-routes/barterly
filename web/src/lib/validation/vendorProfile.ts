@@ -72,7 +72,7 @@ const required = (label: string, max: number) =>
   z.string().trim().min(1, `Enter ${label}.`).max(max, `Keep this under ${max} characters.`);
 
 /** A select that starts blank: "" is allowed in, but fails with `message`. */
-const choice = <T extends string>(values: [T, ...T[]], message: string) =>
+export const choice = <T extends string>(values: [T, ...T[]], message: string) =>
   z.union([z.literal(""), z.enum(values)]).transform((value, ctx): T => {
     if (value === "") {
       ctx.addIssue({ code: "custom", message });

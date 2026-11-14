@@ -22,7 +22,7 @@ export const CONSOLE_SECTIONS: readonly ConsoleSection[] = [
     empty: {
       title: "No gigs yet",
       description:
-        "Gigs describe the help you need and what you offer in return. Posting gigs is coming soon.",
+        "Gigs describe the help you need and what you offer in return. Post your first one.",
     },
   },
   {
@@ -31,6 +31,22 @@ export const CONSOLE_SECTIONS: readonly ConsoleSection[] = [
     empty: {
       title: "No applicants yet",
       description: "When talent apply to your gigs, you'll review and shortlist them here.",
+    },
+  },
+  {
+    href: "/console/properties",
+    label: "Properties",
+    empty: {
+      title: "No properties yet",
+      description: "Add the place talent will stay and work. Each gig belongs to a property.",
+    },
+  },
+  {
+    href: "/console/verification",
+    label: "Verification",
+    empty: {
+      title: "Not verified yet",
+      description: "Verify your ID and your property to get badges on your gigs.",
     },
   },
   {

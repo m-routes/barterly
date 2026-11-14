@@ -4,6 +4,63 @@
  */
 
 export interface paths {
+  "/api/v1/applications/{application_id}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * One application
+     * @description For the applicant, the gig's vendor, or an admin. Attachments have short-lived signed URLs. Badges show the applicant's verification; contact details are never included.
+     */
+    get: operations["applications_retrieve"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/applications/{application_id}/withdraw/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Withdraw my application
+     * @description Allowed while the application is active, up to accepting an offer.
+     */
+    post: operations["applications_withdraw"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/applications/mine/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My applications (talent) */
+    get: operations["applications_mine_list"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/auth/exchange/": {
     parameters: {
       query?: never;
@@ -63,6 +120,192 @@ export interface paths {
     options?: never;
     head?: never;
     patch?: never;
+    trace?: never;
+  };
+  "/api/v1/geo/geocode/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Find an address on the map
+     * @description For a 'find on map' button: call once when the vendor asks, never on each keystroke (OpenStreetMap's Nominatim policy forbids autocomplete). Answers are cached. Use the point to place a pin the vendor then confirms or moves.
+     */
+    post: operations["geo_geocode"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/gigs/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Find gigs (talent)
+     * @description Live gigs still taking applications that you're eligible for (languages, minimum followers), filtered by your choices, then sorted. `best_fit` orders by a 0-100 fit score (skills 30, reliability 25, ratings 20, audience quality 15, distance and availability 10); `fit.breakdown` explains it, and components without data use a neutral 0.5. Distances use each property's approximate location. Pass `next_cursor` back as `cursor` for the next page.
+     */
+    get: operations["gigs_discover"];
+    put?: never;
+    /**
+     * Start a gig (as a draft)
+     * @description Drafts may be incomplete. The full rules apply on submit: at most 6 hours a day and 6 days a week, a start date in the future, at least 1 slot, stay and meals for volunteer gigs, a deliverable for barter gigs, and a stipend above zero for hybrid and paid gigs.
+     */
+    post: operations["gigs_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/gigs/{gig_id}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One gig (its vendor or an admin) */
+    get: operations["gigs_retrieve"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Edit a gig
+     * @description Draft, in-review, live and paused gigs can be edited. Changing the pay, hours or dates of a live or paused gig sends it back to review.
+     */
+    patch: operations["gigs_update"];
+    trace?: never;
+  };
+  "/api/v1/gigs/{gig_id}/applications/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Applicants for my gig (vendor)
+     * @description Sorted by fit score by default. No contact details are shared.
+     */
+    get: operations["gig_applications_list"];
+    put?: never;
+    /**
+     * Apply to a gig (talent)
+     * @description Needs a complete profile, the gig's verification level, the gig's languages and follower minimum, dates inside the gig that meet its minimum stay, and an answer to every screening question. If anything fails, a 422 lists every reason in `details.reasons`. Attachments: up to 8 of your uploads or https links.
+     */
+    post: operations["gig_applications_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/gigs/{gig_id}/status/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Change a gig's status
+     * @description Vendor: draft→in_review (submit), in_review→draft (withdraw), live→paused, paused→live, live/paused/filled→closed, draft/closed→archived. Admin: in_review→live (approve), in_review→draft (send back, with a reason), pause, close, archive. Filled, auto-close and re-review happen on their own.
+     */
+    post: operations["gigs_status_change"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/gigs/admin/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Gig review queue
+     * @description In-review gigs by default, oldest submission first.
+     */
+    get: operations["gigs_admin_list"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/gigs/mine/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My gigs (vendor) */
+    get: operations["gigs_mine_list"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/gigs/saved-searches/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My saved searches */
+    get: operations["saved_searches_list"];
+    put?: never;
+    /**
+     * Save a search
+     * @description Alerts cover gigs published from now on: one notification per run that finds new matches.
+     */
+    post: operations["saved_searches_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/gigs/saved-searches/{search_id}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A saved search */
+    get: operations["saved_searches_retrieve"];
+    put?: never;
+    post?: never;
+    /** Delete a saved search */
+    delete: operations["saved_searches_destroy"];
+    options?: never;
+    head?: never;
+    /** Change a saved search */
+    patch: operations["saved_searches_update"];
     trace?: never;
   };
   "/api/v1/health/": {
@@ -243,12 +486,595 @@ export interface paths {
     patch: operations["profiles_vendor_me_update"];
     trace?: never;
   };
+  "/api/v1/properties/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My properties */
+    get: operations["properties_list"];
+    put?: never;
+    /**
+     * Add a property
+     * @description Without latitude/longitude the address is geocoded once (cached) to suggest a pin; the vendor confirms or moves it with PATCH.
+     */
+    post: operations["properties_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/properties/{property_id}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One of my properties */
+    get: operations["properties_retrieve"];
+    put?: never;
+    post?: never;
+    /**
+     * Remove a property
+     * @description Soft delete. Its verification is withdrawn.
+     */
+    delete: operations["properties_destroy"];
+    options?: never;
+    head?: never;
+    /**
+     * Change a property
+     * @description Changing the name, address or pin of a verified property sends it back to review and removes its verified status until approved again.
+     */
+    patch: operations["properties_update"];
+    trace?: never;
+  };
+  "/api/v1/properties/{property_id}/photos/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Add a photo
+     * @description Upload through /api/v1/media/upload-url/ and /api/v1/media/confirm/ (kind 'photo') first. Send where the photo was taken (EXIF or device location): verification needs at least 3 photos taken within 500 m of the pin.
+     */
+    post: operations["properties_photos_add"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/properties/{property_id}/photos/{photo_id}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Remove a photo
+     * @description The upload itself stays in your files.
+     */
+    delete: operations["properties_photos_remove"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/properties/{property_id}/public/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A property's public page
+     * @description No street address or exact pin: `approximate_location` is a fixed point within about 1 km. `exact_location` is filled only for the owner and admins (and, once bookings exist, guests with a confirmed booking).
+     */
+    get: operations["properties_public_retrieve"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/properties/{property_id}/verification/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Submit a property for verification
+     * @description Needs the address, a confirmed pin in India, and at least 3 photos taken within 500 m of it. The trust team reviews it; approval marks the property verified.
+     */
+    post: operations["properties_verification_submit"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/verification/admin/cases/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Review queue */
+    get: operations["verification_admin_cases_list"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/verification/admin/cases/{case_id}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One case with its evidence */
+    get: operations["verification_admin_case_retrieve"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/verification/admin/cases/{case_id}/decision/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Decide on a case
+     * @description start_review, approve, reject, request_changes (submitted or in-review cases), or revoke (approved cases). Approving grants the badge; leaving approved removes it. Every decision is audit-logged.
+     */
+    post: operations["verification_admin_case_decide"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/verification/checks/business/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Submit PAN and GST for review
+     * @description Formats are checked here (and that the GSTIN contains the PAN). Only the last four characters are stored. Changing the business name or GSTIN on an approved check sends it back to review.
+     */
+    post: operations["verification_business_submit"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/verification/checks/certificates/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Submit certificates (optional) */
+    post: operations["verification_certificates_submit"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/verification/checks/id/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Start an ID + selfie check
+     * @description Opens a session with the KYC provider. Run the provider's capture flow with `client_token` (SDK) or `redirect_url` (hosted page); the result arrives by webhook. Images never pass through Barterly. Starting again on an approved check (new or changed ID) sends it back to review and removes the ID badge until approved.
+     */
+    post: operations["verification_id_start"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/verification/checks/reference/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Submit one reference */
+    post: operations["verification_reference_submit"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/verification/checks/social/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Submit the Instagram account on my profile
+     * @description The response's `details.bio_code` must be in the account's bio while the trust team checks it. Changing the handle on an approved check sends it back to review.
+     */
+    post: operations["verification_social_submit"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/verification/me/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * My checks and badges
+     * @description Every check that applies to your role with its cases (none until started; the property check has one per property), and your active badges.
+     */
+    get: operations["verification_me"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/verification/webhooks/kyc/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * KYC provider result (webhook)
+     * @description Signed by the provider over the raw body; deliveries are de-duplicated by idempotency key, so retries are safe. `outcome` is applied, duplicate, pending, stale, ignored or unknown_reference.
+     */
+    post: operations["verification_kyc_webhook"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    AddPhoto: {
+      /**
+       * Format: uuid
+       * @description A confirmed upload of kind 'photo'.
+       */
+      media_id: string;
+      caption?: string;
+      /** Format: decimal */
+      latitude?: string;
+      /** Format: decimal */
+      longitude?: string;
+      /** Format: date-time */
+      captured_at?: string;
+    };
+    AdminCase: {
+      /** Format: uuid */
+      readonly id: string;
+      readonly check_type: components["schemas"]["CheckTypeEnum"];
+      readonly subject_type: components["schemas"]["SubjectTypeEnum"];
+      /** Format: uuid */
+      readonly property_id: string | null;
+      readonly status: components["schemas"]["VerificationStatusEnum"];
+      /** @description Why it was rejected or what to change. Shown to the user. */
+      readonly reason: string;
+      /** @description Non-sensitive facts for the reviewer: pin, masked numbers, reference contact. */
+      readonly details: unknown;
+      /** Format: date-time */
+      readonly submitted_at: string | null;
+      /** Format: date-time */
+      readonly reviewed_at: string | null;
+      /** Format: date-time */
+      readonly approved_at: string | null;
+      /** Format: date-time */
+      readonly expires_at: string | null;
+      readonly documents: components["schemas"]["AdminDocument"][];
+      /** Format: uuid */
+      readonly user_id: string;
+      readonly user_phone: string;
+      readonly user_role: string;
+      /** Format: uuid */
+      readonly reviewer_id: string | null;
+    };
+    AdminDocument: {
+      /** Format: uuid */
+      readonly id: string;
+      document_type: components["schemas"]["VerificationDocumentTypeEnum"];
+      status?: components["schemas"]["VerificationDocumentStatusEnum"];
+      /** @description Last four characters only. */
+      masked_value?: string;
+      /** Format: uuid */
+      readonly media_id: string | null;
+      /** @description E.g. a photo's location or a certificate's title. */
+      metadata?: unknown;
+      /** Format: date-time */
+      readonly created_at: string;
+      /**
+       * @description KYC provider name.
+       * @default
+       */
+      provider: string;
+      /**
+       * @description The provider's id for this check.
+       * @default
+       */
+      provider_reference: string;
+    };
+    /**
+     * @description * `air_conditioning` - Air conditioning
+     *     * `breakfast` - Breakfast
+     *     * `cctv` - CCTV in common areas
+     *     * `common_area` - Common area
+     *     * `female_dorm` - Female-only dorm
+     *     * `first_aid` - First aid
+     *     * `hot_water` - Hot water
+     *     * `kitchen` - Shared kitchen
+     *     * `laundry` - Laundry
+     *     * `lockers` - Lockers
+     *     * `parking` - Parking
+     *     * `pet_friendly` - Pet friendly
+     *     * `power_backup` - Power backup
+     *     * `wifi` - Wi-Fi
+     *     * `workspace` - Workspace
+     * @enum {string}
+     */
+    AmenitiesEnum:
+      | "air_conditioning"
+      | "breakfast"
+      | "cctv"
+      | "common_area"
+      | "female_dorm"
+      | "first_aid"
+      | "hot_water"
+      | "kitchen"
+      | "laundry"
+      | "lockers"
+      | "parking"
+      | "pet_friendly"
+      | "power_backup"
+      | "wifi"
+      | "workspace";
+    /**
+     * @description Who applied. Deliberately no phone, email, emergency contact, birth date or
+     *     social handle: contact happens on Barterly once there's a booking.
+     */
+    Applicant: {
+      /** Format: uuid */
+      user_id: string;
+      display_name: string;
+      talent_type: string;
+      home_city: string;
+      bio: string;
+      languages: string[];
+      skills: string[];
+      instagram_followers: number | null;
+      /** @description Active badge kinds. */
+      badges: string[];
+    };
+    Application: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly gig: string;
+      readonly gig_title: string;
+      readonly status: components["schemas"]["ApplicationStatusEnum"];
+      readonly status_reason: string;
+      readonly pitch: string;
+      /** @description Answers to the gig's screening questions, in order. */
+      readonly answers: unknown;
+      /** Format: date */
+      readonly proposed_start: string;
+      /** Format: date */
+      readonly proposed_end: string;
+      readonly applicant: components["schemas"]["Applicant"];
+      readonly fit: components["schemas"]["Fit"];
+      readonly attachments: components["schemas"]["Attachment"][];
+      /** Format: date-time */
+      readonly applied_at: string;
+      /** Format: date-time */
+      readonly decided_at: string | null;
+    };
+    ApplicationListItem: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly gig: string;
+      readonly gig_title: string;
+      readonly status: components["schemas"]["ApplicationStatusEnum"];
+      /** Format: date */
+      readonly proposed_start: string;
+      /** Format: date */
+      readonly proposed_end: string;
+      readonly applicant: components["schemas"]["Applicant"];
+      readonly fit: components["schemas"]["Fit"];
+      readonly attachment_count: number;
+      /** Format: date-time */
+      readonly applied_at: string;
+    };
+    /**
+     * @description * `applied` - Applied
+     *     * `withdrawn` - Withdrawn
+     *     * `shortlisted` - Shortlisted
+     *     * `interview` - Interview
+     *     * `offered` - Offered
+     *     * `declined` - Declined
+     *     * `rejected` - Rejected
+     *     * `expired` - Expired
+     * @enum {string}
+     */
+    ApplicationStatusEnum:
+      | "applied"
+      | "withdrawn"
+      | "shortlisted"
+      | "interview"
+      | "offered"
+      | "declined"
+      | "rejected"
+      | "expired";
+    Apply: {
+      pitch: string;
+      /** @description One answer per screening question, in order. */
+      answers?: string[];
+      /** Format: date */
+      proposed_start: string;
+      /** Format: date */
+      proposed_end: string;
+      attachments?: components["schemas"]["AttachmentInput"][];
+    };
+    ApproximateLocation: {
+      /** Format: double */
+      latitude: number;
+      /** Format: double */
+      longitude: number;
+      /** @description The property is within this distance. */
+      radius_m: number;
+    };
+    Attachment: {
+      /** Format: uuid */
+      readonly id: string;
+      readonly kind: components["schemas"]["AttachmentKindEnum"];
+      readonly title: string;
+      /**
+       * Format: uri
+       * @description Signed and short-lived for uploads.
+       */
+      readonly url: string | null;
+      /** Format: uri */
+      readonly thumb_url: string | null;
+    };
+    AttachmentInput: {
+      kind: components["schemas"]["AttachmentKindEnum"];
+      /**
+       * Format: uuid
+       * @description Your upload (photo, video, document).
+       */
+      media_id?: string;
+      /**
+       * Format: uri
+       * @description For kind 'link' only.
+       */
+      url?: string;
+      title?: string;
+    };
+    /**
+     * @description * `photo` - Photo
+     *     * `video` - Video
+     *     * `document` - Document
+     *     * `link` - Link
+     * @enum {string}
+     */
+    AttachmentKindEnum: "photo" | "video" | "document" | "link";
+    Badge: {
+      readonly kind: components["schemas"]["BadgeKindEnum"];
+      /** Format: date-time */
+      readonly granted_at: string;
+      readonly grant_reason: string;
+      /** Format: uuid */
+      readonly case_id: string | null;
+    };
+    /**
+     * @description * `id_verified` - ID verified
+     *     * `property_verified` - Property verified
+     *     * `licence_verified` - Licence verified
+     *     * `social_verified` - Social verified
+     *     * `reference_checked` - Reference checked
+     *     * `trusted_member` - Trusted member
+     * @enum {string}
+     */
+    BadgeKindEnum:
+      | "id_verified"
+      | "property_verified"
+      | "licence_verified"
+      | "social_verified"
+      | "reference_checked"
+      | "trusted_member";
     /** @enum {unknown} */
     BlankEnum: "";
+    Blocked: {
+      /** @default application_blocked */
+      code: string;
+      message: string;
+      /** @description {"reasons": [{"code", "message"}, ...]} */
+      details: {
+        [key: string]: unknown;
+      };
+    };
+    BusinessCheck: {
+      /** @description 10 characters, e.g. ABCPE1234F. */
+      pan: string;
+      /** @description Optional. Defaults to the GSTIN on your profile. */
+      gstin?: string;
+    };
     /**
      * @description * `hostel` - Hostel
      *     * `homestay` - Homestay
@@ -277,6 +1103,64 @@ export interface components {
       | "tour_operator"
       | "coworking"
       | "other";
+    Case: {
+      /** Format: uuid */
+      readonly id: string;
+      readonly check_type: components["schemas"]["CheckTypeEnum"];
+      readonly subject_type: components["schemas"]["SubjectTypeEnum"];
+      /** Format: uuid */
+      readonly property_id: string | null;
+      readonly status: components["schemas"]["VerificationStatusEnum"];
+      /** @description Why it was rejected or what to change. Shown to the user. */
+      readonly reason: string;
+      /** @description Non-sensitive facts for the reviewer: pin, masked numbers, reference contact. */
+      readonly details: unknown;
+      /** Format: date-time */
+      readonly submitted_at: string | null;
+      /** Format: date-time */
+      readonly reviewed_at: string | null;
+      /** Format: date-time */
+      readonly approved_at: string | null;
+      /** Format: date-time */
+      readonly expires_at: string | null;
+      readonly documents: components["schemas"]["Document"][];
+    };
+    CertificateItem: {
+      /**
+       * Format: uuid
+       * @description A confirmed upload of kind 'document'.
+       */
+      media_id: string;
+      title: string;
+    };
+    CertificatesCheck: {
+      certificates: components["schemas"]["CertificateItem"][];
+    };
+    CheckSummary: {
+      check_type: components["schemas"]["CheckTypeEnum"];
+      label: string;
+      /** @description Needed for the trusted member badge. */
+      required: boolean;
+      badge: components["schemas"]["BadgeKindEnum"];
+      /** @description Empty until started. The property check has one per property. */
+      cases: components["schemas"]["Case"][];
+    };
+    /**
+     * @description * `id_selfie` - Government ID and selfie
+     *     * `business_registration` - PAN and GST
+     *     * `property` - Property photos and map pin
+     *     * `social_account` - Linked social account
+     *     * `certificate` - Certificates
+     *     * `reference` - Reference
+     * @enum {string}
+     */
+    CheckTypeEnum:
+      | "id_selfie"
+      | "business_registration"
+      | "property"
+      | "social_account"
+      | "certificate"
+      | "reference";
     ChooseRole: {
       role: components["schemas"]["ChooseRoleRoleEnum"];
     };
@@ -286,6 +1170,31 @@ export interface components {
      * @enum {string}
      */
     ChooseRoleRoleEnum: "vendor" | "talent";
+    /**
+     * @description * `volunteer` - Volunteer (work for stay)
+     *     * `barter` - Barter (content for stay)
+     *     * `hybrid` - Hybrid (stay plus stipend)
+     *     * `paid` - Paid
+     * @enum {string}
+     */
+    CompensationModelEnum: "volunteer" | "barter" | "hybrid" | "paid";
+    Component: {
+      /**
+       * Format: double
+       * @description 0 to 1.
+       */
+      value: number;
+      /** Format: double */
+      weight: number;
+      /**
+       * Format: double
+       * @description What this component adds to the score.
+       */
+      points: number;
+      /** @description No data yet, so the neutral value was used. */
+      neutral: boolean;
+      reason: string;
+    };
     ConfirmRequest: {
       /** Format: uuid */
       media_id: string;
@@ -305,6 +1214,59 @@ export interface components {
      * @enum {string}
      */
     DatabaseEnum: "ok" | "unavailable";
+    Decision: {
+      decision: components["schemas"]["DecisionEnum"];
+      /** @description Required to reject, request changes or revoke. Shown to the user. */
+      reason?: string;
+    };
+    /**
+     * @description * `start_review` - start_review
+     *     * `approve` - approve
+     *     * `reject` - reject
+     *     * `request_changes` - request_changes
+     *     * `revoke` - revoke
+     * @enum {string}
+     */
+    DecisionEnum: "start_review" | "approve" | "reject" | "request_changes" | "revoke";
+    Deliverable: {
+      type: components["schemas"]["DeliverableTypeEnum"];
+      quantity: number;
+      notes?: string;
+    };
+    /**
+     * @description * `instagram_post` - Instagram post
+     *     * `instagram_reel` - Instagram reel
+     *     * `instagram_story` - Instagram story
+     *     * `youtube_video` - YouTube video
+     *     * `blog_post` - Blog post
+     *     * `photo_set` - Edited photo set
+     *     * `mural` - Mural / artwork
+     *     * `other` - Other
+     * @enum {string}
+     */
+    DeliverableTypeEnum:
+      | "instagram_post"
+      | "instagram_reel"
+      | "instagram_story"
+      | "youtube_video"
+      | "blog_post"
+      | "photo_set"
+      | "mural"
+      | "other";
+    Document: {
+      /** Format: uuid */
+      readonly id: string;
+      document_type: components["schemas"]["VerificationDocumentTypeEnum"];
+      status?: components["schemas"]["VerificationDocumentStatusEnum"];
+      /** @description Last four characters only. */
+      masked_value?: string;
+      /** Format: uuid */
+      readonly media_id: string | null;
+      /** @description E.g. a photo's location or a certificate's title. */
+      metadata?: unknown;
+      /** Format: date-time */
+      readonly created_at: string;
+    };
     /** @description Shape of every error response. Use it in extend_schema(responses=...). */
     Error: {
       /** @description Stable machine-readable code, e.g. 'not_found'. */
@@ -314,6 +1276,14 @@ export interface components {
       details: {
         [key: string]: unknown;
       };
+    };
+    ExactLocation: {
+      address: string;
+      pincode: string;
+      /** Format: double */
+      latitude: number | null;
+      /** Format: double */
+      longitude: number | null;
     };
     ExchangeRequest: {
       /** @description The ID token the client got from Firebase phone (OTP) sign-in. */
@@ -330,6 +1300,174 @@ export interface components {
       needs_role: boolean;
       user: components["schemas"]["User"];
     };
+    Fit: {
+      /** @description 0 to 100. */
+      score: number;
+      breakdown: {
+        [key: string]: components["schemas"]["Component"];
+      };
+    };
+    GeocodeRequest: {
+      /** @description A full address. */
+      query: string;
+    };
+    GeocodeResponse: {
+      found: boolean;
+      /** Format: double */
+      latitude: number | null;
+      /** Format: double */
+      longitude: number | null;
+      display_name: string;
+      city: string;
+      state: string;
+      postcode: string;
+    };
+    Gig: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      property: string;
+      title: string;
+      description?: string;
+      role_template: components["schemas"]["RoleTemplateEnum"];
+      compensation_model: components["schemas"]["CompensationModelEnum"];
+      /** Format: date */
+      start_date?: string | null;
+      /** Format: date */
+      end_date?: string | null;
+      /** @description Instead of an end date, for flexible starts. */
+      duration_days?: number | null;
+      /** Format: date */
+      apply_by?: string | null;
+      slots?: number;
+      /** @description 1 to 6. */
+      hours_per_day?: number | null;
+      /** @description 1 to 6: at least one day off. */
+      days_per_week?: number | null;
+      stay_type?: components["schemas"]["StayTypeEnum"] | components["schemas"]["BlankEnum"];
+      meals?: components["schemas"]["MealsEnum"] | components["schemas"]["BlankEnum"];
+      wifi?: boolean;
+      /**
+       * Format: decimal
+       * @description INR, above zero. Hybrid and paid only.
+       */
+      stipend_amount?: string | null;
+      stipend_period?:
+        components["schemas"]["StipendPeriodEnum"] | components["schemas"]["BlankEnum"];
+      deliverables?: components["schemas"]["Deliverable"][];
+      /** @description Skill slugs (GET /api/v1/profiles/skills/). Used for the fit score. */
+      skills?: string[];
+      /** @description Fixed at 18 for every gig. */
+      readonly min_age: number;
+      languages?: components["schemas"]["LanguagesEnum"][];
+      min_followers?: number | null;
+      min_stay_days?: number | null;
+      screening_questions?: string[];
+      /**
+       * @description The badge talent need before they can apply.
+       *
+       *     * `none` - No verification needed
+       *     * `id_verified` - ID verified
+       *     * `trusted_member` - Trusted member
+       */
+      required_verification?: components["schemas"]["RequiredVerificationEnum"];
+      readonly status: components["schemas"]["GigStatusEnum"];
+      /** @description Why it was sent back or reopened. Shown to the vendor. */
+      readonly status_reason: string;
+      /** Format: date-time */
+      readonly submitted_at: string | null;
+      /** Format: date-time */
+      readonly published_at: string | null;
+      /** Format: date-time */
+      readonly closed_at: string | null;
+      /** Format: date-time */
+      readonly created_at: string;
+      /** Format: date-time */
+      readonly updated_at: string;
+    };
+    GigCard: {
+      /** Format: uuid */
+      readonly id: string;
+      readonly title: string;
+      readonly role_template: components["schemas"]["RoleTemplateEnum"];
+      readonly compensation_model: components["schemas"]["CompensationModelEnum"];
+      /** Format: date */
+      readonly start_date: string | null;
+      /** Format: date */
+      readonly end_date: string | null;
+      /** @description Instead of an end date, for flexible starts. */
+      readonly duration_days: number | null;
+      /** Format: date */
+      readonly apply_by: string | null;
+      readonly slots: number;
+      readonly hours_per_day: number | null;
+      /** @description At most 6: everyone gets at least one day off. */
+      readonly days_per_week: number | null;
+      readonly stay_type: components["schemas"]["StayTypeEnum"];
+      readonly meals: components["schemas"]["MealsEnum"];
+      readonly wifi: boolean;
+      /**
+       * Format: decimal
+       * @description INR. Hybrid and paid only.
+       */
+      readonly stipend_amount: string | null;
+      readonly stipend_period: components["schemas"]["StipendPeriodEnum"];
+      /** @description Barter and hybrid only, e.g. [{"type": "instagram_reel", "quantity": 2}] */
+      readonly deliverables: unknown;
+      readonly skills: string[];
+      /** @description ISO 639 codes. */
+      readonly languages: unknown;
+      readonly min_followers: number | null;
+      readonly min_stay_days: number | null;
+      /**
+       * @description The badge talent need before they can apply.
+       *
+       *     * `none` - No verification needed
+       *     * `id_verified` - ID verified
+       *     * `trusted_member` - Trusted member
+       */
+      readonly required_verification: components["schemas"]["RequiredVerificationEnum"];
+      /** Format: date-time */
+      readonly published_at: string | null;
+      readonly property: components["schemas"]["GigPropertySummary"];
+      /** @description The property is verified and the host's ID is verified. */
+      readonly host_verified: boolean;
+      /** Format: double */
+      readonly distance_km: number | null;
+      readonly fit: components["schemas"]["Fit"];
+    };
+    GigPage: {
+      results: components["schemas"]["GigCard"][];
+      next_cursor: string | null;
+      /** Format: uri */
+      next: string | null;
+    };
+    GigPropertySummary: {
+      /** Format: uuid */
+      id: string;
+      name: string;
+      property_type: string;
+      city: string;
+      state: string;
+      women_friendly: boolean;
+      verified: boolean;
+      approximate_location: {
+        [key: string]: unknown;
+      } | null;
+      /** Format: uri */
+      cover_thumb_url: string | null;
+    };
+    /**
+     * @description * `draft` - Draft
+     *     * `in_review` - In review
+     *     * `live` - Live
+     *     * `paused` - Paused
+     *     * `filled` - Filled
+     *     * `closed` - Closed
+     *     * `archived` - Archived
+     * @enum {string}
+     */
+    GigStatusEnum: "draft" | "in_review" | "live" | "paused" | "filled" | "closed" | "archived";
     Health: {
       status: components["schemas"]["HealthStatusEnum"];
       database: components["schemas"]["DatabaseEnum"];
@@ -341,6 +1479,14 @@ export interface components {
      */
     HealthStatusEnum: "ok" | "degraded";
     /**
+     * @description * `aadhaar` - Aadhaar
+     *     * `passport` - Passport
+     *     * `driving_licence` - Driving licence
+     *     * `voter_id` - Voter ID
+     * @enum {string}
+     */
+    IdDocumentTypeEnum: "aadhaar" | "passport" | "driving_licence" | "voter_id";
+    /**
      * @description * `avatar` - Profile photo
      *     * `photo` - Photo
      *     * `video` - Video
@@ -348,6 +1494,17 @@ export interface components {
      * @enum {string}
      */
     KindEnum: "avatar" | "photo" | "video" | "document";
+    KycSession: {
+      reference: string;
+      /** @description Pass to the provider's SDK. */
+      client_token: string;
+      /**
+       * Format: uri
+       * @description Or open the provider's hosted page.
+       */
+      redirect_url: string;
+      expires_in_seconds: number;
+    };
     /**
      * @description * `ar` - Arabic
      *     * `as` - Assamese
@@ -406,6 +1563,14 @@ export interface components {
       | "te"
       | "ur"
       | "zh";
+    /**
+     * @description * `none` - No meals
+     *     * `breakfast` - Breakfast
+     *     * `two_meals` - Two meals a day
+     *     * `all_meals` - All meals
+     * @enum {string}
+     */
+    MealsEnum: "none" | "breakfast" | "two_meals" | "all_meals";
     MediaFile: {
       /** Format: uuid */
       readonly id: string;
@@ -441,6 +1606,190 @@ export interface components {
      * @enum {string}
      */
     MediaFileStatusEnum: "pending_upload" | "processing" | "ready" | "rejected" | "quarantined";
+    MyVerification: {
+      checks: components["schemas"]["CheckSummary"][];
+      /** @description Active badges. */
+      badges: components["schemas"]["Badge"][];
+      trusted_member: boolean;
+    };
+    PaginatedAdminCaseList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["AdminCase"][];
+    };
+    PaginatedApplicationListItemList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["ApplicationListItem"][];
+    };
+    PaginatedGigList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["Gig"][];
+    };
+    PaginatedPropertyList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["Property"][];
+    };
+    PatchedGig: {
+      /** Format: uuid */
+      readonly id?: string;
+      /** Format: uuid */
+      property?: string;
+      title?: string;
+      description?: string;
+      role_template?: components["schemas"]["RoleTemplateEnum"];
+      compensation_model?: components["schemas"]["CompensationModelEnum"];
+      /** Format: date */
+      start_date?: string | null;
+      /** Format: date */
+      end_date?: string | null;
+      /** @description Instead of an end date, for flexible starts. */
+      duration_days?: number | null;
+      /** Format: date */
+      apply_by?: string | null;
+      slots?: number;
+      /** @description 1 to 6. */
+      hours_per_day?: number | null;
+      /** @description 1 to 6: at least one day off. */
+      days_per_week?: number | null;
+      stay_type?: components["schemas"]["StayTypeEnum"] | components["schemas"]["BlankEnum"];
+      meals?: components["schemas"]["MealsEnum"] | components["schemas"]["BlankEnum"];
+      wifi?: boolean;
+      /**
+       * Format: decimal
+       * @description INR, above zero. Hybrid and paid only.
+       */
+      stipend_amount?: string | null;
+      stipend_period?:
+        components["schemas"]["StipendPeriodEnum"] | components["schemas"]["BlankEnum"];
+      deliverables?: components["schemas"]["Deliverable"][];
+      /** @description Skill slugs (GET /api/v1/profiles/skills/). Used for the fit score. */
+      skills?: string[];
+      /** @description Fixed at 18 for every gig. */
+      readonly min_age?: number;
+      languages?: components["schemas"]["LanguagesEnum"][];
+      min_followers?: number | null;
+      min_stay_days?: number | null;
+      screening_questions?: string[];
+      /**
+       * @description The badge talent need before they can apply.
+       *
+       *     * `none` - No verification needed
+       *     * `id_verified` - ID verified
+       *     * `trusted_member` - Trusted member
+       */
+      required_verification?: components["schemas"]["RequiredVerificationEnum"];
+      readonly status?: components["schemas"]["GigStatusEnum"];
+      /** @description Why it was sent back or reopened. Shown to the vendor. */
+      readonly status_reason?: string;
+      /** Format: date-time */
+      readonly submitted_at?: string | null;
+      /** Format: date-time */
+      readonly published_at?: string | null;
+      /** Format: date-time */
+      readonly closed_at?: string | null;
+      /** Format: date-time */
+      readonly created_at?: string;
+      /** Format: date-time */
+      readonly updated_at?: string;
+    };
+    /** @description The owner's view: everything, including the exact address and pin. */
+    PatchedProperty: {
+      /** Format: uuid */
+      readonly id?: string;
+      name?: string;
+      property_type?: components["schemas"]["PropertyTypeEnum"];
+      /** @description Street address. Never shown publicly. */
+      address?: string;
+      city?: string;
+      state?: components["schemas"]["StateEnum"];
+      pincode?: string;
+      /** Format: decimal */
+      latitude?: string | null;
+      /** Format: decimal */
+      longitude?: string | null;
+      /** @description Send true once the vendor has checked the pin. Moving the pin or changing the address resets it unless sent again. */
+      location_confirmed?: boolean;
+      /** @description Amenity codes. */
+      amenities?: components["schemas"]["AmenitiesEnum"][];
+      house_rules?: string[];
+      /** @description Vendor's claim: female staff or dorms, safe for solo women. */
+      women_friendly?: boolean;
+      /**
+       * @description Mirrors the property's verification case.
+       *
+       *     * `not_started` - Not started
+       *     * `submitted` - Submitted
+       *     * `in_review` - In review
+       *     * `approved` - Approved
+       *     * `rejected` - Rejected
+       *     * `changes_requested` - Changes requested
+       *     * `expired` - Expired
+       */
+      readonly verification_status?: components["schemas"]["VerificationStatusEnum"];
+      readonly photos?: components["schemas"]["Photo"][];
+      /** Format: date-time */
+      readonly created_at?: string;
+      /** Format: date-time */
+      readonly updated_at?: string;
+    };
+    PatchedSavedSearch: {
+      /** Format: uuid */
+      readonly id?: string;
+      name?: string;
+      /** @description The same filters as GET /api/v1/gigs/. */
+      params?: unknown;
+      alerts_enabled?: boolean;
+      /**
+       * Format: date-time
+       * @description Gigs published after this are new for the next alert run.
+       */
+      readonly last_checked_at?: string;
+      /** Format: date-time */
+      readonly created_at?: string;
+    };
     PatchedTalentProfile: {
       /** Format: uuid */
       readonly id?: string;
@@ -459,6 +1808,8 @@ export interface components {
       date_of_birth?: string | null;
       /** @description With or without the @. */
       instagram_handle?: string;
+      /** @description Self-reported; checked during social verification. Used for gig eligibility. */
+      instagram_followers?: number | null;
       readonly profile_complete?: boolean;
       /** @description Fields still empty that stop the profile counting as complete. */
       readonly missing_fields?: string[];
@@ -489,8 +1840,146 @@ export interface components {
       /** Format: date-time */
       readonly updated_at?: string;
     };
+    Photo: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly media_id: string;
+      readonly status: string;
+      readonly position: number;
+      readonly caption: string;
+      /**
+       * Format: decimal
+       * @description From EXIF or the device.
+       */
+      readonly latitude: string | null;
+      /** Format: decimal */
+      readonly longitude: string | null;
+      /** Format: date-time */
+      readonly captured_at: string | null;
+      /**
+       * Format: uri
+       * @description Signed, short-lived; null until ready.
+       */
+      readonly url: string | null;
+      /** Format: uri */
+      readonly thumb_url: string | null;
+    };
+    /** @description The owner's view: everything, including the exact address and pin. */
+    Property: {
+      /** Format: uuid */
+      readonly id: string;
+      name: string;
+      property_type: components["schemas"]["PropertyTypeEnum"];
+      /** @description Street address. Never shown publicly. */
+      address: string;
+      city: string;
+      state: components["schemas"]["StateEnum"];
+      pincode?: string;
+      /** Format: decimal */
+      latitude?: string | null;
+      /** Format: decimal */
+      longitude?: string | null;
+      /** @description Send true once the vendor has checked the pin. Moving the pin or changing the address resets it unless sent again. */
+      location_confirmed?: boolean;
+      /** @description Amenity codes. */
+      amenities?: components["schemas"]["AmenitiesEnum"][];
+      house_rules?: string[];
+      /** @description Vendor's claim: female staff or dorms, safe for solo women. */
+      women_friendly?: boolean;
+      /**
+       * @description Mirrors the property's verification case.
+       *
+       *     * `not_started` - Not started
+       *     * `submitted` - Submitted
+       *     * `in_review` - In review
+       *     * `approved` - Approved
+       *     * `rejected` - Rejected
+       *     * `changes_requested` - Changes requested
+       *     * `expired` - Expired
+       */
+      readonly verification_status: components["schemas"]["VerificationStatusEnum"];
+      readonly photos: components["schemas"]["Photo"][];
+      /** Format: date-time */
+      readonly created_at: string;
+      /** Format: date-time */
+      readonly updated_at: string;
+    };
+    /**
+     * @description * `hostel` - Hostel
+     *     * `homestay` - Homestay
+     *     * `cafe` - Café
+     *     * `hotel` - Hotel
+     *     * `trek_operator` - Trek operator
+     * @enum {string}
+     */
+    PropertyTypeEnum: "hostel" | "homestay" | "cafe" | "hotel" | "trek_operator";
+    PublicPhoto: {
+      /** Format: uuid */
+      readonly id: string;
+      readonly caption: string;
+      /** Format: uri */
+      readonly url: string;
+      /** Format: uri */
+      readonly thumb_url: string | null;
+    };
+    /** @description What anyone may see. No street address or exact point unless allowed. */
+    PublicProperty: {
+      /** Format: uuid */
+      readonly id: string;
+      readonly name: string;
+      readonly property_type: components["schemas"]["PropertyTypeEnum"];
+      readonly city: string;
+      readonly state: components["schemas"]["StateEnum"];
+      readonly amenities: unknown;
+      readonly house_rules: unknown;
+      /** @description Vendor's claim: female staff or dorms, safe for solo women. */
+      readonly women_friendly: boolean;
+      readonly verified: boolean;
+      readonly approximate_location: components["schemas"]["ApproximateLocation"] | null;
+      /** @description Only for the owner, admins, and (once bookings exist) confirmed guests. */
+      readonly exact_location: components["schemas"]["ExactLocation"] | null;
+      readonly photos: components["schemas"]["PublicPhoto"][];
+    };
+    ReferenceCheck: {
+      name: string;
+      /** @description Indian mobile number. */
+      phone: string;
+      /** @description E.g. 'Hostel manager in Goa'. */
+      relationship: string;
+    };
     RefreshRequest: {
       refresh: string;
+    };
+    /**
+     * @description * `none` - No verification needed
+     *     * `id_verified` - ID verified
+     *     * `trusted_member` - Trusted member
+     * @enum {string}
+     */
+    RequiredVerificationEnum: "none" | "id_verified" | "trusted_member";
+    /**
+     * @description * `volunteer` - Volunteer
+     *     * `content_creator` - Content creator
+     *     * `trip_leader` - Trip leader
+     *     * `specialist` - Specialist
+     * @enum {string}
+     */
+    RoleTemplateEnum: "volunteer" | "content_creator" | "trip_leader" | "specialist";
+    SavedSearch: {
+      /** Format: uuid */
+      readonly id: string;
+      name: string;
+      /** @description The same filters as GET /api/v1/gigs/. */
+      params: unknown;
+      alerts_enabled?: boolean;
+      /**
+       * Format: date-time
+       * @description Gigs published after this are new for the next alert run.
+       */
+      readonly last_checked_at: string;
+      /** Format: date-time */
+      readonly created_at: string;
     };
     /**
      * @description * `pending` - Not scanned yet
@@ -504,6 +1993,13 @@ export interface components {
     Skill: {
       slug: string;
       name: string;
+    };
+    StartIdCheck: {
+      document_type: components["schemas"]["IdDocumentTypeEnum"];
+    };
+    StartIdCheckResponse: {
+      case: components["schemas"]["Case"];
+      session: components["schemas"]["KycSession"];
     };
     /**
      * @description * `Andhra Pradesh` - Andhra Pradesh
@@ -581,6 +2077,34 @@ export interface components {
       | "Ladakh"
       | "Lakshadweep"
       | "Puducherry";
+    StatusChange: {
+      status: components["schemas"]["GigStatusEnum"];
+      /** @description Required when an admin sends a gig back. Shown to the vendor. */
+      reason?: string;
+    };
+    /**
+     * @description * `none` - No stay
+     *     * `dorm_bed` - Dorm bed
+     *     * `shared_room` - Shared room
+     *     * `private_room` - Private room
+     *     * `tent` - Tent / camping
+     * @enum {string}
+     */
+    StayTypeEnum: "none" | "dorm_bed" | "shared_room" | "private_room" | "tent";
+    /**
+     * @description * `total` - For the whole gig
+     *     * `per_week` - Per week
+     *     * `per_month` - Per month
+     * @enum {string}
+     */
+    StipendPeriodEnum: "total" | "per_week" | "per_month";
+    /**
+     * @description * `user` - User
+     *     * `property` - Property
+     *     * `social_account` - Social account
+     * @enum {string}
+     */
+    SubjectTypeEnum: "user" | "property" | "social_account";
     TalentProfile: {
       /** Format: uuid */
       readonly id: string;
@@ -599,6 +2123,8 @@ export interface components {
       date_of_birth?: string | null;
       /** @description With or without the @. */
       instagram_handle?: string;
+      /** @description Self-reported; checked during social verification. Used for gig eligibility. */
+      instagram_followers?: number | null;
       readonly profile_complete: boolean;
       /** @description Fields still empty that stop the profile counting as complete. */
       readonly missing_fields: string[];
@@ -710,6 +2236,59 @@ export interface components {
       /** Format: date-time */
       readonly updated_at: string;
     };
+    /**
+     * @description * `pending` - Pending
+     *     * `verified` - Verified
+     *     * `failed` - Failed
+     * @enum {string}
+     */
+    VerificationDocumentStatusEnum: "pending" | "verified" | "failed";
+    /**
+     * @description * `aadhaar` - Aadhaar
+     *     * `passport` - Passport
+     *     * `driving_licence` - Driving licence
+     *     * `voter_id` - Voter ID
+     *     * `selfie` - Selfie
+     *     * `pan` - PAN
+     *     * `gstin` - GSTIN
+     *     * `property_photo` - Property photo
+     *     * `certificate` - Certificate
+     * @enum {string}
+     */
+    VerificationDocumentTypeEnum:
+      | "aadhaar"
+      | "passport"
+      | "driving_licence"
+      | "voter_id"
+      | "selfie"
+      | "pan"
+      | "gstin"
+      | "property_photo"
+      | "certificate";
+    /**
+     * @description * `not_started` - Not started
+     *     * `submitted` - Submitted
+     *     * `in_review` - In review
+     *     * `approved` - Approved
+     *     * `rejected` - Rejected
+     *     * `changes_requested` - Changes requested
+     *     * `expired` - Expired
+     * @enum {string}
+     */
+    VerificationStatusEnum:
+      | "not_started"
+      | "submitted"
+      | "in_review"
+      | "approved"
+      | "rejected"
+      | "changes_requested"
+      | "expired";
+    WebhookResponse: {
+      outcome: string;
+    };
+    Withdraw: {
+      reason?: string;
+    };
   };
   responses: never;
   parameters: never;
@@ -719,6 +2298,150 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  applications_retrieve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        application_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Application"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  applications_withdraw: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        application_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["Withdraw"];
+        "application/x-www-form-urlencoded": components["schemas"]["Withdraw"];
+        "multipart/form-data": components["schemas"]["Withdraw"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Application"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  applications_mine_list: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedApplicationListItemList"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
   auth_exchange: {
     parameters: {
       query?: never;
@@ -861,6 +2584,706 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  geo_geocode: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GeocodeRequest"];
+        "application/x-www-form-urlencoded": components["schemas"]["GeocodeRequest"];
+        "multipart/form-data": components["schemas"]["GeocodeRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GeocodeResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  gigs_discover: {
+    parameters: {
+      query?: {
+        city?: string;
+        compensation_model?: ("volunteer" | "barter" | "hybrid" | "paid")[];
+        latitude?: number;
+        longitude?: number;
+        /** @description How many days you can stay: hides gigs that need a longer minimum stay. */
+        min_stay?: number;
+        /** @description Keywords. */
+        q?: string;
+        radius_km?: number;
+        role?: ("volunteer" | "content_creator" | "trip_leader" | "specialist")[];
+        /**
+         * @description * `best_fit` - best_fit
+         *     * `newest` - newest
+         *     * `start_date` - start_date
+         *     * `distance` - distance
+         */
+        sort?: "best_fit" | "newest" | "start_date" | "distance";
+        /** @description Gigs starting on or after. */
+        start_from?: string;
+        /** @description Gigs starting on or before. */
+        start_to?: string;
+        stay_type?: ("none" | "dorm_bed" | "shared_room" | "private_room" | "tent")[];
+        verified_hosts?: boolean | null;
+        women_friendly?: boolean | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GigPage"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  gigs_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Gig"];
+        "application/x-www-form-urlencoded": components["schemas"]["Gig"];
+        "multipart/form-data": components["schemas"]["Gig"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Gig"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  gigs_retrieve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        gig_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Gig"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  gigs_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        gig_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["PatchedGig"];
+        "application/x-www-form-urlencoded": components["schemas"]["PatchedGig"];
+        "multipart/form-data": components["schemas"]["PatchedGig"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Gig"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  gig_applications_list: {
+    parameters: {
+      query?: {
+        min_score?: number;
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+        sort?: "fit" | "newest" | "oldest";
+        /** @description Comma list of statuses. */
+        status?: string;
+      };
+      header?: never;
+      path: {
+        gig_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedApplicationListItemList"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  gig_applications_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        gig_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Apply"];
+        "application/x-www-form-urlencoded": components["schemas"]["Apply"];
+        "multipart/form-data": components["schemas"]["Apply"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Application"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Blocked"];
+        };
+      };
+    };
+  };
+  gigs_status_change: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        gig_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StatusChange"];
+        "application/x-www-form-urlencoded": components["schemas"]["StatusChange"];
+        "multipart/form-data": components["schemas"]["StatusChange"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Gig"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  gigs_admin_list: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+        status?: "archived" | "closed" | "draft" | "filled" | "in_review" | "live" | "paused";
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedGigList"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  gigs_mine_list: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+        status?: "archived" | "closed" | "draft" | "filled" | "in_review" | "live" | "paused";
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedGigList"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  saved_searches_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SavedSearch"][];
+        };
+      };
+    };
+  };
+  saved_searches_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SavedSearch"];
+        "application/x-www-form-urlencoded": components["schemas"]["SavedSearch"];
+        "multipart/form-data": components["schemas"]["SavedSearch"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SavedSearch"];
+        };
+      };
+    };
+  };
+  saved_searches_retrieve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        search_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SavedSearch"];
+        };
+      };
+    };
+  };
+  saved_searches_destroy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        search_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No response body */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  saved_searches_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        search_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["PatchedSavedSearch"];
+        "application/x-www-form-urlencoded": components["schemas"]["PatchedSavedSearch"];
+        "multipart/form-data": components["schemas"]["PatchedSavedSearch"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SavedSearch"];
         };
       };
     };
@@ -1369,6 +3792,991 @@ export interface operations {
         };
       };
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  properties_list: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedPropertyList"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  properties_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Property"];
+        "application/x-www-form-urlencoded": components["schemas"]["Property"];
+        "multipart/form-data": components["schemas"]["Property"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Property"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  properties_retrieve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        property_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Property"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  properties_destroy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        property_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No response body */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  properties_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        property_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["PatchedProperty"];
+        "application/x-www-form-urlencoded": components["schemas"]["PatchedProperty"];
+        "multipart/form-data": components["schemas"]["PatchedProperty"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Property"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  properties_photos_add: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        property_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AddPhoto"];
+        "application/x-www-form-urlencoded": components["schemas"]["AddPhoto"];
+        "multipart/form-data": components["schemas"]["AddPhoto"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Photo"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  properties_photos_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        photo_id: string;
+        property_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No response body */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  properties_public_retrieve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        property_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PublicProperty"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  properties_verification_submit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        property_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Case"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  verification_admin_cases_list: {
+    parameters: {
+      query?: {
+        check_type?:
+          | "business_registration"
+          | "certificate"
+          | "id_selfie"
+          | "property"
+          | "reference"
+          | "social_account";
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+        status?:
+          | "approved"
+          | "changes_requested"
+          | "expired"
+          | "in_review"
+          | "not_started"
+          | "rejected"
+          | "submitted";
+        /** @description User id. */
+        user?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedAdminCaseList"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  verification_admin_case_retrieve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminCase"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  verification_admin_case_decide: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Decision"];
+        "application/x-www-form-urlencoded": components["schemas"]["Decision"];
+        "multipart/form-data": components["schemas"]["Decision"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminCase"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  verification_business_submit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BusinessCheck"];
+        "application/x-www-form-urlencoded": components["schemas"]["BusinessCheck"];
+        "multipart/form-data": components["schemas"]["BusinessCheck"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Case"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  verification_certificates_submit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CertificatesCheck"];
+        "application/x-www-form-urlencoded": components["schemas"]["CertificatesCheck"];
+        "multipart/form-data": components["schemas"]["CertificatesCheck"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Case"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  verification_id_start: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StartIdCheck"];
+        "application/x-www-form-urlencoded": components["schemas"]["StartIdCheck"];
+        "multipart/form-data": components["schemas"]["StartIdCheck"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StartIdCheckResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  verification_reference_submit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReferenceCheck"];
+        "application/x-www-form-urlencoded": components["schemas"]["ReferenceCheck"];
+        "multipart/form-data": components["schemas"]["ReferenceCheck"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Case"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  verification_social_submit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Case"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  verification_me: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MyVerification"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  verification_kyc_webhook: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          [key: string]: unknown;
+        };
+        "application/x-www-form-urlencoded": {
+          [key: string]: unknown;
+        };
+        "multipart/form-data": {
+          [key: string]: unknown;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WebhookResponse"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      503: {
         headers: {
           [name: string]: unknown;
         };
