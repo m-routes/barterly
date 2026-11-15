@@ -4,6 +4,7 @@ import 'package:barterly/src/auth/login_screen.dart';
 import 'package:barterly/src/auth/onboarding_screens.dart';
 import 'package:barterly/src/auth/session.dart';
 import 'package:barterly/src/auth/user.dart';
+import 'package:barterly/src/chat/chat_screen.dart';
 import 'package:barterly/src/discover/discover_screen.dart';
 import 'package:barterly/src/discover/gig_detail_screen.dart';
 import 'package:barterly/src/profile/profile_setup_screen.dart';
@@ -28,6 +29,7 @@ abstract final class Routes {
   static const verification = '/profile/verification';
   static String gig(String id) => '/discover/gig/$id';
   static String apply(String id) => '/discover/gig/$id/apply';
+  static String chat(String conversationId) => '/trips/chat/$conversationId';
 
   /// Screens that only make sense before the person is fully in.
   static const Set<String> gates = {splash, login, join, wrongApp, setup};
@@ -103,6 +105,13 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: Routes.trips,
                 builder: (_, _) => const MyApplicationsScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'chat/:id',
+                    builder: (_, state) =>
+                        ChatScreen(conversationId: state.pathParameters['id']!),
+                  ),
+                ],
               ),
             ],
           ),

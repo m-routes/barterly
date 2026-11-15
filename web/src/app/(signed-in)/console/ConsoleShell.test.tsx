@@ -37,6 +37,7 @@ describe("ConsoleShell", () => {
       "Dashboard",
       "Gigs",
       "Applicants",
+      "Messages",
       "Properties",
       "Verification",
       "Talent search",

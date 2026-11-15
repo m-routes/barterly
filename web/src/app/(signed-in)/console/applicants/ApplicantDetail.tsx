@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+
+import { Button } from "@/components/ui/Button";
 
 import { ApplicationStatusChip, Chip } from "@/components/ui/StatusChip";
 import { ErrorState, LoadingState } from "@/components/ui/states";
@@ -21,6 +24,36 @@ function asAnswers(value: unknown): Answer[] {
         (a): a is Answer => typeof a === "object" && a !== null && "question" in a && "answer" in a,
       )
     : [];
+}
+
+/** Opens (or reuses) the chat with this applicant. */
+function MessageButton({ applicationId }: { applicationId: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const open = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const conversation = await unwrap(
+        api.POST("/api/v1/applications/{application_id}/conversation/", {
+          params: { path: { application_id: applicationId } },
+        }),
+      );
+      router.push(`/console/messages/${conversation.id}`);
+    } catch (e) {
+      setError(describeError(e));
+      setBusy(false);
+    }
+  };
+  return (
+    <div>
+      <Button variant="secondary" busy={busy} busyLabel="Opening…" onClick={() => void open()}>
+        Message
+      </Button>
+      {error ? <p className="field__error">{error}</p> : null}
+    </div>
+  );
 }
 
 function humanize(key: string): string {
@@ -104,6 +137,7 @@ export function ApplicantDetail() {
           {[person.talent_type, person.home_city].filter(Boolean).join(" · ")} · applied{" "}
           {formatDate(a.applied_at)}
         </p>
+        <MessageButton applicationId={a.id} />
       </header>
 
       <div className="stack">

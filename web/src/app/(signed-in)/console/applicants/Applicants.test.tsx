@@ -9,7 +9,8 @@ import { ApplicantDetail } from "./ApplicantDetail";
 import { ApplicantTable } from "./ApplicantTable";
 
 const params = { gigId: gig.id, applicationId: application.id };
-vi.mock("next/navigation", () => ({ useParams: () => params }));
+const push = vi.fn();
+vi.mock("next/navigation", () => ({ useParams: () => params, useRouter: () => ({ push }) }));
 
 let network: ReturnType<typeof vi.fn>;
 

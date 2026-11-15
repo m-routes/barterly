@@ -7,6 +7,7 @@ exists exactly when its change does. The notification's kind is the event's name
 from django.contrib.auth import get_user_model
 
 from apps.common.events import DomainEvent, subscribe
+from apps.notifications.models import Notification, NotificationStatus
 from apps.notifications.services import queue_notification
 
 TALENT, VENDOR = "talent", "vendor"
@@ -54,7 +55,32 @@ def notify(event: DomainEvent) -> None:
         queue_notification(user, event.name, event.payload)
 
 
+def notify_chat_message(event: DomainEvent) -> None:
+    """A push for a new chat message. While one for the same conversation is still
+    waiting to go out, it's updated (count and latest preview) instead of adding
+    another, so a burst of messages is one notification."""
+    payload = event.payload
+    waiting = (
+        Notification.objects.select_for_update()
+        .filter(
+            user_id=payload["recipient_id"],
+            kind=event.name,
+            status=NotificationStatus.QUEUED,
+            payload__conversation_id=payload["conversation_id"],
+        )
+        .first()
+    )
+    if waiting:
+        waiting.payload = {**payload, "count": waiting.payload.get("count", 1) + 1}
+        waiting.save(update_fields=["payload"])
+        return
+    user = get_user_model().objects.filter(pk=payload["recipient_id"]).first()
+    if user:
+        queue_notification(user, event.name, {**payload, "count": 1})
+
+
 def register() -> None:
     subscribe("application.", notify)
     subscribe("booking.", notify)
     subscribe("interview.", notify)
+    subscribe("chat.message", notify_chat_message)

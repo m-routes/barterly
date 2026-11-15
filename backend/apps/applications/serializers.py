@@ -116,6 +116,14 @@ class _ApplicationBase(serializers.ModelSerializer):
 
 class ApplicationListItemSerializer(_ApplicationBase):
     attachment_count = serializers.IntegerField(read_only=True)
+    conversation = serializers.UUIDField(
+        source="conversation_ref",
+        read_only=True,
+        allow_null=True,
+        default=None,
+        help_text="The chat about this application, once it's open (apps.chat).",
+    )
+    unread_messages = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = Application
@@ -130,6 +138,8 @@ class ApplicationListItemSerializer(_ApplicationBase):
             "applicant",
             "fit",
             "attachment_count",
+            "conversation",
+            "unread_messages",
             "applied_at",
         ]
         read_only_fields = fields

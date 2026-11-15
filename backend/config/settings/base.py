@@ -4,7 +4,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from apps.common.logging import logging_config
-from config.settings.env import env_bool, env_float, env_int, env_str
+from config.settings.env import env_bool, env_float, env_int, env_list, env_str
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "apps.applications",
     "apps.bookings",
     "apps.hiring",
+    "apps.chat",
     "apps.backoffice.apps.BackofficeConfig",
 ]
 
@@ -109,6 +110,7 @@ REST_FRAMEWORK = {
         "kyc_start": env_str("THROTTLE_KYC_START", "5/day"),
         "geocode": env_str("THROTTLE_GEOCODE", "30/hour"),
         "property_public": env_str("THROTTLE_PROPERTY_PUBLIC", "600/hour"),
+        "chat_send": env_str("THROTTLE_CHAT_SEND", "30/minute"),
     },
     # Proxies in front of Django that append to X-Forwarded-For. 0 = use REMOTE_ADDR.
     "NUM_PROXIES": env_int("TRUSTED_PROXY_COUNT", 0),
@@ -166,6 +168,7 @@ SPECTACULAR_SETTINGS = {
         "VendorApplicationMoveEnum": ["shortlisted", "interview", "offered", "rejected"],
         "RejectionReasonEnum": ["not_a_fit", "dates", "filled", "language", "incomplete", "other"],
         "InterviewStatusEnum": "apps.hiring.models.InterviewStatus",
+        "ChatReportReasonEnum": "apps.chat.models.ReportReason",
     },
 }
 
@@ -229,3 +232,8 @@ DISCOVERY_MAX_CANDIDATES = env_int("DISCOVERY_MAX_CANDIDATES", 1000)
 SCHEDULER_TOKEN_VERIFIER = "apps.bookings.scheduler.GoogleOidcVerifier"  # noqa: S105 (a class path)
 SCHEDULER_AUDIENCE = env_str("SCHEDULER_AUDIENCE", "")
 SCHEDULER_INVOKER_EMAIL = env_str("SCHEDULER_INVOKER_EMAIL", "")
+
+# Chat (apps.chat). The profanity filter is a hook like the other provider settings:
+# the default lets everything through; WordListProfanityFilter masks the listed words.
+CHAT_PROFANITY_FILTER = "apps.chat.filters.NoopProfanityFilter"
+CHAT_PROFANITY_WORDS = env_list("CHAT_PROFANITY_WORDS")

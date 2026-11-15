@@ -81,6 +81,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/applications/{application_id}/conversation/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Open (or get) the chat with an applicant
+     * @description Vendors only. Talent can reply once the vendor has shortlisted or messaged them. Returns 201 when the conversation is new.
+     */
+    post: operations["chat_open"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/applications/{application_id}/decline/": {
     parameters: {
       query?: never;
@@ -400,6 +420,119 @@ export interface paths {
      * @description Check in, start delivering, complete, cancel, report a no-show, dispute, review; admins also resolve disputes and refund. The transition table decides who may make each move and when (409 with the reason if not now).
      */
     post: operations["bookings_transition"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/conversations/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My conversations, newest first, with unread counts */
+    get: operations["chat_conversations_list"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/conversations/{conversation_id}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One conversation: who, whether you can send, whether contacts are hidden */
+    get: operations["chat_conversation_detail"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/conversations/{conversation_id}/block/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Block the other person in this conversation
+     * @description Neither side can send while the block is in place.
+     */
+    post: operations["chat_block"];
+    /** Unblock the other person */
+    delete: operations["chat_unblock"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/conversations/{conversation_id}/messages/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Messages after a cursor (polling), before one (history), or the newest
+     * @description Poll with `after=<cursor>` every few seconds while the chat is open; the answer's `cursor` is the next `after`. Without `after`, returns the newest page; `before=<cursor>` pages back through history.
+     */
+    get: operations["chat_messages_list"];
+    put?: never;
+    /**
+     * Send a message
+     * @description Before the booking is confirmed, phone numbers, emails, links, handles and off-platform contact phrases are replaced with [hidden]; `notice` says so. Rate limited (429). 403 when the chat is closed or a block is in place.
+     */
+    post: operations["chat_messages_send"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/conversations/{conversation_id}/read/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Mark the other side's messages read, up to a cursor */
+    post: operations["chat_mark_read"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/conversations/unread/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Unread message count (for a badge) */
+    get: operations["chat_unread"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -797,6 +930,23 @@ export interface paths {
      * @description Allowed: avatar and photo (jpeg, png, webp; 5 MB and 10 MB), video (mp4, 100 MB), document (pdf, jpeg, png; 10 MB). PUT the file to `upload_url` with exactly the returned `headers` before `expires_at`, then call /api/v1/media/confirm/.
      */
     post: operations["media_upload_url"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/messages/{message_id}/report/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Report a message for review */
+    post: operations["chat_report"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1366,6 +1516,13 @@ export interface components {
       readonly applicant: components["schemas"]["Applicant"];
       readonly fit: components["schemas"]["Fit"];
       readonly attachment_count: number;
+      /**
+       * Format: uuid
+       * @description The chat about this application, once it's open (apps.chat).
+       */
+      readonly conversation: string | null;
+      /** @default 0 */
+      readonly unread_messages: number;
       /** Format: date-time */
       readonly applied_at: string;
     };
@@ -1666,6 +1823,50 @@ export interface components {
     CertificatesCheck: {
       certificates: components["schemas"]["CertificateItem"][];
     };
+    ChatAttachment: {
+      /** Format: uuid */
+      id: string;
+      readonly kind: string;
+      content_type: string;
+      size_bytes: number;
+      /** @description Signed and short-lived. */
+      readonly url: string | null;
+      readonly thumb_url: string | null;
+    };
+    ChatMessage: {
+      /** Format: uuid */
+      readonly id: string;
+      /** @description This message's place; ascending. */
+      cursor: string;
+      /** Format: uuid */
+      readonly sender: string;
+      readonly mine: boolean;
+      /** @description As shown: contact details already masked. */
+      readonly body: string;
+      /** @description True when contact details in it were hidden. */
+      readonly masked: boolean;
+      readonly attachments: components["schemas"]["ChatAttachment"][];
+      /** @description The sender's id for the send, so retries are safe. */
+      readonly client_id: string;
+      /**
+       * Format: date-time
+       * @description When the other side read it.
+       */
+      readonly read_at: string | null;
+      /** Format: date-time */
+      readonly created_at: string;
+    };
+    /**
+     * @description * `spam` - Spam
+     *     * `harassment` - Harassment or abuse
+     *     * `scam` - Scam or fraud
+     *     * `contact_sharing` - Asking to move off Barterly
+     *     * `inappropriate` - Inappropriate content
+     *     * `other` - Something else
+     * @enum {string}
+     */
+    ChatReportReasonEnum:
+      "spam" | "harassment" | "scam" | "contact_sharing" | "inappropriate" | "other";
     CheckSummary: {
       check_type: components["schemas"]["CheckTypeEnum"];
       label: string;
@@ -1738,6 +1939,41 @@ export interface components {
      * @enum {string}
      */
     ContentTypeEnum: "application/pdf" | "image/jpeg" | "image/png" | "image/webp" | "video/mp4";
+    Conversation: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      application: string;
+      gig_title: string;
+      application_status: components["schemas"]["ApplicationStatusEnum"];
+      readonly other: components["schemas"]["Party"];
+      readonly unread: number;
+      readonly last_message: components["schemas"]["LastMessage"] | null;
+      /** Format: date-time */
+      readonly last_message_at: string | null;
+      /** Format: date-time */
+      readonly opened_at: string;
+    };
+    ConversationDetail: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      application: string;
+      gig_title: string;
+      application_status: components["schemas"]["ApplicationStatusEnum"];
+      readonly other: components["schemas"]["Party"];
+      readonly unread: number;
+      readonly last_message: components["schemas"]["LastMessage"] | null;
+      /** Format: date-time */
+      readonly last_message_at: string | null;
+      /** Format: date-time */
+      readonly opened_at: string;
+      readonly can_send: boolean;
+      readonly cant_send_reason: string;
+      /** @description False until the booking is confirmed: contact details get hidden. */
+      readonly contact_sharing_allowed: boolean;
+      readonly blocked_by_me: boolean;
+    };
     /**
      * @description * `ok` - ok
      *     * `unavailable` - unavailable
@@ -2198,6 +2434,12 @@ export interface components {
       | "te"
       | "ur"
       | "zh";
+    LastMessage: {
+      body: string;
+      mine: boolean;
+      /** Format: date-time */
+      created_at: string;
+    };
     /**
      * @description * `none` - No meals
      *     * `breakfast` - Breakfast
@@ -2241,6 +2483,15 @@ export interface components {
      * @enum {string}
      */
     MediaFileStatusEnum: "pending_upload" | "processing" | "ready" | "rejected" | "quarantined";
+    MessagePage: {
+      results: components["schemas"]["ChatMessage"][];
+      /** @description Send as `after` on the next poll. */
+      cursor: string;
+      /** @description Older messages exist (use `before`). */
+      has_earlier: boolean;
+      /** @description The newest of your messages the other side has read (a cursor). */
+      other_read_up_to: string;
+    };
     MyVerification: {
       checks: components["schemas"]["CheckSummary"][];
       /** @description Active badges. */
@@ -2303,6 +2554,21 @@ export interface components {
       previous?: string | null;
       results: components["schemas"]["BookingListItem"][];
     };
+    PaginatedConversationList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["Conversation"][];
+    };
     PaginatedGigList: {
       /** @example 123 */
       count: number;
@@ -2347,6 +2613,12 @@ export interface components {
        */
       previous?: string | null;
       results: components["schemas"]["VendorApplicationListItem"][];
+    };
+    Party: {
+      /** Format: uuid */
+      id: string;
+      name: string;
+      role: string;
     };
     PatchedGig: {
       /** Format: uuid */
@@ -2642,6 +2914,13 @@ export interface components {
       readonly exact_location: components["schemas"]["ExactLocation"] | null;
       readonly photos: components["schemas"]["PublicPhoto"][];
     };
+    Read: {
+      /** @description A message cursor; everything up to it is read. */
+      up_to: string;
+    };
+    ReadResult: {
+      marked: number;
+    };
     Reason: {
       code: string;
       label: string;
@@ -2668,6 +2947,15 @@ export interface components {
      * @enum {string}
      */
     RejectionReasonEnum: "not_a_fit" | "dates" | "filled" | "language" | "incomplete" | "other";
+    Report: {
+      reason: components["schemas"]["ChatReportReasonEnum"];
+      note?: string;
+    };
+    ReportResult: {
+      /** Format: uuid */
+      id: string;
+      status: string;
+    };
     /**
      * @description * `none` - No verification needed
      *     * `id_verified` - ID verified
@@ -2734,6 +3022,18 @@ export interface components {
      * @enum {string}
      */
     ScanStatusEnum: "pending" | "clean" | "infected" | "skipped" | "error";
+    Send: {
+      body?: string;
+      /** @description Confirmed uploads (kind 'photo' or 'document'): JPEG, PNG, WebP or PDF, up to 10 MB each. */
+      attachment_ids?: string[];
+      /** @description Your id for this send; sending again with it returns the same message. */
+      client_id?: string;
+    };
+    Sent: {
+      message: components["schemas"]["ChatMessage"];
+      /** @description Tell the sender this when it isn't empty (e.g. why a number was hidden). */
+      notice: string;
+    };
     Skill: {
       slug: string;
       name: string;
@@ -2925,6 +3225,12 @@ export interface components {
       /** @description Exchange at /api/v1/auth/refresh/ for new tokens. */
       refresh: string;
     };
+    Unread: {
+      /** @description Unread messages across all conversations. */
+      unread: number;
+      /** @description Conversations with unread messages. */
+      conversations: number;
+    };
     UploadUrlRequest: {
       kind: components["schemas"]["KindEnum"];
       content_type: components["schemas"]["ContentTypeEnum"];
@@ -3032,6 +3338,13 @@ export interface components {
       readonly applicant: components["schemas"]["Applicant"];
       readonly fit: components["schemas"]["Fit"];
       readonly attachment_count: number;
+      /**
+       * Format: uuid
+       * @description The chat about this application, once it's open (apps.chat).
+       */
+      readonly conversation: string | null;
+      /** @default 0 */
+      readonly unread_messages: number;
       /** Format: date-time */
       readonly applied_at: string;
       readonly rejection_code: string;
@@ -3341,6 +3654,59 @@ export interface operations {
         };
       };
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  chat_open: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        application_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConversationDetail"];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConversationDetail"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -4355,6 +4721,378 @@ export interface operations {
         };
       };
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  chat_conversations_list: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedConversationList"];
+        };
+      };
+    };
+  };
+  chat_conversation_detail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        conversation_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConversationDetail"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  chat_block: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        conversation_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConversationDetail"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  chat_unblock: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        conversation_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConversationDetail"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  chat_messages_list: {
+    parameters: {
+      query?: {
+        /** @description Only messages after this cursor. */
+        after?: string;
+        /** @description Only messages before this cursor. */
+        before?: string;
+        /** @description Default 50, at most 100. */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        conversation_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MessagePage"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  chat_messages_send: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        conversation_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["Send"];
+        "application/x-www-form-urlencoded": components["schemas"]["Send"];
+        "multipart/form-data": components["schemas"]["Send"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Sent"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  chat_mark_read: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        conversation_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Read"];
+        "application/x-www-form-urlencoded": components["schemas"]["Read"];
+        "multipart/form-data": components["schemas"]["Read"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReadResult"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  chat_unread: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Unread"];
+        };
+      };
+      401: {
         headers: {
           [name: string]: unknown;
         };
@@ -5639,6 +6377,73 @@ export interface operations {
         };
       };
       503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  chat_report: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        message_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Report"];
+        "application/x-www-form-urlencoded": components["schemas"]["Report"];
+        "multipart/form-data": components["schemas"]["Report"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReportResult"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
         headers: {
           [name: string]: unknown;
         };

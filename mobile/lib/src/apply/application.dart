@@ -205,6 +205,8 @@ class Application {
     this.appliedAt,
     this.attachmentCount = 0,
     this.fitScore,
+    this.conversationId,
+    this.unreadMessages = 0,
   });
 
   factory fromJson(Map<String, Object?> json) => Application(
@@ -220,6 +222,8 @@ class Application {
         (json['attachments'] as List?)?.length ??
         0,
     fitScore: ((json['fit'] as Map?)?['score'] as num?)?.round(),
+    conversationId: json['conversation'] as String?,
+    unreadMessages: (json['unread_messages'] as num?)?.toInt() ?? 0,
   );
 
   final String id;
@@ -231,6 +235,10 @@ class Application {
   final DateTime? appliedAt;
   final int attachmentCount;
   final int? fitScore;
+
+  /// The chat with the host, once they've shortlisted or messaged you.
+  final String? conversationId;
+  final int unreadMessages;
 }
 
 enum ApplicationStatus {

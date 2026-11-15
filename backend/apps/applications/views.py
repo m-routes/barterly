@@ -23,6 +23,7 @@ from apps.applications.services import (
     withdraw,
 )
 from apps.bookings.lifecycle import Actor
+from apps.chat.services import with_chat
 from apps.common.exceptions import error_body
 from apps.common.permissions import IsAdminRole, IsTalent, IsVendor
 from apps.common.serializers import ErrorSerializer
@@ -83,7 +84,7 @@ class GigApplicationsView(generics.ListAPIView):
     def get_queryset(self):
         gig = generics.get_object_or_404(Gig, pk=self.kwargs["gig_id"], vendor=self.request.user)
         qs = (
-            applications()
+            with_chat(applications(), self.request.user)
             .filter(gig=gig)
             .prefetch_related("private_tags")
             .annotate(note_count=Count("private_notes", distinct=True))
@@ -183,7 +184,11 @@ class MyApplicationsView(generics.ListAPIView):
     serializer_class = ApplicationListItemSerializer
 
     def get_queryset(self):
-        return applications().filter(talent=self.request.user).order_by("-applied_at", "id")
+        return (
+            with_chat(applications(), self.request.user)
+            .filter(talent=self.request.user)
+            .order_by("-applied_at", "id")
+        )
 
     @extend_schema(
         operation_id="applications_mine_list",
