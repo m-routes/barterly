@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "apps.discovery",
     "apps.notifications",
     "apps.applications",
+    "apps.bookings",
     "apps.backoffice.apps.BackofficeConfig",
 ]
 
@@ -159,6 +160,9 @@ SPECTACULAR_SETTINGS = {
         "DeliverableTypeEnum": "apps.gigs.constants.DeliverableType",
         "ApplicationStatusEnum": "apps.applications.constants.ApplicationStatus",
         "AttachmentKindEnum": "apps.applications.models.AttachmentKind",
+        "BookingStatusEnum": "apps.bookings.lifecycle.BookingStatus",
+        "BookingActorEnum": "apps.bookings.lifecycle.Actor",
+        "VendorApplicationMoveEnum": ["shortlisted", "interview", "offered", "rejected"],
     },
 }
 
@@ -216,3 +220,9 @@ DISCOVERY_DISTANCE_ZERO_KM = env_int("DISCOVERY_DISTANCE_ZERO_KM", 300)
 DISCOVERY_PAGE_SIZE = env_int("DISCOVERY_PAGE_SIZE", 20)
 # best_fit scores the newest matching gigs in Python; this caps how many.
 DISCOVERY_MAX_CANDIDATES = env_int("DISCOVERY_MAX_CANDIDATES", 1000)
+
+# Scheduled jobs: Cloud Scheduler calls POST /api/v1/jobs/<name>/ with an OIDC token for
+# the scheduler service account (apps/bookings/scheduler.py). Terraform sets both values.
+SCHEDULER_TOKEN_VERIFIER = "apps.bookings.scheduler.GoogleOidcVerifier"  # noqa: S105 (a class path)
+SCHEDULER_AUDIENCE = env_str("SCHEDULER_AUDIENCE", "")
+SCHEDULER_INVOKER_EMAIL = env_str("SCHEDULER_INVOKER_EMAIL", "")

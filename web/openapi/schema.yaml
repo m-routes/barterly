@@ -48,6 +48,176 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/applications/{application_id}/accept/:
+    post:
+      operationId: applications_accept
+      description: 'Books a slot: the application becomes confirmed and a booking
+        is created. Refused (409) when the offer has expired, the gig has no slot
+        left, or you already have a booking for those dates.'
+      summary: Accept an offer
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - bookings
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/applications/{application_id}/decline/:
+    post:
+      operationId: applications_decline
+      summary: Decline an offer
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - applications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Withdraw'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Withdraw'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Withdraw'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Application'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/applications/{application_id}/status/:
+    post:
+      operationId: applications_status_change
+      description: 'The gig''s vendor moves an application along. An offer reserves
+        nothing yet: the talent has 48 hours to accept (which books a slot) or decline,
+        and offers need an open slot on a running gig.'
+      summary: Shortlist, interview, offer or reject
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - applications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorStatus'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VendorStatus'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VendorStatus'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Application'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/applications/{application_id}/withdraw/:
     post:
       operationId: applications_withdraw
@@ -275,6 +445,171 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: ''
         '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/bookings/:
+    get:
+      operationId: bookings_list
+      description: As talent or as the vendor, newest first.
+      summary: My bookings
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - cancelled
+          - checked_in
+          - completed
+          - confirmed
+          - delivering
+          - disputed
+          - no_show
+          - refunded
+          - reviewed
+      tags:
+      - bookings
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBookingListItemList'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/bookings/{booking_id}/:
+    get:
+      operationId: bookings_retrieve
+      summary: One booking, with its history
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - bookings
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/bookings/{booking_id}/transition/:
+    post:
+      operationId: bookings_transition
+      description: Check in, start delivering, complete, cancel, report a no-show,
+        dispute, review; admins also resolve disputes and refund. The transition table
+        decides who may make each move and when (409 with the reason if not now).
+      summary: Move a booking
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingTransition'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BookingTransition'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BookingTransition'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
           content:
             application/json:
               schema:
@@ -1192,6 +1527,55 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Health'
+          description: ''
+  /api/v1/jobs/{job}/:
+    post:
+      operationId: jobs_run
+      description: 'Jobs: close_expired_gigs, expire_offers, expire_verifications,
+        flag_stale_interviews, run_search_alerts, sync_kyc_results. Needs a Google-signed
+        OIDC token for the scheduler service account. Idempotent; overlapping runs
+        of one job are skipped.'
+      summary: Run a scheduled job (Cloud Scheduler only)
+      parameters:
+      - in: path
+        name: job
+        schema:
+          type: string
+        required: true
+      tags:
+      - jobs
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResult'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
           description: ''
   /api/v1/me/:
     get:
@@ -2870,6 +3254,18 @@ components:
           format: date-time
           readOnly: true
           nullable: true
+        status_changed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: When the status last changed (for stale interviews).
+        offer_expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Set when an offer is made; the talent must answer by then.
       required:
       - answers
       - applicant
@@ -2880,10 +3276,12 @@ components:
       - gig
       - gig_title
       - id
+      - offer_expires_at
       - pitch
       - proposed_end
       - proposed_start
       - status
+      - status_changed_at
       - status_reason
     ApplicationListItem:
       type: object
@@ -2947,6 +3345,7 @@ components:
       - declined
       - rejected
       - expired
+      - confirmed
       type: string
       description: |-
         * `applied` - Applied
@@ -2957,6 +3356,7 @@ components:
         * `declined` - Declined
         * `rejected` - Rejected
         * `expired` - Expired
+        * `confirmed` - Confirmed
     Apply:
       type: object
       properties:
@@ -3119,6 +3519,259 @@ components:
       required:
       - details
       - message
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        application:
+          type: string
+          format: uuid
+          readOnly: true
+        gig:
+          type: string
+          format: uuid
+          readOnly: true
+        gig_title:
+          type: string
+          readOnly: true
+        talent:
+          type: string
+          format: uuid
+          readOnly: true
+        vendor:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/BookingStatusEnum'
+          readOnly: true
+        status_reason:
+          type: string
+          readOnly: true
+        start_date:
+          type: string
+          format: date
+          readOnly: true
+        end_date:
+          type: string
+          format: date
+          readOnly: true
+        confirmed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        checked_in_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        cancelled_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        next_moves:
+          type: array
+          items:
+            $ref: '#/components/schemas/BookingStatusEnum'
+          readOnly: true
+          description: Statuses you could move this booking to (rules are checked
+            on the move).
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/BookingEvent'
+          readOnly: true
+      required:
+      - application
+      - cancelled_at
+      - checked_in_at
+      - completed_at
+      - confirmed_at
+      - end_date
+      - events
+      - gig
+      - gig_title
+      - id
+      - next_moves
+      - start_date
+      - status
+      - status_reason
+      - talent
+      - vendor
+    BookingActorEnum:
+      enum:
+      - talent
+      - vendor
+      - system
+      - admin
+      type: string
+      description: |-
+        * `talent` - The talent
+        * `vendor` - The gig's vendor
+        * `system` - A scheduled job or another service
+        * `admin` - Barterly admin
+    BookingEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        from_state:
+          type: string
+          readOnly: true
+        to_state:
+          type: string
+          readOnly: true
+        actor:
+          allOf:
+          - $ref: '#/components/schemas/BookingActorEnum'
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        metadata:
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - actor
+      - created_at
+      - from_state
+      - id
+      - metadata
+      - reason
+      - to_state
+    BookingListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        application:
+          type: string
+          format: uuid
+          readOnly: true
+        gig:
+          type: string
+          format: uuid
+          readOnly: true
+        gig_title:
+          type: string
+          readOnly: true
+        talent:
+          type: string
+          format: uuid
+          readOnly: true
+        vendor:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/BookingStatusEnum'
+          readOnly: true
+        status_reason:
+          type: string
+          readOnly: true
+        start_date:
+          type: string
+          format: date
+          readOnly: true
+        end_date:
+          type: string
+          format: date
+          readOnly: true
+        confirmed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        checked_in_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        cancelled_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        next_moves:
+          type: array
+          items:
+            $ref: '#/components/schemas/BookingStatusEnum'
+          readOnly: true
+          description: Statuses you could move this booking to (rules are checked
+            on the move).
+      required:
+      - application
+      - cancelled_at
+      - checked_in_at
+      - completed_at
+      - confirmed_at
+      - end_date
+      - gig
+      - gig_title
+      - id
+      - next_moves
+      - start_date
+      - status
+      - status_reason
+      - talent
+      - vendor
+    BookingStatusEnum:
+      enum:
+      - confirmed
+      - checked_in
+      - delivering
+      - completed
+      - cancelled
+      - no_show
+      - disputed
+      - refunded
+      - reviewed
+      type: string
+      description: |-
+        * `confirmed` - Confirmed
+        * `checked_in` - Checked in
+        * `delivering` - Delivering
+        * `completed` - Completed
+        * `cancelled` - Cancelled
+        * `no_show` - No-show
+        * `disputed` - Disputed
+        * `refunded` - Refunded
+        * `reviewed` - Reviewed
+    BookingTransition:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/BookingStatusEnum'
+        reason:
+          type: string
+          maxLength: 1000
+        metadata:
+          type: object
+          additionalProperties: {}
+          description: Extra facts kept on the event.
+      required:
+      - status
     BusinessCheck:
       type: object
       properties:
@@ -4158,6 +4811,24 @@ components:
         * `passport` - Passport
         * `driving_licence` - Driving licence
         * `voter_id` - Voter ID
+    JobResult:
+      type: object
+      properties:
+        job:
+          type: string
+        run_id:
+          type: integer
+          nullable: true
+        skipped:
+          type: boolean
+        result:
+          type: object
+          additionalProperties: {}
+      required:
+      - job
+      - result
+      - run_id
+      - skipped
     KindEnum:
       enum:
       - avatar
@@ -4405,6 +5076,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ApplicationListItem'
+    PaginatedBookingListItemList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BookingListItem'
     PaginatedGigList:
       type: object
       required:
@@ -5559,6 +6253,18 @@ components:
         * `vendor` - Vendor
         * `talent` - Talent
         * `admin` - Admin
+    VendorApplicationMoveEnum:
+      enum:
+      - shortlisted
+      - interview
+      - offered
+      - rejected
+      type: string
+      description: |-
+        * `shortlisted` - shortlisted
+        * `interview` - interview
+        * `offered` - offered
+        * `rejected` - rejected
     VendorProfile:
       type: object
       properties:
@@ -5623,6 +6329,19 @@ components:
       - missing_fields
       - profile_complete
       - updated_at
+    VendorStatus:
+      type: object
+      description: |-
+        The moves a vendor makes on an application (the transition table decides if
+        they're allowed from the current status).
+      properties:
+        status:
+          $ref: '#/components/schemas/VendorApplicationMoveEnum'
+        reason:
+          type: string
+          maxLength: 500
+      required:
+      - status
     VerificationDocumentStatusEnum:
       enum:
       - pending

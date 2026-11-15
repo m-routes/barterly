@@ -32,12 +32,30 @@ class Application(TimeStampedModel):
     fit_breakdown = models.JSONField(help_text="The score's breakdown when the talent applied.")
     applied_at = models.DateTimeField(auto_now_add=True)
     decided_at = models.DateTimeField(null=True, blank=True)
+    status_changed_at = models.DateTimeField(
+        null=True, blank=True, help_text="When the status last changed (for stale interviews)."
+    )
+    offer_expires_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Set when an offer is made; the talent must answer by then.",
+    )
+    stale_flagged_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the interview was flagged as stale (once per interview).",
+    )
 
     class Meta:
         ordering = ["-applied_at"]
         indexes = [
             models.Index(fields=["gig", "status", "fit_score"], name="application_gig_fit_idx"),
             models.Index(fields=["talent", "status"], name="application_talent_idx"),
+            models.Index(
+                fields=["offer_expires_at"],
+                condition=Q(status="offered"),
+                name="application_offer_due_idx",
+            ),
         ]
         constraints = [
             models.UniqueConstraint(

@@ -21,14 +21,20 @@ UNUSABLE_MEDIA = (MediaStatus.REJECTED, MediaStatus.QUARANTINED, MediaStatus.PEN
 
 
 def can_see_exact_location(user, prop: Property) -> bool:
-    """The owner and Barterly admins. Guests get it once a booking is confirmed.
-
-    Bookings don't exist yet: when they do, return True here for a user with a
-    confirmed booking at this property.
-    """
+    """The owner, Barterly admins, and talent with an active booking here (confirmed,
+    checked in or delivering). After the stay, guests see the approximate area again."""
     if not getattr(user, "is_authenticated", False):
         return False
-    return user.pk == prop.vendor_id or user.is_admin_role
+    if user.pk == prop.vendor_id or user.is_admin_role:
+        return True
+    from apps.bookings.lifecycle import BookingStatus
+    from apps.bookings.models import Booking
+
+    return Booking.objects.filter(
+        talent=user,
+        gig__property=prop,
+        status__in=[BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN, BookingStatus.DELIVERING],
+    ).exists()
 
 
 def save_property(prop: Property, data: dict, *, actor, request=None) -> Property:

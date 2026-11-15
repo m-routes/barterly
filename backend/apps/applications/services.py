@@ -11,19 +11,20 @@ from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from apps.applications.constants import ACTIVE, TRANSITIONS, Actor, ApplicationStatus
+from apps.applications.constants import ACTIVE, ApplicationStatus
 from apps.applications.models import Application, ApplicationAttachment, AttachmentKind
 from apps.applications.rules import Reason, blocking_reasons, gig_end
+from apps.bookings import lifecycle
+from apps.bookings.lifecycle import Actor
+from apps.common.events import DomainEvent, publish
 from apps.common.services.audit import log_action, snapshot
 from apps.discovery.scoring import GigFacts, TalentFacts, fit_score
 from apps.discovery.services import talent_signals
 from apps.gigs.models import Gig
 from apps.media.models import MediaFile, MediaStatus
 from apps.media.policy import Kind
-from apps.notifications.services import queue_notification
 from apps.profiles.models import TalentProfile
 
-NEW_APPLICATION_KIND = "applications.new"
 UNUSABLE_MEDIA = (MediaStatus.REJECTED, MediaStatus.QUARANTINED, MediaStatus.PENDING_UPLOAD)
 MEDIA_KIND_FOR = {
     AttachmentKind.PHOTO: Kind.PHOTO,
@@ -94,6 +95,7 @@ def apply(
                     proposed_end=proposed_end,
                     fit_score=fit.score,
                     fit_breakdown=fit.breakdown(),
+                    status_changed_at=timezone.now(),
                 )
         except IntegrityError as exc:  # a parallel request applied first
             raise ApplicationBlocked(
@@ -117,16 +119,19 @@ def apply(
             after={"status": application.status, "gig": str(gig.pk), "fit_score": fit.score},
             request=request,
         )
-        queue_notification(
-            gig.vendor,
-            NEW_APPLICATION_KIND,
-            {
-                "application_id": str(application.pk),
-                "gig_id": str(gig.pk),
-                "gig_title": gig.title,
-                "talent_name": profile.display_name,
-                "fit_score": fit.score,
-            },
+        publish(
+            DomainEvent(
+                "application.applied",
+                {
+                    "application_id": str(application.pk),
+                    "gig_id": str(gig.pk),
+                    "gig_title": gig.title,
+                    "talent_id": str(talent.pk),
+                    "vendor_id": str(gig.vendor_id),
+                    "talent_name": profile.display_name,
+                    "fit_score": fit.score,
+                },
+            )
         )
     return application
 
@@ -166,35 +171,85 @@ def _fit(talent, profile, gig, start: date, end: date):
     )
 
 
+def lock(application_id) -> Application:
+    """Lock the application's gig, then the application (always in that order, so
+    applications and bookings of one gig never deadlock)."""
+    gig_id = Application.objects.values_list("gig_id", flat=True).get(pk=application_id)
+    Gig.objects.select_for_update().get(pk=gig_id)
+    return (
+        Application.objects.select_for_update()
+        .select_related("gig", "gig__vendor", "talent")
+        .get(pk=application_id)
+    )
+
+
 def transition(
-    application_id, to: str, *, actor: str, user=None, reason: str = "", request=None
+    application_id, to: str, *, actor: str, user=None, reason: str = "", request=None, now=None
 ) -> Application:
-    """Move an application if TRANSITIONS lets this actor do it. Audited."""
+    """Move an application as the transition table allows. Audited; publishes
+    application.<status>. Accepting an offer is bookings.services.accept_offer."""
+    if to == ApplicationStatus.CONFIRMED:
+        raise InvalidApplicationTransition("Accept an offer through bookings.accept_offer.")
     with transaction.atomic():
-        application = Application.objects.select_for_update().get(pk=application_id)
-        allowed = TRANSITIONS.get((application.status, to))
-        if allowed is None:
-            raise InvalidApplicationTransition(
-                f"A {application.get_status_display().lower()} application can't become {to}."
-            )
-        if actor not in allowed:
-            raise InvalidApplicationTransition(
-                f"Only the {' or '.join(sorted(allowed))} can do that."
-            )
-        before = snapshot(application, ["status", "status_reason"])
-        application.status = to
-        application.status_reason = reason.strip()
-        if to not in ACTIVE:
-            application.decided_at = timezone.now()
-        application.save(update_fields=["status", "status_reason", "decided_at", "updated_at"])
-        log_action(
-            actor=user,
-            action=f"application.{to}",
-            obj=application,
-            before=before,
-            after={**snapshot(application, ["status", "status_reason"]), "by": actor},
+        return move(
+            lock(application_id),
+            to,
+            actor=actor,
+            user=user,
+            reason=reason,
             request=request,
+            now=now,
         )
+
+
+def move(application, to: str, *, actor: str, user=None, reason: str = "", request=None, now=None):
+    """Apply one transition to a locked application (see lock())."""
+    now = now or timezone.now()
+    ctx = lifecycle.Context(subject=application, actor=actor, reason=reason, now=now)
+    try:
+        lifecycle.check(application.status, to, ctx)
+    except (lifecycle.InvalidTransition, lifecycle.GuardFailed) as exc:
+        raise InvalidApplicationTransition(str(exc)) from exc
+    frm = application.status
+    before = snapshot(application, ["status", "status_reason", "offer_expires_at"])
+    application.status = to
+    application.status_reason = reason.strip()
+    application.status_changed_at = now
+    application.stale_flagged_at = None
+    if to == ApplicationStatus.OFFERED:
+        application.offer_expires_at = now + lifecycle.OFFER_TTL
+    if to not in ACTIVE:
+        application.decided_at = now
+    application.save()
+    log_action(
+        actor=user,
+        action=f"application.{to}",
+        obj=application,
+        before=before,
+        after={
+            **snapshot(application, ["status", "status_reason", "offer_expires_at"]),
+            "by": actor,
+        },
+        request=request,
+    )
+    publish(
+        DomainEvent(
+            f"application.{to}",
+            {
+                "application_id": str(application.pk),
+                "gig_id": str(application.gig_id),
+                "gig_title": application.gig.title,
+                "talent_id": str(application.talent_id),
+                "vendor_id": str(application.gig.vendor_id),
+                "from": frm,
+                "to": to,
+                "by": actor,
+                "reason": application.status_reason,
+                "offer_expires_at": application.offer_expires_at,
+            },
+            occurred_at=now,
+        )
+    )
     return application
 
 

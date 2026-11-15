@@ -176,6 +176,8 @@ export const application: Application = {
     },
   },
   decided_at: null,
+  status_changed_at: "2026-11-10T10:00:00Z",
+  offer_expires_at: null,
 };
 
 export function page<T>(results: T[], count = results.length) {

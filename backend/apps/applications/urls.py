@@ -21,4 +21,14 @@ urlpatterns = [
         views.WithdrawView.as_view(),
         name="withdraw",
     ),
+    path(
+        "applications/<uuid:application_id>/status/",
+        views.VendorStatusView.as_view(),
+        name="status",
+    ),
+    path(
+        "applications/<uuid:application_id>/decline/",
+        views.DeclineView.as_view(),
+        name="decline",
+    ),
 ]

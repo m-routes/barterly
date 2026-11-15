@@ -6,3 +6,8 @@ class NotificationsConfig(AppConfig):
     name = "apps.notifications"
     label = "notifications"
     verbose_name = "Notifications"
+
+    def ready(self) -> None:
+        from apps.notifications import handlers
+
+        handlers.register()

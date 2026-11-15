@@ -153,8 +153,18 @@ class ApplicationSerializer(_ApplicationBase):
             "attachments",
             "applied_at",
             "decided_at",
+            "status_changed_at",
+            "offer_expires_at",
         ]
         read_only_fields = fields
+
+
+class VendorStatusSerializer(serializers.Serializer):
+    """The moves a vendor makes on an application (the transition table decides if
+    they're allowed from the current status)."""
+
+    status = serializers.ChoiceField(choices=["shortlisted", "interview", "offered", "rejected"])
+    reason = serializers.CharField(max_length=500, required=False, allow_blank=True)
 
 
 class WithdrawSerializer(serializers.Serializer):

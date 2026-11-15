@@ -24,6 +24,63 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/applications/{application_id}/accept/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Accept an offer
+     * @description Books a slot: the application becomes confirmed and a booking is created. Refused (409) when the offer has expired, the gig has no slot left, or you already have a booking for those dates.
+     */
+    post: operations["applications_accept"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/applications/{application_id}/decline/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Decline an offer */
+    post: operations["applications_decline"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/applications/{application_id}/status/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Shortlist, interview, offer or reject
+     * @description The gig's vendor moves an application along. An offer reserves nothing yet: the talent has 48 hours to accept (which books a slot) or decline, and offers need an open slot on a running gig.
+     */
+    post: operations["applications_status_change"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/applications/{application_id}/withdraw/": {
     parameters: {
       query?: never;
@@ -116,6 +173,63 @@ export interface paths {
      * @description Rotating refresh: the old refresh token is blacklisted once used.
      */
     post: operations["auth_refresh"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * My bookings
+     * @description As talent or as the vendor, newest first.
+     */
+    get: operations["bookings_list"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One booking, with its history */
+    get: operations["bookings_retrieve"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/transition/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Move a booking
+     * @description Check in, start delivering, complete, cancel, report a no-show, dispute, review; admins also resolve disputes and refund. The transition table decides who may make each move and when (409 with the reason if not now).
+     */
+    post: operations["bookings_transition"];
     delete?: never;
     options?: never;
     head?: never;
@@ -338,6 +452,26 @@ export interface paths {
     get: operations["health_check"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/jobs/{job}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Run a scheduled job (Cloud Scheduler only)
+     * @description Jobs: close_expired_gigs, expire_offers, expire_verifications, flag_stale_interviews, run_search_alerts, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
+     */
+    post: operations["jobs_run"];
     delete?: never;
     options?: never;
     head?: never;
@@ -963,6 +1097,16 @@ export interface components {
       readonly applied_at: string;
       /** Format: date-time */
       readonly decided_at: string | null;
+      /**
+       * Format: date-time
+       * @description When the status last changed (for stale interviews).
+       */
+      readonly status_changed_at: string | null;
+      /**
+       * Format: date-time
+       * @description Set when an offer is made; the talent must answer by then.
+       */
+      readonly offer_expires_at: string | null;
     };
     ApplicationListItem: {
       /** Format: uuid */
@@ -990,6 +1134,7 @@ export interface components {
      *     * `declined` - Declined
      *     * `rejected` - Rejected
      *     * `expired` - Expired
+     *     * `confirmed` - Confirmed
      * @enum {string}
      */
     ApplicationStatusEnum:
@@ -1000,7 +1145,8 @@ export interface components {
       | "offered"
       | "declined"
       | "rejected"
-      | "expired";
+      | "expired"
+      | "confirmed";
     Apply: {
       pitch: string;
       /** @description One answer per screening question, in order. */
@@ -1086,6 +1232,113 @@ export interface components {
       message: string;
       /** @description {"reasons": [{"code", "message"}, ...]} */
       details: {
+        [key: string]: unknown;
+      };
+    };
+    Booking: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly application: string;
+      /** Format: uuid */
+      readonly gig: string;
+      readonly gig_title: string;
+      /** Format: uuid */
+      readonly talent: string;
+      /** Format: uuid */
+      readonly vendor: string;
+      readonly status: components["schemas"]["BookingStatusEnum"];
+      readonly status_reason: string;
+      /** Format: date */
+      readonly start_date: string;
+      /** Format: date */
+      readonly end_date: string;
+      /** Format: date-time */
+      readonly confirmed_at: string;
+      /** Format: date-time */
+      readonly checked_in_at: string | null;
+      /** Format: date-time */
+      readonly completed_at: string | null;
+      /** Format: date-time */
+      readonly cancelled_at: string | null;
+      /** @description Statuses you could move this booking to (rules are checked on the move). */
+      readonly next_moves: components["schemas"]["BookingStatusEnum"][];
+      readonly events: components["schemas"]["BookingEvent"][];
+    };
+    /**
+     * @description * `talent` - The talent
+     *     * `vendor` - The gig's vendor
+     *     * `system` - A scheduled job or another service
+     *     * `admin` - Barterly admin
+     * @enum {string}
+     */
+    BookingActorEnum: "talent" | "vendor" | "system" | "admin";
+    BookingEvent: {
+      readonly id: number;
+      readonly from_state: string;
+      readonly to_state: string;
+      readonly actor: components["schemas"]["BookingActorEnum"];
+      readonly reason: string;
+      readonly metadata: unknown;
+      /** Format: date-time */
+      readonly created_at: string;
+    };
+    BookingListItem: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly application: string;
+      /** Format: uuid */
+      readonly gig: string;
+      readonly gig_title: string;
+      /** Format: uuid */
+      readonly talent: string;
+      /** Format: uuid */
+      readonly vendor: string;
+      readonly status: components["schemas"]["BookingStatusEnum"];
+      readonly status_reason: string;
+      /** Format: date */
+      readonly start_date: string;
+      /** Format: date */
+      readonly end_date: string;
+      /** Format: date-time */
+      readonly confirmed_at: string;
+      /** Format: date-time */
+      readonly checked_in_at: string | null;
+      /** Format: date-time */
+      readonly completed_at: string | null;
+      /** Format: date-time */
+      readonly cancelled_at: string | null;
+      /** @description Statuses you could move this booking to (rules are checked on the move). */
+      readonly next_moves: components["schemas"]["BookingStatusEnum"][];
+    };
+    /**
+     * @description * `confirmed` - Confirmed
+     *     * `checked_in` - Checked in
+     *     * `delivering` - Delivering
+     *     * `completed` - Completed
+     *     * `cancelled` - Cancelled
+     *     * `no_show` - No-show
+     *     * `disputed` - Disputed
+     *     * `refunded` - Refunded
+     *     * `reviewed` - Reviewed
+     * @enum {string}
+     */
+    BookingStatusEnum:
+      | "confirmed"
+      | "checked_in"
+      | "delivering"
+      | "completed"
+      | "cancelled"
+      | "no_show"
+      | "disputed"
+      | "refunded"
+      | "reviewed";
+    BookingTransition: {
+      status: components["schemas"]["BookingStatusEnum"];
+      reason?: string;
+      /** @description Extra facts kept on the event. */
+      metadata?: {
         [key: string]: unknown;
       };
     };
@@ -1562,6 +1815,14 @@ export interface components {
      * @enum {string}
      */
     IdDocumentTypeEnum: "aadhaar" | "passport" | "driving_licence" | "voter_id";
+    JobResult: {
+      job: string;
+      run_id: number | null;
+      skipped: boolean;
+      result: {
+        [key: string]: unknown;
+      };
+    };
     /**
      * @description * `avatar` - Profile photo
      *     * `photo` - Photo
@@ -1717,6 +1978,21 @@ export interface components {
        */
       previous?: string | null;
       results: components["schemas"]["ApplicationListItem"][];
+    };
+    PaginatedBookingListItemList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["BookingListItem"][];
     };
     PaginatedGigList: {
       /** @example 123 */
@@ -2290,6 +2566,14 @@ export interface components {
      * @enum {string}
      */
     UserRoleEnum: "vendor" | "talent" | "admin";
+    /**
+     * @description * `shortlisted` - shortlisted
+     *     * `interview` - interview
+     *     * `offered` - offered
+     *     * `rejected` - rejected
+     * @enum {string}
+     */
+    VendorApplicationMoveEnum: "shortlisted" | "interview" | "offered" | "rejected";
     VendorProfile: {
       /** Format: uuid */
       readonly id: string;
@@ -2311,6 +2595,14 @@ export interface components {
       readonly created_at: string;
       /** Format: date-time */
       readonly updated_at: string;
+    };
+    /**
+     * @description The moves a vendor makes on an application (the transition table decides if
+     *     they're allowed from the current status).
+     */
+    VendorStatus: {
+      status: components["schemas"]["VendorApplicationMoveEnum"];
+      reason?: string;
     };
     /**
      * @description * `pending` - Pending
@@ -2410,6 +2702,177 @@ export interface operations {
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  applications_accept: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        application_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Booking"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  applications_decline: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        application_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["Withdraw"];
+        "application/x-www-form-urlencoded": components["schemas"]["Withdraw"];
+        "multipart/form-data": components["schemas"]["Withdraw"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Application"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  applications_status_change: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        application_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["VendorStatus"];
+        "application/x-www-form-urlencoded": components["schemas"]["VendorStatus"];
+        "multipart/form-data": components["schemas"]["VendorStatus"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Application"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -2655,6 +3118,168 @@ export interface operations {
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  bookings_list: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+        status?:
+          | "cancelled"
+          | "checked_in"
+          | "completed"
+          | "confirmed"
+          | "delivering"
+          | "disputed"
+          | "no_show"
+          | "refunded"
+          | "reviewed";
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedBookingListItemList"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  bookings_retrieve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Booking"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  bookings_transition: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BookingTransition"];
+        "application/x-www-form-urlencoded": components["schemas"]["BookingTransition"];
+        "multipart/form-data": components["schemas"]["BookingTransition"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Booking"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -3440,6 +4065,59 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Health"];
+        };
+      };
+    };
+  };
+  jobs_run: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        job: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["JobResult"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
         };
       };
     };

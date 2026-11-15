@@ -67,7 +67,8 @@ Surfaces: the vendor console (web), the talent app (mobile) and the admin consol
 | `gigs` | `Gig` (role template, compensation model, dates, hours, stay, meals, stipend, deliverables, eligibility, screening questions), the business rules, the status machine and review, plan limits, auto-close |
 | `discovery` | Gig search for talent (`GET /api/v1/gigs/`): hard filters, the fit score, cursor pages; saved searches and their alert job |
 | `applications` | `Application` and its attachments, the apply rules (with every blocking reason), the status table, applicant views for vendors |
-| `notifications` | Queued `Notification` rows; delivery arrives in Phase 3 |
+| `notifications` | Queued `Notification` rows, created from domain events; delivery arrives later in Phase 3 |
+| `bookings` | The transition table, bookings, the append-only booking event log and scheduled jobs |
 | `verification` | Verification cases per check, evidence (provider references and masked numbers only), badges, the KYC provider interface and webhook, re-verification on profile edits, the review API |
 
 ### Users and permissions
@@ -125,7 +126,7 @@ A vendor can have several properties (`hostel`, `homestay`, `cafe`, `hotel`, `tr
 
 **No PostGIS.** Production is Cloud SQL Postgres 16. PostGIS is available there, but GeoDjango would need GDAL and GEOS in the image, CI and every laptop. Location is stored as `latitude`/`longitude` decimal columns with a composite index instead. `Property.objects.within_radius(lat, lng, metres)` filters on a bounding box the index can serve, then on the exact haversine distance computed in SQL, nearest first. Moving to a `PointField` with a GiST index later only changes that one method.
 
-**Exact and approximate location.** The street address and exact pin go only to the owner and admins, and once bookings exist, to guests with a confirmed booking (`can_see_exact_location`). Everyone else sees `approximate_location`. That point is 300–900 m from the real one, in a direction seeded from `SECRET_KEY` and the property id. It's stored and stable, so repeated requests can't be averaged back to the real spot. Public "nearby" queries must use it too (`within_radius(public=True)`, the default), because ordering by the real distance would leak the pin.
+**Exact and approximate location.** The street address and exact pin go only to the owner and admins, and to talent with an active booking there: confirmed, checked in or delivering (`can_see_exact_location`). Everyone else sees `approximate_location`. That point is 300–900 m from the real one, in a direction seeded from `SECRET_KEY` and the property id. It's stored and stable, so repeated requests can't be averaged back to the real spot. Public "nearby" queries must use it too (`within_radius(public=True)`, the default), because ordering by the real distance would leak the pin.
 
 **Pin flow.** Creating a property, or changing its address without sending a pin, geocodes the address once to suggest a pin. The vendor then confirms or moves it (`location_confirmed`). Moving the pin or changing the address clears the confirmation unless the same request confirms it again.
 
@@ -166,8 +167,8 @@ Every change writes an audit row `gig.<status>`. Its `after.by` records whether 
 **Plan limits.** `GIG_PLAN_POLICY` names a `PlanPolicy` that returns the vendor's `Plan(max_live_gigs)`. It's checked when a gig goes live, either approved or resumed. `UnlimitedPlanPolicy` is used for now.
 
 **Jobs and hooks.**
-- `manage.py close_expired_gigs` closes live and paused gigs whose apply-by date has passed. It should run daily.
-- `on_confirmed_bookings_changed(gig_id, confirmed)` is for bookings (Phase 3). It marks a live gig `filled` when confirmed bookings reach its slots, and reopens it if one is cancelled before applications close.
+- `close_expired_gigs` closes live and paused gigs whose apply-by date has passed. Cloud Scheduler runs it daily (see Bookings, Scheduled jobs).
+- `on_confirmed_bookings_changed(gig_id, confirmed)` is called by bookings. It marks a live gig `filled` when confirmed bookings reach its slots, and reopens it if one is cancelled before applications close.
 
 ### Discovery
 
@@ -220,16 +221,50 @@ Talent apply with `POST /api/v1/gigs/{id}/applications/`. An application has a p
 
 A database constraint also allows only one active application per talent per gig (`applied`, `shortlisted`, `interview`, `offered`).
 
-**Statuses.** `apps.applications.constants.TRANSITIONS` defines every move and who makes it:
-- **Vendor:** shortlist, interview, offer and reject.
-- **Talent:** withdraw (from any active status, so up to accepting an offer) and decline an offer.
-- **System:** expire.
+**Statuses.** Every move, who makes it and its guard are in the one transition table, `apps.bookings.lifecycle.TRANSITIONS` (see Bookings).
+- **Vendor:** shortlist, interview, offer and reject, with `POST /api/v1/applications/{id}/status/`. An offer needs a running gig with an open slot, and expires 48 hours after it's made.
+- **Talent:** withdraw (from any active status, up to accepting an offer), decline an offer (`/decline/`) or accept it (`/accept/`, which creates the booking).
+- **System:** expire unanswered offers, and expire the rest when a gig closes.
 
-This phase uses apply and withdraw. The rest are wired for Phase 3. Every change writes an audit row `application.<status>`.
+Every change writes an audit row `application.<status>` and publishes the domain event of the same name.
 
 **Vendors** list applicants with `GET /api/v1/gigs/{id}/applications/`. Filters are status (comma list) and `min_score`. Sorts are `fit` (default), `newest` and `oldest`. The query count is fixed and a test checks it. `GET /api/v1/applications/{id}/` adds attachments with short-lived signed URLs and the applicant's active badges. Applicant data never includes phone, email, emergency contact, birth date or social handle.
 
-**Notification.** A new application queues `applications.new` for the vendor.
+**Notifications** come from domain events (see Bookings). A new application queues `application.applied` for the vendor.
+
+### Bookings (`apps/bookings`)
+
+**One transition table.** `lifecycle.TRANSITIONS` covers the whole engagement, from application to booking:
+- Application: applied → shortlisted → interview → offered.
+- Accepting the offer (offered → confirmed) creates the `Booking`.
+- Booking: confirmed → checked_in → delivering → completed → reviewed, with cancelled, no_show, disputed and refunded along the way.
+
+Each row lists the actors allowed to make the move (talent, vendor, system, admin), whether a reason is needed, and a guard. Guards include: an open slot to offer or accept, an unexpired offer, no overlapping booking for the talent, check-in from the day before the stay, the stay has started for no-shows and completion, disputes within 14 days, and refunds only where money changed hands. `lifecycle.check()` is the only place a move is allowed or refused. The services call it, and the API answers 409 with the reason.
+
+**Slots.** A booking holds one of its gig's slots while it's confirmed, checked in, delivering, completed, disputed or reviewed. Every status change locks the gig row first (`SELECT … FOR UPDATE`), then the application or booking, and counts slots while holding that lock. Two people accepting the last slot at the same moment can't both get it, and a test runs that race with two threads. When the count reaches the gig's slots, the gig becomes `filled`. A cancellation reopens it while applications are still open.
+
+**Event log.** Each booking move appends a `BookingEvent`: from and to state, actor, the person, reason, metadata and time. A database trigger (migration `bookings.0002`) refuses every UPDATE and DELETE on that table, whichever database user tries, the app's own included. Moves also write an AuditLog row.
+
+**Domain events.** Every application and booking move publishes `application.<status>` or `booking.<status>` (`apps.common.events`). Handlers run inside the same transaction, so a rolled-back move leaves no event, notification or audit row behind. `apps.notifications.handlers` turns events into queued notifications. A booking move goes to the other party, and a move by the system or an admin goes to both.
+
+**API.**
+- `POST /api/v1/applications/{id}/accept/`
+- `GET /api/v1/bookings/`, as talent or as the vendor
+- `GET /api/v1/bookings/{id}/`, with its events and the `next_moves` you can make
+- `POST /api/v1/bookings/{id}/transition/` with `{status, reason, metadata}`
+
+**Scheduled jobs.** Cloud Scheduler calls `POST /api/v1/jobs/<name>/` with a Google-signed OIDC token. The API accepts only tokens whose audience is its own URL and that were issued to the scheduler service account (`SCHEDULER_AUDIENCE`, `SCHEDULER_INVOKER_EMAIL`, set by `infra/terraform/modules/environment/scheduler.tf`). The jobs, with their India-time schedules:
+
+| Job | Runs | What it does |
+|---|---|---|
+| `expire_offers` | Every 15 minutes | Offers with no reply after 48 hours expire |
+| `flag_stale_interviews` | Daily at 9:00 | Interviews with no movement for 7 days are flagged once, and the vendor is told |
+| `close_expired_gigs` | Daily at 0:15 | Gigs whose apply-by date has passed are closed |
+| `expire_verifications` | Daily at 0:30 | Verifications past their validity expire |
+| `sync_kyc_results` | Every 30 minutes | The KYC provider is asked for missing results |
+| `run_search_alerts` | Every 6 hours | Saved-search alerts go out for new gigs |
+
+Every job is idempotent: it re-checks each row under a lock before changing it. A Postgres advisory lock skips overlapping runs of the same job, and each run is recorded as a `JobRun` (shown in the admin). Run one by hand with `manage.py run_job <name>`.
 
 ### Verification
 
