@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('applications', '0002_remove_application_application_status_valid_and_more'),
+        ('applications', '0002_offers_and_confirmed'),
         ('gigs', '0003_required_verification'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
