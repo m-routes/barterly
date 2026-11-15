@@ -133,6 +133,11 @@ def apply(
                 },
             )
         )
+        # The vendor's auto-reject rules: let it in, then reject at once with the reason.
+        from apps.hiring.services import run_auto_reject
+
+        if run_auto_reject(application, profile):
+            application.refresh_from_db()
     return application
 
 

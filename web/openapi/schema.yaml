@@ -4,6 +4,125 @@ info:
   version: 0.1.0
   description: Work-exchange marketplace for travel and hospitality in India.
 paths:
+  /api/v1/applicant-filters/:
+    get:
+      operationId: hiring_filters_list
+      summary: My saved applicant filters
+      tags:
+      - hiring
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SavedFilter'
+          description: ''
+    post:
+      operationId: hiring_filters_create
+      summary: Save an applicant filter
+      tags:
+      - hiring
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SavedFilter'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SavedFilter'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SavedFilter'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedFilter'
+          description: ''
+  /api/v1/applicant-filters/{filter_id}/:
+    get:
+      operationId: hiring_filters_retrieve
+      summary: One saved filter
+      parameters:
+      - in: path
+        name: filter_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - hiring
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedFilter'
+          description: ''
+    patch:
+      operationId: hiring_filters_update
+      summary: Rename or change a filter
+      parameters:
+      - in: path
+        name: filter_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - hiring
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSavedFilter'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSavedFilter'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSavedFilter'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedFilter'
+          description: ''
+    delete:
+      operationId: hiring_filters_delete
+      summary: Delete a saved filter
+      parameters:
+      - in: path
+        name: filter_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - hiring
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/applications/{application_id}/:
     get:
       operationId: applications_retrieve
@@ -28,7 +147,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Application'
+                $ref: '#/components/schemas/VendorApplication'
           description: ''
         '401':
           content:
@@ -156,12 +275,437 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/applications/{application_id}/interview/:
+    get:
+      operationId: hiring_interview_retrieve
+      description: Times are UTC (ISO 8601) with India-time text alongside.
+      summary: The interview being arranged (applicant or vendor)
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - hiring
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Interview'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    post:
+      operationId: hiring_interview_propose
+      description: Up to three times, at least an hour ahead and within 60 days, plus
+        a video link. Moves the application to the interview stage if it isn't there
+        yet, and replaces an interview still being arranged.
+      summary: Propose interview times (vendor)
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - hiring
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposeInterview'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProposeInterview'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProposeInterview'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Interview'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/applications/{application_id}/interview/cancel/:
+    post:
+      operationId: hiring_interview_cancel
+      summary: Cancel the interview (vendor)
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - hiring
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NoteIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NoteIn'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Interview'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/applications/{application_id}/interview/new-times/:
+    post:
+      operationId: hiring_interview_new_times
+      summary: Ask for other interview times (applicant)
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - hiring
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NoteIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NoteIn'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Interview'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/applications/{application_id}/interview/pick/:
+    post:
+      operationId: hiring_interview_pick
+      summary: Pick an interview time (applicant)
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - hiring
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PickSlot'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PickSlot'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PickSlot'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Interview'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/applications/{application_id}/notes/:
+    get:
+      operationId: hiring_notes_list
+      description: Only the gig's vendor sees these. The applicant never does.
+      summary: My private notes on an applicant
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - hiring
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Note'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    post:
+      operationId: hiring_notes_create
+      summary: Add a private note
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - hiring
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Note'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Note'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Note'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/applications/{application_id}/notes/{note_id}/:
+    delete:
+      operationId: hiring_notes_delete
+      summary: Delete my private note
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: note_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - hiring
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/applications/{application_id}/status/:
     post:
       operationId: applications_status_change
-      description: 'The gig''s vendor moves an application along. An offer reserves
-        nothing yet: the talent has 48 hours to accept (which books a slot) or decline,
-        and offers need an open slot on a running gig.'
+      description: 'The gig''s vendor moves an application along. Rejecting needs
+        a reason_code (GET /api/v1/hiring/rejection-reasons/); the applicant reads
+        its text and the optional message. An offer reserves nothing yet: the talent
+        has 48 hours to accept (which books a slot) or decline, and offers need an
+        open slot on a running gig.'
       summary: Shortlist, interview, offer or reject
       parameters:
       - in: path
@@ -192,9 +736,70 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Application'
+                $ref: '#/components/schemas/VendorApplication'
           description: ''
         '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/applications/{application_id}/tags/:
+    put:
+      operationId: hiring_tags_set
+      description: Replaces the tags. Lower-cased; at most 10. The applicant never
+        sees them.
+      summary: Set my private tags on an applicant
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - hiring
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tags'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Tags'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Tags'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tags'
+          description: ''
+        '400':
           content:
             application/json:
               schema:
@@ -1050,6 +1655,11 @@ paths:
         schema:
           type: string
         description: Comma list of statuses.
+      - in: query
+        name: tag
+        schema:
+          type: string
+        description: Only applicants with this private tag.
       tags:
       - applications
       security:
@@ -1060,7 +1670,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedApplicationListItemList'
+                $ref: '#/components/schemas/PaginatedVendorApplicationListItemList'
           description: ''
         '400':
           content:
@@ -1136,6 +1746,166 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Blocked'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/gigs/{gig_id}/applications/bulk/:
+    post:
+      operationId: hiring_bulk
+      description: Each application is changed on its own; the results say which worked
+        and why the others didn't (e.g. already rejected). Rejecting needs a reason_code.
+      summary: Shortlist or reject many applicants
+      parameters:
+      - in: path
+        name: gig_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - hiring
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Bulk'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Bulk'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Bulk'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BulkResult'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/gigs/{gig_id}/auto-reject-rules/:
+    get:
+      operationId: hiring_rules_retrieve
+      summary: A gig's auto-reject rules
+      parameters:
+      - in: path
+        name: gig_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - hiring
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rules'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    put:
+      operationId: hiring_rules_set
+      description: 'Checked when someone applies: an application that misses a rule
+        is rejected at once, and the applicant is told which requirement they missed.
+        Types: language (languages), skill (skills), min_followers (value), min_stay_days
+        (value).'
+      summary: Set a gig's auto-reject rules
+      parameters:
+      - in: path
+        name: gig_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - hiring
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Rules'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Rules'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Rules'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rules'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
           description: ''
         '401':
           content:
@@ -1528,13 +2298,49 @@ paths:
               schema:
                 $ref: '#/components/schemas/Health'
           description: ''
+  /api/v1/hiring/rejection-reasons/:
+    get:
+      operationId: hiring_rejection_reasons
+      summary: Rejection reasons to choose from
+      tags:
+      - hiring
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Reason'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/jobs/{job}/:
     post:
       operationId: jobs_run
       description: 'Jobs: close_expired_gigs, expire_offers, expire_verifications,
-        flag_stale_interviews, run_search_alerts, sync_kyc_results. Needs a Google-signed
-        OIDC token for the scheduler service account. Idempotent; overlapping runs
-        of one job are skipped.'
+        flag_stale_interviews, run_search_alerts, send_interview_reminders, sync_kyc_results.
+        Needs a Google-signed OIDC token for the scheduler service account. Idempotent;
+        overlapping runs of one job are skipped.'
       summary: Run a scheduled job (Cloud Scheduler only)
       parameters:
       - in: path
@@ -2967,6 +3773,14 @@ paths:
           description: ''
 components:
   schemas:
+    ActionEnum:
+      enum:
+      - shortlist
+      - reject
+      type: string
+      description: |-
+        * `shortlist` - shortlist
+        * `reject` - reject
     AddPhoto:
       type: object
       properties:
@@ -3199,6 +4013,9 @@ components:
       - user_id
     Application:
       type: object
+      description: |-
+        What the applicant (and the vendor) sees. Never the vendor's notes or tags:
+        those are only in apps.hiring.serializers.VendorApplicationSerializer.
       properties:
         id:
           type: string
@@ -3218,6 +4035,7 @@ components:
         status_reason:
           type: string
           readOnly: true
+          description: Shown to the applicant (e.g. why it was rejected).
         pitch:
           type: string
           readOnly: true
@@ -3266,6 +4084,17 @@ components:
           readOnly: true
           nullable: true
           description: Set when an offer is made; the talent must answer by then.
+        timeline:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimelineEntry'
+          readOnly: true
+          description: Every status change, with the reason given.
+        interview:
+          allOf:
+          - $ref: '#/components/schemas/Interview'
+          nullable: true
+          readOnly: true
       required:
       - answers
       - applicant
@@ -3276,6 +4105,7 @@ components:
       - gig
       - gig_title
       - id
+      - interview
       - offer_expires_at
       - pitch
       - proposed_end
@@ -3283,6 +4113,7 @@ components:
       - status
       - status_changed_at
       - status_reason
+      - timeline
     ApplicationListItem:
       type: object
       properties:
@@ -3301,6 +4132,10 @@ components:
           allOf:
           - $ref: '#/components/schemas/ApplicationStatusEnum'
           readOnly: true
+        status_reason:
+          type: string
+          readOnly: true
+          description: Shown to the applicant (e.g. why it was rejected).
         proposed_start:
           type: string
           format: date
@@ -3335,6 +4170,7 @@ components:
       - proposed_end
       - proposed_start
       - status
+      - status_reason
     ApplicationStatusEnum:
       enum:
       - applied
@@ -3772,6 +4608,43 @@ components:
           description: Extra facts kept on the event.
       required:
       - status
+    Bulk:
+      type: object
+      properties:
+        action:
+          $ref: '#/components/schemas/ActionEnum'
+        application_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 100
+          minItems: 1
+        reason_code:
+          $ref: '#/components/schemas/RejectionReasonEnum'
+        message:
+          type: string
+          maxLength: 400
+      required:
+      - action
+      - application_ids
+    BulkResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        ok:
+          type: boolean
+        status:
+          type: string
+        error:
+          type: string
+      required:
+      - error
+      - id
+      - ok
+      - status
     BusinessCheck:
       type: object
       properties:
@@ -4190,6 +5063,21 @@ components:
       - profile_complete
       - refresh
       - user
+    FilterParams:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Comma list.
+        min_score:
+          type: integer
+          maximum: 100
+          minimum: 0
+        sort:
+          $ref: '#/components/schemas/SortEnum'
+        tag:
+          type: string
+          maxLength: 30
     Fit:
       type: object
       properties:
@@ -4811,6 +5699,89 @@ components:
         * `passport` - Passport
         * `driving_licence` - Driving licence
         * `voter_id` - Voter ID
+    Interview:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/InterviewStatusEnum'
+          readOnly: true
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/InterviewSlot'
+          readOnly: true
+        starts_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        starts_at_ist:
+          type: string
+          readOnly: true
+        duration_minutes:
+          type: integer
+          readOnly: true
+        video_link:
+          type: string
+          format: uri
+          readOnly: true
+          description: Shown once a time is picked.
+        note:
+          type: string
+          readOnly: true
+          description: Shown to the talent.
+        timezone:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - duration_minutes
+      - id
+      - note
+      - slots
+      - starts_at
+      - starts_at_ist
+      - status
+      - timezone
+      - video_link
+    InterviewSlot:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        starts_at:
+          type: string
+          format: date-time
+          readOnly: true
+        starts_at_ist:
+          type: string
+          readOnly: true
+      required:
+      - id
+      - starts_at
+      - starts_at_ist
+    InterviewStatusEnum:
+      enum:
+      - proposed
+      - scheduled
+      - new_times_requested
+      - cancelled
+      type: string
+      description: |-
+        * `proposed` - Waiting for the talent to pick a time
+        * `scheduled` - Scheduled
+        * `new_times_requested` - Talent asked for other times
+        * `cancelled` - Cancelled
     JobResult:
       type: object
       properties:
@@ -5030,6 +6001,34 @@ components:
       - badges
       - checks
       - trusted_member
+    Note:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        body:
+          type: string
+          maxLength: 2000
+        author:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - author
+      - body
+      - created_at
+      - id
+    NoteIn:
+      type: object
+      properties:
+        note:
+          type: string
+          maxLength: 500
     PaginatedAdminCaseList:
       type: object
       required:
@@ -5145,6 +6144,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Property'
+    PaginatedVendorApplicationListItemList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/VendorApplicationListItem'
     PatchedGig:
       type: object
       properties:
@@ -5378,6 +6400,26 @@ components:
           type: string
           format: date-time
           readOnly: true
+    PatchedSavedFilter:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 60
+        gig:
+          type: string
+          format: uuid
+          nullable: true
+        params:
+          $ref: '#/components/schemas/FilterParams'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
     PatchedSavedSearch:
       type: object
       properties:
@@ -5593,6 +6635,13 @@ components:
       - status
       - thumb_url
       - url
+    PickSlot:
+      type: object
+      properties:
+        slot_id:
+          type: integer
+      required:
+      - slot_id
     Property:
       type: object
       description: 'The owner''s view: everything, including the exact address and
@@ -5703,6 +6752,33 @@ components:
         * `cafe` - Café
         * `hotel` - Hotel
         * `trek_operator` - Trek operator
+    ProposeInterview:
+      type: object
+      properties:
+        slots:
+          type: array
+          items:
+            type: string
+            format: date-time
+          description: ISO 8601. Times without an offset are read as India time (Asia/Kolkata).
+          maxItems: 3
+          minItems: 1
+        video_link:
+          type: string
+          format: uri
+          description: Google Meet, Zoom or similar.
+          maxLength: 300
+        duration_minutes:
+          type: integer
+          maximum: 180
+          minimum: 10
+          default: 30
+        note:
+          type: string
+          maxLength: 500
+      required:
+      - slots
+      - video_link
     PublicPhoto:
       type: object
       properties:
@@ -5790,6 +6866,20 @@ components:
       - state
       - verified
       - women_friendly
+    Reason:
+      type: object
+      properties:
+        code:
+          type: string
+        label:
+          type: string
+        text:
+          type: string
+          description: What the applicant reads.
+      required:
+      - code
+      - label
+      - text
     ReferenceCheck:
       type: object
       properties:
@@ -5815,6 +6905,22 @@ components:
           type: string
       required:
       - refresh
+    RejectionReasonEnum:
+      enum:
+      - not_a_fit
+      - dates
+      - filled
+      - language
+      - incomplete
+      - other
+      type: string
+      description: |-
+        * `not_a_fit` - not_a_fit
+        * `dates` - dates
+        * `filled` - filled
+        * `language` - language
+        * `incomplete` - incomplete
+        * `other` - other
     RequiredVerificationEnum:
       enum:
       - none
@@ -5837,6 +6943,69 @@ components:
         * `content_creator` - Content creator
         * `trip_leader` - Trip leader
         * `specialist` - Specialist
+    Rule:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/RuleTypeEnum'
+        languages:
+          type: array
+          items:
+            type: string
+        skills:
+          type: array
+          items:
+            type: string
+        value:
+          type: integer
+      required:
+      - type
+    RuleTypeEnum:
+      enum:
+      - language
+      - skill
+      - min_followers
+      - min_stay_days
+      type: string
+      description: |-
+        * `language` - language
+        * `skill` - skill
+        * `min_followers` - min_followers
+        * `min_stay_days` - min_stay_days
+    Rules:
+      type: object
+      properties:
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/Rule'
+      required:
+      - rules
+    SavedFilter:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 60
+        gig:
+          type: string
+          format: uuid
+          nullable: true
+        params:
+          $ref: '#/components/schemas/FilterParams'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - name
+      - params
     SavedSearch:
       type: object
       properties:
@@ -5893,6 +7062,16 @@ components:
       required:
       - name
       - slug
+    SortEnum:
+      enum:
+      - fit
+      - newest
+      - oldest
+      type: string
+      description: |-
+        * `fit` - fit
+        * `newest` - newest
+        * `oldest` - oldest
     StartIdCheck:
       type: object
       properties:
@@ -6031,6 +7210,17 @@ components:
         * `user` - User
         * `property` - Property
         * `social_account` - Social account
+    Tags:
+      type: object
+      properties:
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 30
+          maxItems: 10
+      required:
+      - tags
     TalentProfile:
       type: object
       properties:
@@ -6137,6 +7327,20 @@ components:
         * `tech` - Tech / design
         * `outdoor` - Outdoor / trek guide
         * `other` - Other
+    TimelineEntry:
+      type: object
+      properties:
+        status:
+          type: string
+        at:
+          type: string
+          format: date-time
+        reason:
+          type: string
+      required:
+      - at
+      - reason
+      - status
     TokenPair:
       type: object
       properties:
@@ -6253,6 +7457,196 @@ components:
         * `vendor` - Vendor
         * `talent` - Talent
         * `admin` - Admin
+    VendorApplication:
+      type: object
+      description: The applicant view plus the vendor's private notes, tags and rejection
+        code.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        gig:
+          type: string
+          format: uuid
+          readOnly: true
+        gig_title:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ApplicationStatusEnum'
+          readOnly: true
+        status_reason:
+          type: string
+          readOnly: true
+          description: Shown to the applicant (e.g. why it was rejected).
+        pitch:
+          type: string
+          readOnly: true
+        answers:
+          readOnly: true
+          description: Answers to the gig's screening questions, in order.
+        proposed_start:
+          type: string
+          format: date
+          readOnly: true
+        proposed_end:
+          type: string
+          format: date
+          readOnly: true
+        applicant:
+          allOf:
+          - $ref: '#/components/schemas/Applicant'
+          readOnly: true
+        fit:
+          allOf:
+          - $ref: '#/components/schemas/Fit'
+          readOnly: true
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+          readOnly: true
+        applied_at:
+          type: string
+          format: date-time
+          readOnly: true
+        decided_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        status_changed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: When the status last changed (for stale interviews).
+        offer_expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Set when an offer is made; the talent must answer by then.
+        timeline:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimelineEntry'
+          readOnly: true
+          description: Every status change, with the reason given.
+        interview:
+          allOf:
+          - $ref: '#/components/schemas/Interview'
+          nullable: true
+          readOnly: true
+        rejection_code:
+          type: string
+          readOnly: true
+          description: apps.hiring.templates.RejectionReason, when rejected.
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Note'
+          readOnly: true
+        tags:
+          type: array
+          items:
+            type: string
+          readOnly: true
+      required:
+      - answers
+      - applicant
+      - applied_at
+      - attachments
+      - decided_at
+      - fit
+      - gig
+      - gig_title
+      - id
+      - interview
+      - notes
+      - offer_expires_at
+      - pitch
+      - proposed_end
+      - proposed_start
+      - rejection_code
+      - status
+      - status_changed_at
+      - status_reason
+      - tags
+      - timeline
+    VendorApplicationListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        gig:
+          type: string
+          format: uuid
+          readOnly: true
+        gig_title:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ApplicationStatusEnum'
+          readOnly: true
+        status_reason:
+          type: string
+          readOnly: true
+          description: Shown to the applicant (e.g. why it was rejected).
+        proposed_start:
+          type: string
+          format: date
+          readOnly: true
+        proposed_end:
+          type: string
+          format: date
+          readOnly: true
+        applicant:
+          allOf:
+          - $ref: '#/components/schemas/Applicant'
+          readOnly: true
+        fit:
+          allOf:
+          - $ref: '#/components/schemas/Fit'
+          readOnly: true
+        attachment_count:
+          type: integer
+          readOnly: true
+        applied_at:
+          type: string
+          format: date-time
+          readOnly: true
+        rejection_code:
+          type: string
+          readOnly: true
+        tags:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        note_count:
+          type: integer
+          readOnly: true
+      required:
+      - applicant
+      - applied_at
+      - attachment_count
+      - fit
+      - gig
+      - gig_title
+      - id
+      - note_count
+      - proposed_end
+      - proposed_start
+      - rejection_code
+      - status
+      - status_reason
+      - tags
     VendorApplicationMoveEnum:
       enum:
       - shortlisted
@@ -6333,13 +7727,16 @@ components:
       type: object
       description: |-
         The moves a vendor makes on an application (the transition table decides if
-        they're allowed from the current status).
+        they're allowed from the current status). Rejecting needs a reason_code; the
+        applicant sees its text plus the optional message.
       properties:
         status:
           $ref: '#/components/schemas/VendorApplicationMoveEnum'
-        reason:
+        reason_code:
+          $ref: '#/components/schemas/RejectionReasonEnum'
+        message:
           type: string
-          maxLength: 500
+          maxLength: 400
       required:
       - status
     VerificationDocumentStatusEnum:

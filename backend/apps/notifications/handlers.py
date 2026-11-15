@@ -23,6 +23,13 @@ APPLICATION_RECIPIENTS: dict[str, tuple[str, ...]] = {
     "application.confirmed": (VENDOR,),
     "application.expired": (TALENT,),
     "application.interview_stale": (VENDOR,),
+    # Interviews (apps.hiring).
+    "interview.proposed": (TALENT,),
+    "interview.scheduled": (TALENT, VENDOR),
+    "interview.new_times_requested": (VENDOR,),
+    "interview.cancelled": (TALENT,),
+    "interview.reminder_day": (TALENT, VENDOR),
+    "interview.reminder_hour": (TALENT, VENDOR),
 }
 
 
@@ -50,3 +57,4 @@ def notify(event: DomainEvent) -> None:
 def register() -> None:
     subscribe("application.", notify)
     subscribe("booking.", notify)
+    subscribe("interview.", notify)

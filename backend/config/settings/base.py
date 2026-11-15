@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "apps.notifications",
     "apps.applications",
     "apps.bookings",
+    "apps.hiring",
     "apps.backoffice.apps.BackofficeConfig",
 ]
 
@@ -163,6 +164,8 @@ SPECTACULAR_SETTINGS = {
         "BookingStatusEnum": "apps.bookings.lifecycle.BookingStatus",
         "BookingActorEnum": "apps.bookings.lifecycle.Actor",
         "VendorApplicationMoveEnum": ["shortlisted", "interview", "offered", "rejected"],
+        "RejectionReasonEnum": ["not_a_fit", "dates", "filled", "language", "incomplete", "other"],
+        "InterviewStatusEnum": "apps.hiring.models.InterviewStatus",
     },
 }
 

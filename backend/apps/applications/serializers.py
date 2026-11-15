@@ -4,6 +4,7 @@ from rest_framework import serializers
 from apps.applications.constants import MAX_ATTACHMENTS
 from apps.applications.models import Application, ApplicationAttachment, AttachmentKind
 from apps.discovery.serializers import FitSerializer
+from apps.hiring.interview_serializers import InterviewSerializer
 from apps.media.services.uploads import read_urls
 
 
@@ -123,6 +124,7 @@ class ApplicationListItemSerializer(_ApplicationBase):
             "gig",
             "gig_title",
             "status",
+            "status_reason",
             "proposed_start",
             "proposed_end",
             "applicant",
@@ -133,8 +135,34 @@ class ApplicationListItemSerializer(_ApplicationBase):
         read_only_fields = fields
 
 
+class TimelineEntrySerializer(serializers.Serializer):
+    status = serializers.CharField()
+    at = serializers.DateTimeField()
+    reason = serializers.CharField(allow_blank=True)
+
+
 class ApplicationSerializer(_ApplicationBase):
+    """What the applicant (and the vendor) sees. Never the vendor's notes or tags:
+    those are only in apps.hiring.serializers.VendorApplicationSerializer."""
+
     attachments = AttachmentSerializer(many=True, read_only=True)
+    timeline = serializers.SerializerMethodField(
+        help_text="Every status change, with the reason given."
+    )
+    interview = serializers.SerializerMethodField()
+
+    @extend_schema_field(TimelineEntrySerializer(many=True))
+    def get_timeline(self, application):
+        from apps.hiring.services import timeline
+
+        return TimelineEntrySerializer(timeline(application), many=True).data
+
+    @extend_schema_field(InterviewSerializer(allow_null=True))
+    def get_interview(self, application):
+        from apps.hiring.services import active_interview
+
+        interview = active_interview(application)
+        return InterviewSerializer(interview).data if interview else None
 
     class Meta:
         model = Application
@@ -155,16 +183,27 @@ class ApplicationSerializer(_ApplicationBase):
             "decided_at",
             "status_changed_at",
             "offer_expires_at",
+            "timeline",
+            "interview",
         ]
         read_only_fields = fields
 
 
 class VendorStatusSerializer(serializers.Serializer):
     """The moves a vendor makes on an application (the transition table decides if
-    they're allowed from the current status)."""
+    they're allowed from the current status). Rejecting needs a reason_code; the
+    applicant sees its text plus the optional message."""
 
     status = serializers.ChoiceField(choices=["shortlisted", "interview", "offered", "rejected"])
-    reason = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    reason_code = serializers.ChoiceField(
+        choices=["not_a_fit", "dates", "filled", "language", "incomplete", "other"], required=False
+    )
+    message = serializers.CharField(max_length=400, required=False, allow_blank=True)
+
+    def validate(self, data):
+        if data["status"] == "rejected" and not data.get("reason_code"):
+            raise serializers.ValidationError({"reason_code": ["Pick a reason."]})
+        return data
 
 
 class WithdrawSerializer(serializers.Serializer):

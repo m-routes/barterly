@@ -27,6 +27,11 @@ from apps.common.exceptions import error_body
 from apps.common.permissions import IsAdminRole, IsTalent, IsVendor
 from apps.common.serializers import ErrorSerializer
 from apps.gigs.models import Gig
+from apps.hiring import services as hiring
+from apps.hiring.serializers import (
+    VendorApplicationListItemSerializer,
+    VendorApplicationSerializer,
+)
 from apps.verification.models import Badge
 
 TAG = ["applications"]
@@ -67,17 +72,25 @@ def with_attachments(qs):
 
 
 class GigApplicationsView(generics.ListAPIView):
-    """POST: talent apply. GET: the gig's vendor lists applicants."""
+    """POST: talent apply. GET: the gig's vendor lists applicants (with their private
+    tags and note counts)."""
 
-    serializer_class = ApplicationListItemSerializer
+    serializer_class = VendorApplicationListItemSerializer
 
     def get_permissions(self):
         return [IsTalent()] if self.request.method == "POST" else [IsVendor()]
 
     def get_queryset(self):
         gig = generics.get_object_or_404(Gig, pk=self.kwargs["gig_id"], vendor=self.request.user)
-        qs = applications().filter(gig=gig)
+        qs = (
+            applications()
+            .filter(gig=gig)
+            .prefetch_related("private_tags")
+            .annotate(note_count=Count("private_notes", distinct=True))
+        )
         params = self.request.query_params
+        if params.get("tag"):
+            qs = qs.filter(private_tags__label=params["tag"].strip().lower())
         if params.get("status"):
             qs = qs.filter(status__in=params["status"].split(","))
         if params.get("min_score"):
@@ -97,9 +110,14 @@ class GigApplicationsView(generics.ListAPIView):
         parameters=[
             OpenApiParameter("status", str, description="Comma list of statuses."),
             OpenApiParameter("min_score", int),
+            OpenApiParameter("tag", str, description="Only applicants with this private tag."),
             OpenApiParameter("sort", enum=list(SORTS)),
         ],
-        responses={200: ApplicationListItemSerializer(many=True), 400: ErrorSerializer, **ERRORS},
+        responses={
+            200: VendorApplicationListItemSerializer(many=True),
+            400: ErrorSerializer,
+            **ERRORS,
+        },
         tags=TAG,
     )
     def get(self, request: Request, *args, **kwargs) -> Response:
@@ -186,13 +204,22 @@ class ApplicationDetailView(generics.RetrieveAPIView):
     serializer_class = ApplicationSerializer
     lookup_url_kwarg = "application_id"
 
+    def get_serializer_class(self):
+        # Vendors and admins also see private notes and tags; the applicant never does.
+        user = self.request.user
+        if user.is_authenticated and (user.is_vendor or user.is_admin_role):
+            return VendorApplicationSerializer
+        return ApplicationSerializer
+
     def get_queryset(self):
         user = self.request.user
         qs = with_attachments(applications())
         if user.is_admin_role:
             return qs
         if user.is_vendor:
-            return qs.filter(gig__vendor=user)
+            return qs.filter(gig__vendor=user).prefetch_related(
+                "private_tags", "private_notes__author"
+            )
         return qs.filter(talent=user)
 
     @extend_schema(
@@ -203,7 +230,7 @@ class ApplicationDetailView(generics.RetrieveAPIView):
             "signed URLs. Badges show the applicant's verification; contact details are "
             "never included."
         ),
-        responses={200: ApplicationSerializer, **ERRORS},
+        responses={200: VendorApplicationSerializer, **ERRORS},
         tags=TAG,
     )
     def get(self, request: Request, *args, **kwargs) -> Response:
@@ -239,9 +266,10 @@ class WithdrawView(APIView):
         return Response(ApplicationSerializer(application).data)
 
 
-def _respond(application_id) -> Response:
+def _respond(application_id, *, vendor: bool = False) -> Response:
     application = with_attachments(applications()).get(pk=application_id)
-    return Response(ApplicationSerializer(application).data)
+    serializer = VendorApplicationSerializer if vendor else ApplicationSerializer
+    return Response(serializer(application).data)
 
 
 class VendorStatusView(APIView):
@@ -251,12 +279,14 @@ class VendorStatusView(APIView):
         operation_id="applications_status_change",
         summary="Shortlist, interview, offer or reject",
         description=(
-            "The gig's vendor moves an application along. An offer reserves nothing yet: the "
+            "The gig's vendor moves an application along. Rejecting needs a reason_code "
+            "(GET /api/v1/hiring/rejection-reasons/); the applicant reads its text and the "
+            "optional message. An offer reserves nothing yet: the "
             "talent has 48 hours to accept (which books a slot) or decline, and offers need "
             "an open slot on a running gig."
         ),
         request=VendorStatusSerializer,
-        responses={200: ApplicationSerializer, 409: ErrorSerializer, **ERRORS},
+        responses={200: VendorApplicationSerializer, 409: ErrorSerializer, **ERRORS},
         tags=TAG,
     )
     def post(self, request: Request, application_id) -> Response:
@@ -264,18 +294,19 @@ class VendorStatusView(APIView):
             raise exceptions.NotFound("No such application.")
         serializer = VendorStatusSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
         try:
-            transition(
+            hiring.move(
                 application_id,
-                serializer.validated_data["status"],
-                actor=Actor.VENDOR,
-                user=request.user,
-                reason=serializer.validated_data.get("reason", ""),
+                data["status"],
+                vendor=request.user,
+                code=data.get("reason_code", ""),
+                message=data.get("message", ""),
                 request=request,
             )
-        except InvalidApplicationTransition as exc:
+        except hiring.HiringError as exc:
             raise Conflict(str(exc)) from exc
-        return _respond(application_id)
+        return _respond(application_id, vendor=True)
 
 
 class DeclineView(APIView):

@@ -180,6 +180,8 @@ TRANSITIONS: dict[tuple[str, str], Rule] = {
         for s in _ACTIVE_BEFORE_OFFER
     },
     **{(s, A.REJECTED): Rule(frozenset({V})) for s in ACTIVE},
+    # Auto-reject rules: the system turns down a new application that misses them.
+    (A.APPLIED, A.REJECTED): Rule(frozenset({V, SYS})),
     # The talent: withdraw any time until accepting; answer an offer.
     **{(s, A.WITHDRAWN): Rule(frozenset({T})) for s in ACTIVE},
     (A.OFFERED, A.DECLINED): Rule(frozenset({T})),
