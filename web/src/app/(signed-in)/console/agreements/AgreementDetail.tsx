@@ -21,6 +21,8 @@ import {
 } from "@/lib/firebase/phoneAuth";
 import { formatDate } from "@/lib/format";
 import { useLoad } from "@/lib/hooks/useLoad";
+
+import { BookingPanel } from "./BookingPanel";
 import { useSession } from "@/lib/session/session";
 import { MEALS_LABELS, STAY_TYPE_LABELS, options } from "@/lib/vendor/labels";
 
@@ -68,7 +70,9 @@ export function AgreementDetail({ config, phoneSignIn }: Props) {
   }
   const agreement = state.data;
   const base = agreement.versions.find((v) => v.status === "active") ?? agreement.versions[0];
-  const canChange = ["confirmed", "checked_in", "delivering"].includes(agreement.booking_status);
+  const canChange = ["signing", "confirmed", "checked_in", "delivering"].includes(
+    agreement.booking_status,
+  );
 
   return (
     <div className="page page--narrow">
@@ -91,6 +95,7 @@ export function AgreementDetail({ config, phoneSignIn }: Props) {
       </header>
 
       <div className="stack">
+        <BookingPanel agreement={agreement} onChange={() => void reload()} />
         {agreement.versions.map((version) => (
           <VersionCard
             key={version.id}
@@ -256,7 +261,7 @@ function ChangeForm({
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const started = agreement.booking_status !== "confirmed";
+  const started = !["signing", "confirmed"].includes(agreement.booking_status);
   const set = <K extends keyof Terms>(key: K, value: Terms[K]) =>
     setTerms((t) => ({ ...t, [key]: value }));
 

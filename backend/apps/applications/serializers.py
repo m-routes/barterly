@@ -6,6 +6,9 @@ from apps.applications.models import Application, ApplicationAttachment, Attachm
 from apps.discovery.serializers import FitSerializer
 from apps.hiring.interview_serializers import InterviewSerializer
 from apps.media.services.uploads import read_urls
+from apps.reliability import services as reliability
+from apps.reliability.models import Side
+from apps.reliability.serializers import ReliabilitySerializer
 
 
 class AttachmentInputSerializer(serializers.Serializer):
@@ -83,6 +86,7 @@ class ApplicantSerializer(serializers.Serializer):
     skills = serializers.ListField(child=serializers.CharField())
     instagram_followers = serializers.IntegerField(allow_null=True)
     badges = serializers.ListField(child=serializers.CharField(), help_text="Active badge kinds.")
+    reliability = ReliabilitySerializer(help_text="Their reliability as talent (v1).")
 
 
 def applicant(user) -> dict:
@@ -97,6 +101,7 @@ def applicant(user) -> dict:
         "skills": [s.slug for s in profile.skills.all()] if profile else [],
         "instagram_followers": profile.instagram_followers if profile else None,
         "badges": sorted(b.kind for b in getattr(user, "active_badges", [])),
+        "reliability": reliability.for_user(user, Side.TALENT),
     }
 
 

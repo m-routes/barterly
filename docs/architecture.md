@@ -68,11 +68,12 @@ Surfaces: the vendor console (web), the talent app (mobile) and the admin consol
 | `discovery` | Gig search for talent (`GET /api/v1/gigs/`): hard filters, the fit score, cursor pages; saved searches and their alert job |
 | `applications` | `Application` and its attachments, the apply rules (with every blocking reason), the status table, applicant views for vendors |
 | `notifications` | Queued `Notification` rows, created from domain events; delivery arrives later in Phase 3 |
-| `bookings` | The transition table, bookings, the append-only booking event log and scheduled jobs |
+| `bookings` | The transition table, bookings, the append-only booking event log, confirmation and cancellation (with the step-in offer), and scheduled jobs |
 | `hiring` | Rejection reasons, bulk actions, auto-reject rules, private notes and tags, saved filters, interviews |
 | `chat` | One conversation per application, messages with cursors and read receipts, the contact-sharing guard, blocks, reports, the profanity filter hook |
 | `offers` | `Offer`: the frozen terms snapshot a vendor sends, the talent's one counter, and the terms schema (`apps/offers/terms.py`) |
 | `agreements` | `Agreement`, its versions and signatures, the PDF template and WeasyPrint renderer, the `ESignProvider` interface (in-app OTP provider and a fake) |
+| `reliability` | The reliability score v1 (a pure function, [reliability.md](reliability.md)) and each person's stored score per side |
 | `verification` | Verification cases per check, evidence (provider references and masked numbers only), badges, the KYC provider interface and webhook, re-verification on profile edits, the review API |
 
 ### Users and permissions
@@ -240,12 +241,28 @@ Every change writes an audit row `application.<status>` and publishes the domain
 
 **One transition table.** `lifecycle.TRANSITIONS` covers the whole engagement, from application to booking:
 - Application: applied → shortlisted → interview → offered.
-- Accepting the offer (offered → confirmed) creates the `Booking`, with the offer's dates. The talent accepts the host's offer; the host confirms only by accepting the talent's counter.
-- Booking: confirmed → checked_in → delivering → completed → reviewed, with cancelled, no_show, disputed and refunded along the way.
+- Accepting the offer (offered → confirmed) creates the `Booking` awaiting signatures (`signing`), with the offer's dates. The talent accepts the host's offer; the host confirms only by accepting the talent's counter.
+- Booking: signing → confirmed (by the system, when both have signed the agreement) → checked_in → delivering → completed → reviewed, with cancelled, no_show, disputed and refunded along the way.
 
 Each row lists the actors allowed to make the move (talent, vendor, system, admin), whether a reason is needed, and a guard. Guards include: an open slot to offer or accept, an unexpired offer, no overlapping booking for the talent, check-in from the day before the stay and only once both sides have signed the agreement, the stay has started for no-shows and completion, disputes within 14 days, and refunds only where money changed hands. `lifecycle.check()` is the only place a move is allowed or refused. The services call it, and the API answers 409 with the reason.
 
-**Slots.** A booking holds one of its gig's slots while it's confirmed, checked in, delivering, completed, disputed or reviewed. Every status change locks the gig row first (`SELECT … FOR UPDATE`), then the application or booking, and counts slots while holding that lock. Two people accepting the last slot at the same moment can't both get it, and a test runs that race with two threads. When the count reaches the gig's slots, the gig becomes `filled`. A cancellation reopens it while applications are still open.
+**Slots.** A booking holds one of its gig's slots while it's confirmed, checked in, delivering, completed, disputed or reviewed: not while it's awaiting signatures. Every status change locks the gig row first (`SELECT … FOR UPDATE`), then the application or booking, and counts slots while holding that lock. Two bookings whose last signatures land at the same moment can't both take the last slot, and a test runs that race with two threads. When the count reaches the gig's slots, the gig becomes `filled`. A cancellation reopens it while applications are still open. A booking awaiting signatures still keeps the talent's dates: no second booking may overlap it.
+
+**When both sign** (`apps/bookings/confirmation.py`, called inside signing):
+1. The booking moves signing → confirmed and takes its slot; the gig is marked filled when its slots are full.
+2. If it's full, the other offers for the gig are settled by `BOOKING_WHEN_FULL` (an environment setting): `hold` (the default) puts open offers on hold until a place opens (they lapse when the stay would have started) and leaves other bookings awaiting signatures waiting, unable to complete signing until a place opens; `expire` ends those applications and calls off those bookings, with no effect on anyone's reliability. Audited as `gig.full_settled`.
+3. The details unlock: `GET /api/v1/bookings/{id}/details/` gives both sides each other's verified phone (the one they sign in with by OTP) and the talent the exact address, the property's directions and a Google Maps directions link. 409 before both have signed; nothing once the stay has ended or been cancelled. The property's exact location follows the same rule.
+
+**Cancelling before check-in** (`apps/bookings/cancellation.py`): `GET /api/v1/bookings/{id}/cancel/` lists the reasons for your side and what cancelling now would do; `POST` with `{reason, note}` cancels (a note is required for "other"). The transition endpoint refuses `cancelled` before check-in for talent and hosts; admins cancelling there are recorded with reason `admin`. Each cancellation is recorded (`Cancellation`) with its effect under the agreement's cancellation policy (flexible 3, moderate 7, strict 14 days' notice):
+
+| When | Effect on the canceller |
+|---|---|
+| Before both signed, or by Barterly | None |
+| Before the notice period | Free |
+| Inside the notice period | Late |
+| A day or less before the stay | Last minute |
+
+A confirmed booking gives its slot back. The place is then offered on: offers held when the gig filled open again first, with a fresh 48 hours; if nobody is in line (no open offer, no booking awaiting signatures), the best-fitting shortlisted applicant who is free on those dates gets an offer on the terms the host agreed for that place (`STEP_IN_OFFERS`, on by default; never once the stay has started). It is still the host's offer: the host signs its agreement like any other. The host hears `booking.place_opened` and `offer.step_in`.
 
 **Event log.** Each booking move appends a `BookingEvent`: from and to state, actor, the person, reason, metadata and time. A database trigger (migration `bookings.0002`) refuses every UPDATE and DELETE on that table, whichever database user tries, the app's own included. Moves also write an AuditLog row.
 
@@ -256,12 +273,14 @@ Each row lists the actors allowed to make the move (talent, vendor, system, admi
 - `GET /api/v1/bookings/`, as talent or as the vendor
 - `GET /api/v1/bookings/{id}/`, with its events and the `next_moves` you can make
 - `POST /api/v1/bookings/{id}/transition/` with `{status, reason, metadata}`
+- `GET`/`POST /api/v1/bookings/{id}/cancel/`, `GET /api/v1/bookings/{id}/details/`
+- `GET /api/v1/reliability/me/`; the score also appears on applicants (`applicant.reliability`) and offer threads (`host_reliability`)
 
 **Scheduled jobs.** Cloud Scheduler calls `POST /api/v1/jobs/<name>/` with a Google-signed OIDC token. The API accepts only tokens whose audience is its own URL and that were issued to the scheduler service account (`SCHEDULER_AUDIENCE`, `SCHEDULER_INVOKER_EMAIL`, set by `infra/terraform/modules/environment/scheduler.tf`). The jobs, with their India-time schedules:
 
 | Job | Runs | What it does |
 |---|---|---|
-| `expire_offers` | Every 15 minutes | Offers with no reply 48 hours after the last offer or counter expire |
+| `expire_offers` | Every 15 minutes | Offers with no reply 48 hours after the last offer or counter expire, as do offers held for a place that never opened; bookings still awaiting signatures when the stay starts are cancelled |
 | `flag_stale_interviews` | Daily at 9:00 | Interviews with no movement for 7 days are flagged once, and the vendor is told |
 | `close_expired_gigs` | Daily at 0:15 | Gigs whose apply-by date has passed are closed |
 | `expire_verifications` | Daily at 0:30 | Verifications past their validity expire |
@@ -338,12 +357,12 @@ One conversation per application, between its talent and the gig's vendor.
 - Each answer gives the other side a fresh 48 hours (`offer_expires_at`); `expire_offers` ends the application after that. An application that ends lapses its open offer.
 - `GET /applications/{id}/offers/` returns every revision with `changed_fields`, whose turn it is and whether a counter is still allowed. All moves are audited (`offer.sent`, `offer.accepted`, ...) and notify the other side (`offer.countered`, `offer.counter_declined`).
 
-**Agreements.** Accepting an offer creates the booking and agreement version 1 from the accepted terms, in the same transaction.
+**Agreements.** Accepting an offer creates the booking (awaiting signatures) and agreement version 1 from the accepted terms, in the same transaction.
 
 - **PDF:** after the transaction commits, the version is drawn up from a registered template (`apps/agreements/templates/agreements/agreement_v1.html`) with WeasyPrint, stored in the private media bucket under `agreements/<id>/v<n>-<hash>.pdf`, and its SHA-256, size and template hash recorded. A render that fails doesn't undo the booking: `render_agreements` retries it. The PDF covers the parties, dates and hour caps, what the host provides, deliverables, the content usage rights clause, safety and conduct, the cancellation policy, and how changes work. The API image installs Pango and DejaVu fonts for it.
 - **Legal text: placeholder.** The template's wording has not been reviewed by a lawyer. Every PDF prints a warning on its first section and in every page footer, `TEMPLATES[...].reviewed` is `False`, and the API returns `template_reviewed: false` so the web console and app say so too. A lawyer must review it before launch; the reviewed wording goes in a new template file (templates are never edited once used, since each version records its template's hash).
 - **Signing:** `GET /agreement-versions/{id}/sign/` returns the consent statement and what's needed; `POST` signs. The `ESignProvider` interface (`apps/agreements/esign/`) decides what proves consent. The in-app provider (`ESIGN_PROVIDER`, a code setting) needs the consent box ticked and a fresh OTP re-confirmation: the client re-runs Firebase phone sign-in and sends the new ID token, which must be for the signer's own phone and less than 5 minutes old (`auth_time`). Each signature stores the time, IP address, user agent, device (`X-Client-Device`), the phone confirmed, the consent text word for word and the SHA-256 of the PDF the signer saw, which must match the version's. `FakeESignProvider` is for tests.
-- **Valid only when both have signed.** A version is in force once both sides sign it; the one before is then superseded. Check-in needs an agreement in force.
+- **Valid only when both have signed.** A version is in force once both sides sign it; the one before is then superseded. Version 1 in force confirms the booking (see Bookings). Check-in needs an agreement in force.
 - **Changes after signing:** `POST /bookings/{id}/agreement/changes/` (`{changes, reason}`) draws up a new version that both must sign again; the version in force stays in force until then. A newer change replaces one still unsigned, the other side can decline it (`/agreement-versions/{id}/decline/`), and dates can't change once the stay has started. When a version with new dates comes into force, the booking's dates follow (audited as `booking.dates_changed`).
 - **Record:** database triggers (migration `agreements.0002`) keep a version's terms, template and people fixed, let its PDF fields be set once only, and make signatures append-only. Drawing up, signing, coming into force, proposing and declining are audited and notify the other side.
 - **Clients:** the web console's Agreements section lists agreements and shows each version with its PDF, signing (with OTP re-confirmation) and changes; the applicant page has the offer form and answers counters. The mobile app's My trips opens the offer (accept, decline, ask for a change) and the agreement (PDF, signing).

@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "apps.chat",
     "apps.offers",
     "apps.agreements",
+    "apps.reliability",
     "apps.backoffice.apps.BackofficeConfig",
 ]
 
@@ -167,6 +168,10 @@ SPECTACULAR_SETTINGS = {
         "AttachmentKindEnum": "apps.applications.models.AttachmentKind",
         "BookingStatusEnum": "apps.bookings.lifecycle.BookingStatus",
         "BookingActorEnum": "apps.bookings.lifecycle.Actor",
+        "CancellationReasonEnum": "apps.bookings.models.CancellationReason",
+        "CancellationEffectEnum": "apps.bookings.models.CancellationEffect",
+        "CancelledByEnum": "apps.bookings.models.CancelledBy",
+        "ReliabilitySideEnum": "apps.reliability.models.Side",
         "VendorApplicationMoveEnum": ["shortlisted", "interview", "offered", "rejected"],
         "RejectionReasonEnum": ["not_a_fit", "dates", "filled", "language", "incomplete", "other"],
         "InterviewStatusEnum": "apps.hiring.models.InterviewStatus",
@@ -245,3 +250,9 @@ CHAT_PROFANITY_WORDS = env_list("CHAT_PROFANITY_WORDS")
 # can't be pointed at a fake from the environment.
 AGREEMENT_RENDERER = "apps.agreements.pdf.WeasyPrintRenderer"
 ESIGN_PROVIDER = "apps.agreements.esign.inapp.InAppESignProvider"
+# When both sides sign and the gig's slots are full, other open offers and unsigned
+# bookings for it are put on "hold" (until a place opens) or "expire"d.
+BOOKING_WHEN_FULL = env_str("BOOKING_WHEN_FULL", "hold")
+# When a confirmed booking is cancelled and nobody is in line, offer the place to the
+# next shortlisted applicant on the same terms.
+STEP_IN_OFFERS = env_bool("STEP_IN_OFFERS", True)

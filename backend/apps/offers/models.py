@@ -21,6 +21,7 @@ class Party(models.TextChoices):
 
 class OfferStatus(models.TextChoices):
     OPEN = "open", "Waiting for an answer"
+    HELD = "held", "On hold until a place opens"
     ACCEPTED = "accepted", "Accepted"
     DECLINED = "declined", "Declined"
     COUNTERED = "countered", "Countered"
@@ -51,6 +52,14 @@ class Offer(models.Model):
         default=False, help_text="No counter allowed: the one counter has been used."
     )
     message = models.TextField(max_length=1000, blank=True)
+    step_in_for = models.ForeignKey(
+        "bookings.Booking",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="step_in_offers",
+        help_text="Sent automatically when this booking was cancelled and its place freed.",
+    )
     status = models.CharField(max_length=10, choices=OfferStatus.choices, default=OfferStatus.OPEN)
     status_reason = models.CharField(max_length=500, blank=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)

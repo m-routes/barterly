@@ -27,13 +27,11 @@ def can_see_exact_location(user, prop: Property) -> bool:
         return False
     if user.pk == prop.vendor_id or user.is_admin_role:
         return True
-    from apps.bookings.lifecycle import BookingStatus
+    from apps.bookings.confirmation import UNLOCKED_WHILE
     from apps.bookings.models import Booking
 
     return Booking.objects.filter(
-        talent=user,
-        gig__property=prop,
-        status__in=[BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN, BookingStatus.DELIVERING],
+        talent=user, gig__property=prop, status__in=UNLOCKED_WHILE
     ).exists()
 
 

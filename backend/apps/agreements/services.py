@@ -5,7 +5,8 @@
   recorded. It runs after the booking's transaction commits (render_quietly) and the
   render_agreements job retries any left over, so a slow PDF never blocks a booking.
 - sign(): one side signs one version through the e-sign provider. When both have signed,
-  the version is in force and the one before is superseded.
+  the version is in force and the one before is superseded. Version 1 in force confirms
+  the booking (apps.bookings.confirmation.confirm_signed), in the same transaction.
 - propose_change(): either side changes the terms as a new version that both must sign;
   the version in force stays in force until then. decline_change() turns it down.
 
@@ -30,7 +31,8 @@ from apps.agreements.esign.base import (
     get_provider,
 )
 from apps.agreements.models import Agreement, AgreementVersion, Signature, VersionStatus
-from apps.bookings.lifecycle import HOLDS_SLOT, BookingStatus
+from apps.bookings import confirmation
+from apps.bookings.lifecycle import BEFORE_CHECK_IN, HOLDS_DATES, BookingStatus
 from apps.bookings.models import Booking
 from apps.common.events import DomainEvent, publish
 from apps.common.services.audit import client_ip, log_action, snapshot
@@ -43,7 +45,12 @@ logger = logging.getLogger(__name__)
 
 # The booking states in which an agreement can be signed or changed.
 OPEN_BOOKING = frozenset(
-    {BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN, BookingStatus.DELIVERING}
+    {
+        BookingStatus.SIGNING,
+        BookingStatus.CONFIRMED,
+        BookingStatus.CHECKED_IN,
+        BookingStatus.DELIVERING,
+    }
 )
 # Every term but how the gig is paid can change by a new version.
 CHANGEABLE = (
@@ -308,6 +315,10 @@ def sign(version_id, *, user, consent: bool, document_sha256: str, otp_token: st
         )
         if version.signatures.count() == len(Party.values):
             _put_in_force(agreement, version, booking, user=user, request=request, now=now)
+            try:
+                confirmation.confirm_signed(booking, version_number=version.number, now=now)
+            except confirmation.ConfirmationRefused as exc:
+                raise AgreementError(str(exc)) from exc
     return version
 
 
@@ -316,14 +327,14 @@ def _put_in_force(agreement, version, booking, *, user, request, now) -> None:
     end = date.fromisoformat(version.terms["end_date"])
     dates_change = (start, end) != (booking.start_date, booking.end_date)
     if dates_change:
-        if booking.status != BookingStatus.CONFIRMED:
+        if booking.status not in BEFORE_CHECK_IN:
             raise AgreementError(
                 "The stay has started, so its dates can't change. Decline this version and "
                 "propose one that keeps the dates."
             )
         clash = Booking.objects.filter(
             talent_id=booking.talent_id,
-            status__in=HOLDS_SLOT,
+            status__in=HOLDS_DATES,
             start_date__lt=end,
             end_date__gt=start,
         ).exclude(pk=booking.pk)
@@ -392,7 +403,7 @@ def propose_change(booking_id, *, user, changes: dict, reason: str, request=None
         base = agreement.current_version or waiting
         merged = {**base.terms, **changes}
         dates_change = any(merged[f] != base.terms[f] for f in offer_terms.DATE_FIELDS)
-        if dates_change and booking.status != BookingStatus.CONFIRMED:
+        if dates_change and booking.status not in BEFORE_CHECK_IN:
             raise AgreementError("The stay has started, so its dates can't change.")
         terms = offer_terms.validate(
             merged,

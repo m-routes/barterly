@@ -21,6 +21,7 @@ from apps.gigs.services import on_confirmed_bookings_changed
 
 AUDIT_FIELDS = ["status", "status_reason"]
 STATUS_TIMESTAMPS = {
+    BookingStatus.CONFIRMED: "confirmed_at",
     BookingStatus.CHECKED_IN: "checked_in_at",
     BookingStatus.COMPLETED: "completed_at",
     BookingStatus.CANCELLED: "cancelled_at",
@@ -94,7 +95,8 @@ def _sync_slots(gig_id) -> None:
 def confirm(
     application, *, start, end, actor: str, user, request=None, now=None, metadata=None
 ) -> Booking:
-    """Book an accepted offer: offered → confirmed, and the booking is created.
+    """Book an accepted offer: the application moves offered → confirmed, and the booking
+    is created awaiting signatures (it takes a slot when both sign; see confirmation).
 
     The caller (apps.offers.services.accept) holds the gig and application locks from
     the slot check to the insert, so the last slot goes to exactly one of two people
@@ -120,7 +122,7 @@ def confirm(
         vendor=application.gig.vendor,
         start_date=start,
         end_date=end,
-        confirmed_at=now,
+        status=BookingStatus.SIGNING,
         status_changed_at=now,
     )
     _record(
@@ -134,7 +136,6 @@ def confirm(
         now=now,
         before={"status": ApplicationStatus.OFFERED},
     )
-    _sync_slots(booking.gig_id)
     return booking
 
 

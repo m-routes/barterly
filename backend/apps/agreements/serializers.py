@@ -4,6 +4,7 @@ from rest_framework import serializers
 from apps.agreements import pdf
 from apps.agreements.models import Agreement, AgreementVersion, Signature, VersionStatus
 from apps.agreements.services import party_of
+from apps.bookings.lifecycle import BookingStatus
 from apps.offers.models import Party
 from apps.offers.terms import (
     CancellationPolicy,
@@ -90,7 +91,9 @@ class AgreementVersionSerializer(serializers.ModelSerializer):
 
 
 class AgreementSerializer(serializers.ModelSerializer):
-    booking_status = serializers.CharField(source="booking.status", read_only=True)
+    booking_status = serializers.ChoiceField(
+        source="booking.status", choices=BookingStatus.choices, read_only=True
+    )
     gig_title = serializers.CharField(source="booking.gig.title", read_only=True)
     in_force = serializers.BooleanField(read_only=True)
     current_version = serializers.IntegerField(
@@ -125,7 +128,9 @@ class AgreementSerializer(serializers.ModelSerializer):
 
 
 class AgreementListItemSerializer(serializers.ModelSerializer):
-    booking_status = serializers.CharField(source="booking.status", read_only=True)
+    booking_status = serializers.ChoiceField(
+        source="booking.status", choices=BookingStatus.choices, read_only=True
+    )
     gig_title = serializers.CharField(source="booking.gig.title", read_only=True)
     other_name = serializers.SerializerMethodField()
     start_date = serializers.DateField(source="booking.start_date", read_only=True)

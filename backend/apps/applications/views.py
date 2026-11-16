@@ -54,6 +54,7 @@ def applications():
         Application.objects.select_related("gig", "talent__talent_profile")
         .prefetch_related(
             "talent__talent_profile__skills",
+            "talent__reliability_scores",
             Prefetch(
                 "talent__badges",
                 queryset=Badge.objects.filter(revoked_at__isnull=True),

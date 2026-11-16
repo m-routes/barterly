@@ -62,6 +62,32 @@ beforeEach(() => {
         size: 1,
       });
     }
+    if (path.endsWith("/details/")) {
+      return jsonResponse(200, {
+        booking_id: current.booking,
+        status: current.booking_status,
+        host: { name: "Asha", phone: "+919876543210" },
+        talent: { name: "Aarav Mehta", phone: "+919812345678" },
+        place: null,
+      });
+    }
+    if (path.endsWith("/cancel/") && request.method === "GET") {
+      return jsonResponse(200, {
+        reasons: [
+          { code: "staffing", label: "Staffing needs changed" },
+          { code: "other", label: "Something else" },
+        ],
+        effect: "late",
+        effect_label: "Late",
+        policy: "moderate",
+        notice_days: 7,
+        days_before_start: 4,
+      });
+    }
+    if (path.endsWith("/cancel/")) {
+      current = agreement({ booking_status: "cancelled" });
+      return jsonResponse(200, {});
+    }
     if (path.endsWith("/changes/")) return jsonResponse(201, current);
     if (path.endsWith("/decline/")) return jsonResponse(200, current);
     return jsonResponse(404, errorBody("not_found"));
@@ -164,5 +190,40 @@ describe("AgreementDetail", () => {
     expect(await screen.findByText(/I'd like Sundays free/)).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Decline this change" }));
     await vi.waitFor(() => expect(posted("/agreement-versions/v-2/decline/")).toHaveLength(1));
+  });
+});
+
+describe("BookingPanel", () => {
+  it("waits for signatures before sharing contact details", async () => {
+    render(<AgreementDetail />);
+    expect(await screen.findByText("Awaiting signatures")).toBeVisible();
+    expect(screen.getByText(/contact details shared, once both of you have signed/)).toBeVisible();
+    expect(network.mock.calls.some((c) => (c[0] as Request).url.endsWith("/details/"))).toBe(false);
+  });
+
+  it("shows the talent's verified phone once confirmed", async () => {
+    current = agreement({ booking_status: "confirmed", in_force: true, current_version: 1 });
+    render(<AgreementDetail />);
+    const phone = await screen.findByRole("link", { name: "+919812345678" });
+    expect(phone).toHaveAttribute("href", "tel:+919812345678");
+    expect(screen.getByText("Confirmed")).toBeVisible();
+  });
+
+  it("cancels with a reason after showing the policy's effect", async () => {
+    const user = userEvent.setup();
+    current = agreement({ booking_status: "confirmed", in_force: true, current_version: 1 });
+    render(<AgreementDetail />);
+    await user.click(await screen.findByRole("button", { name: "Cancel this booking" }));
+    expect(await screen.findByText(/counts as a late cancellation/)).toBeVisible();
+    expect(screen.getByText(/7 days' notice; the stay starts in 4 days/)).toBeVisible();
+    const submit = screen.getByRole("button", { name: "Cancel the booking" });
+    expect(submit).toBeDisabled();
+    await user.selectOptions(screen.getByLabelText("Reason"), "other");
+    expect(submit).toBeDisabled(); // "other" needs a note
+    await user.type(screen.getByLabelText(/More about why/), "Roof repairs");
+    await user.click(submit);
+    await vi.waitFor(() => expect(posted("/cancel/")).toHaveLength(1));
+    expect(await posted("/cancel/")[0]!.json()).toEqual({ reason: "other", note: "Roof repairs" });
+    expect(await screen.findByText("Cancelled")).toBeVisible();
   });
 });
