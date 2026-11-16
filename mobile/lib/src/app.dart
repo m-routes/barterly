@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:barterly/src/auth/session.dart';
+import 'package:barterly/src/auth/user.dart';
 import 'package:barterly/src/providers.dart';
 import 'package:barterly/src/router.dart';
 import 'package:barterly/src/theme/app_theme.dart';
@@ -22,6 +23,10 @@ class BarterlyApp extends ConsumerWidget {
             .read(crashReporterProvider)
             .setUser(next is SignedIn ? next.user.id : null),
       );
+      // Push for signed-in talent: register the device, open tapped pushes.
+      if (next is SignedIn && next.user.role == UserRole.talent) {
+        unawaited(ref.read(pushRegistrarProvider).start());
+      }
     });
     return MaterialApp.router(
       title: 'Barterly',

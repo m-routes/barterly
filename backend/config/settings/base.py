@@ -172,6 +172,9 @@ SPECTACULAR_SETTINGS = {
         "CancellationEffectEnum": "apps.bookings.models.CancellationEffect",
         "CancelledByEnum": "apps.bookings.models.CancelledBy",
         "ReliabilitySideEnum": "apps.reliability.models.Side",
+        "NotificationChannelEnum": "apps.notifications.models.Channel",
+        "NotificationLocaleEnum": "apps.notifications.models.Locale",
+        "DevicePlatformEnum": "apps.notifications.models.DevicePlatform",
         "VendorApplicationMoveEnum": ["shortlisted", "interview", "offered", "rejected"],
         "RejectionReasonEnum": ["not_a_fit", "dates", "filled", "language", "incomplete", "other"],
         "InterviewStatusEnum": "apps.hiring.models.InterviewStatus",
@@ -193,7 +196,14 @@ MEDIA_BUCKET = env_str("GS_MEDIA_BUCKET", "")
 GS_SA_EMAIL = env_str("GS_SA_EMAIL", "") or None
 MEDIA_STORAGE_CLASS = "apps.media.storage.GCSMediaStorage"
 MEDIA_VIRUS_SCANNER = "apps.media.scanning.NoopVirusScanner"
-TASK_QUEUE_CLASS = "apps.media.tasks.InlineTaskQueue"
+# Background tasks (apps/media/tasks.py). Deployed: Cloud Tasks, calling
+# POST /api/v1/tasks/<name>/ with an OIDC token for the tasks service account.
+TASK_QUEUE_CLASS = env_str("TASK_QUEUE_CLASS", "apps.media.tasks.InlineTaskQueue")
+CLOUD_TASKS_PROJECT = env_str("CLOUD_TASKS_PROJECT", "")
+CLOUD_TASKS_LOCATION = env_str("CLOUD_TASKS_LOCATION", "asia-south1")
+CLOUD_TASKS_QUEUE = env_str("CLOUD_TASKS_QUEUE", "")
+TASKS_AUDIENCE = env_str("TASKS_AUDIENCE", "")
+TASKS_INVOKER_EMAIL = env_str("TASKS_INVOKER_EMAIL", "")
 MEDIA_UPLOAD_URL_SECONDS = env_int("MEDIA_UPLOAD_URL_SECONDS", 900)
 MEDIA_READ_URL_SECONDS = env_int("MEDIA_READ_URL_SECONDS", 300)
 MEDIA_MAX_PENDING_UPLOADS = env_int("MEDIA_MAX_PENDING_UPLOADS", 20)
@@ -240,6 +250,33 @@ DISCOVERY_MAX_CANDIDATES = env_int("DISCOVERY_MAX_CANDIDATES", 1000)
 SCHEDULER_TOKEN_VERIFIER = "apps.bookings.scheduler.GoogleOidcVerifier"  # noqa: S105 (a class path)
 SCHEDULER_AUDIENCE = env_str("SCHEDULER_AUDIENCE", "")
 SCHEDULER_INVOKER_EMAIL = env_str("SCHEDULER_INVOKER_EMAIL", "")
+
+# Notifications (apps.notifications). One provider per channel; None switches the
+# channel off. SMS and WhatsApp wait for a provider choice (MSG91, Gupshup, Twilio, ...):
+# write it against apps.notifications.channels.base.ChannelProvider.
+NOTIFICATION_PROVIDERS = {
+    "push": env_str("NOTIFY_PUSH_PROVIDER", "apps.notifications.channels.fcm.FcmPushProvider")
+    or None,
+    "email": env_str(
+        "NOTIFY_EMAIL_PROVIDER", "apps.notifications.channels.email.DjangoEmailProvider"
+    )
+    or None,
+    "sms": env_str("NOTIFY_SMS_PROVIDER", "") or None,
+    "whatsapp": env_str("NOTIFY_WHATSAPP_PROVIDER", "") or None,
+}
+# Attempts before a delivery is a dead letter. Keep at or below the Cloud Tasks queue's
+# max_attempts (infra/terraform/modules/environment/tasks.tf).
+NOTIFICATION_MAX_ATTEMPTS = env_int("NOTIFICATION_MAX_ATTEMPTS", 6)
+# The web console, for links in emails, SMS and web push.
+WEB_APP_URL = env_str("WEB_APP_URL", "http://localhost:3000")
+DEFAULT_FROM_EMAIL = env_str("DEFAULT_FROM_EMAIL", "Barterly <notifications@barterly.in>")
+EMAIL_BACKEND = env_str("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = env_str("EMAIL_HOST", "localhost")
+EMAIL_PORT = env_int("EMAIL_PORT", 587)
+EMAIL_HOST_USER = env_str("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = env_str("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+EMAIL_TIMEOUT = 10
 
 # Chat (apps.chat). The profanity filter is a hook like the other provider settings:
 # the default lets everything through; WordListProfanityFilter masks the listed words.

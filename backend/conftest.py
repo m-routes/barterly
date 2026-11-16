@@ -17,6 +17,8 @@ def _fake_sign_in_and_fresh_cache(settings):
     from apps.agreements.esign import base as esign
     from apps.geo import geocoders
     from apps.media import storage
+    from apps.notifications.channels import base as channels
+    from apps.notifications.channels.fake import FakeProvider
     from apps.verification.providers import base as kyc
 
     settings.AUTH_TOKEN_VERIFIER = "apps.accounts.tests.fakes.FakeTokenVerifier"  # noqa: S105
@@ -27,6 +29,13 @@ def _fake_sign_in_and_fresh_cache(settings):
     settings.AGREEMENT_RENDERER = "apps.agreements.tests.fakes.FakeRenderer"
     settings.ESIGN_PROVIDER = "apps.agreements.esign.fake.FakeESignProvider"
     settings.SCHEDULER_TOKEN_VERIFIER = "apps.bookings.tests.fakes.FakeSchedulerVerifier"  # noqa: S105
+    settings.NOTIFICATION_PROVIDERS = {
+        "push": "apps.notifications.channels.fake.FakePush",
+        "email": "apps.notifications.channels.fake.FakeEmail",
+        "sms": "apps.notifications.channels.fake.FakeSms",
+        "whatsapp": "apps.notifications.channels.fake.FakeWhatsApp",
+    }
+    settings.WEB_APP_URL = "https://web.test"
     settings.CACHES = {
         "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"},
     }
@@ -37,6 +46,8 @@ def _fake_sign_in_and_fresh_cache(settings):
     geocoders._build.cache_clear()
     pdf._build.cache_clear()
     esign._build.cache_clear()  # a fresh fake e-sign provider per test
+    channels._build.cache_clear()
+    FakeProvider.reset()  # empty fake outboxes per test
     yield
     cache.clear()
     _build.cache_clear()

@@ -1,6 +1,7 @@
 import 'package:barterly/src/auth/session.dart';
 import 'package:barterly/src/profile/talent_profile.dart';
 import 'package:barterly/src/providers.dart';
+import 'package:barterly/src/router.dart';
 import 'package:barterly/src/theme/tokens.dart';
 import 'package:barterly/src/widgets/states.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -100,6 +101,20 @@ class _ProfileSummary extends ConsumerWidget {
         const SizedBox(height: BarterlySpace.md),
         ListTile(
           contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.notifications_outlined),
+          title: const Text('Notifications'),
+          subtitle: Text(switch (ref.watch(unreadCountProvider)) {
+            AsyncData(:final value) when value > 0 => '$value unread',
+            _ => 'Inbox, language and quiet hours',
+          }),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () async {
+            await context.push(Routes.notifications);
+            ref.invalidate(unreadCountProvider);
+          },
+        ),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.verified_user_outlined),
           title: const Text('Verification and badges'),
           subtitle: const Text('ID, selfie and Instagram'),
@@ -114,7 +129,10 @@ class _ProfileSummary extends ConsumerWidget {
           subtitle: Text(phone),
         ),
         TextButton(
-          onPressed: () => ref.read(sessionProvider.notifier).signOut(),
+          onPressed: () async {
+            await ref.read(pushRegistrarProvider).stop();
+            await ref.read(sessionProvider.notifier).signOut();
+          },
           child: const Text('Sign out'),
         ),
       ],

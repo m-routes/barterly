@@ -3486,10 +3486,11 @@ paths:
   /api/v1/jobs/{job}/:
     post:
       operationId: jobs_run
-      description: 'Jobs: close_expired_gigs, expire_offers, expire_verifications,
-        flag_stale_interviews, render_agreements, run_search_alerts, send_interview_reminders,
-        sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service
-        account. Idempotent; overlapping runs of one job are skipped.'
+      description: 'Jobs: close_expired_gigs, dispatch_notifications, expire_offers,
+        expire_verifications, flag_stale_interviews, render_agreements, run_search_alerts,
+        send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed
+        OIDC token for the scheduler service account. Idempotent; overlapping runs
+        of one job are skipped.'
       summary: Run a scheduled job (Cloud Scheduler only)
       parameters:
       - in: path
@@ -3821,6 +3822,308 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: ''
         '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/notifications/:
+    get:
+      operationId: notifications_list
+      summary: My notifications, newest first
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: unread
+        schema:
+          type: boolean
+        description: Only unread ones.
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNotificationList'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/notifications/{notification_id}/read/:
+    post:
+      operationId: notifications_read
+      summary: Mark one notification read
+      parameters:
+      - in: path
+        name: notification_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarkRead'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MarkRead'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MarkRead'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/notifications/devices/:
+    post:
+      operationId: notifications_devices_register
+      description: A token already registered moves to whoever registers it last.
+      summary: Register this device for push (an FCM token)
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Device'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Device'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Device'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/notifications/devices/remove/:
+    post:
+      operationId: notifications_devices_remove
+      summary: Stop push to this device (on sign-out)
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceToken'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DeviceToken'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DeviceToken'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/notifications/preferences/:
+    get:
+      operationId: notifications_preferences
+      summary: What I'm notified about, on which channels, and quiet hours
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preferences'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    put:
+      operationId: notifications_preferences_update
+      description: Send only what changes. `changes` switches one event type on one
+        channel. In-app can't be switched off. Urgent reminders (an offer about to
+        expire, an interview within the hour) ignore quiet hours.
+      summary: Change language, quiet hours or channels per event type
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePreferences'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UpdatePreferences'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdatePreferences'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preferences'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/notifications/read-all/:
+    post:
+      operationId: notifications_read_all
+      summary: Mark every notification read
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Marked'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/notifications/unread-count/:
+    get:
+      operationId: notifications_unread_count
+      summary: How many notifications I haven't read
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnreadCount'
+          description: ''
+        '401':
           content:
             application/json:
               schema:
@@ -4659,6 +4962,55 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ReliabilityDetail'
+          description: ''
+  /api/v1/tasks/{name}/:
+    post:
+      operationId: tasks_run
+      description: Needs a Google-signed OIDC token for the tasks service account.
+        The body is the task's payload. 503 asks Cloud Tasks to retry.
+      summary: Run a queued task (Cloud Tasks only)
+      parameters:
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      tags:
+      - jobs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      security:
+      - {}
+      responses:
+        '204':
+          description: No response body
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
           description: ''
   /api/v1/verification/admin/cases/:
     get:
@@ -6678,6 +7030,17 @@ components:
           nullable: true
         cancellation_policy:
           $ref: '#/components/schemas/CancellationPolicyEnum'
+    ChannelSetting:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        locked:
+          type: boolean
+          description: 'In-app can''t be switched off: it''s the inbox.'
+      required:
+      - enabled
+      - locked
     ChatAttachment:
       type: object
       properties:
@@ -7122,6 +7485,35 @@ components:
         * `photo_set` - Edited photo set
         * `mural` - Mural / artwork
         * `other` - Other
+    Device:
+      type: object
+      properties:
+        token:
+          type: string
+          maxLength: 500
+        platform:
+          $ref: '#/components/schemas/DevicePlatformEnum'
+      required:
+      - platform
+      - token
+    DevicePlatformEnum:
+      enum:
+      - android
+      - ios
+      - web
+      type: string
+      description: |-
+        * `android` - Android
+        * `ios` - iOS
+        * `web` - Web
+    DeviceToken:
+      type: object
+      properties:
+        token:
+          type: string
+          maxLength: 500
+      required:
+      - token
     Document:
       type: object
       properties:
@@ -7171,6 +7563,51 @@ components:
       - code
       - details
       - message
+    EventTypeEnum:
+      enum:
+      - application.applied
+      - application.shortlisted
+      - interview.scheduled
+      - application.offered
+      - offer.expiring
+      - agreement.ready
+      - booking.confirmed
+      - chat.message
+      - gigs.search_alert
+      - reminder
+      - other
+      type: string
+      description: |-
+        * `application.applied` - application.applied
+        * `application.shortlisted` - application.shortlisted
+        * `interview.scheduled` - interview.scheduled
+        * `application.offered` - application.offered
+        * `offer.expiring` - offer.expiring
+        * `agreement.ready` - agreement.ready
+        * `booking.confirmed` - booking.confirmed
+        * `chat.message` - chat.message
+        * `gigs.search_alert` - gigs.search_alert
+        * `reminder` - reminder
+        * `other` - other
+    EventTypeSetting:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        urgent:
+          type: boolean
+          description: Not held back by quiet hours.
+        channels:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ChannelSetting'
+      required:
+      - channels
+      - key
+      - label
+      - urgent
     ExactLocation:
       type: object
       properties:
@@ -8094,6 +8531,20 @@ components:
           maxLength: 1000
       required:
       - terms
+    MarkRead:
+      type: object
+      properties:
+        from_push:
+          type: boolean
+          default: false
+          description: 'Opened by tapping the push: the push counts as read too.'
+    Marked:
+      type: object
+      properties:
+        marked:
+          type: integer
+      required:
+      - marked
     MealsEnum:
       enum:
       - none
@@ -8263,6 +8714,81 @@ components:
         note:
           type: string
           maxLength: 500
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          type: string
+          readOnly: true
+          description: The event type, e.g. 'offer.expiring'.
+        title:
+          type: string
+          readOnly: true
+        body:
+          type: string
+          readOnly: true
+        urgent:
+          type: boolean
+          readOnly: true
+          description: Not held back by quiet hours.
+        app_path:
+          type: string
+          readOnly: true
+          description: Mobile app route.
+        web_url:
+          type: string
+          format: uri
+          readOnly: true
+          description: Web console page.
+        read:
+          type: boolean
+          readOnly: true
+        read_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - app_path
+      - body
+      - created_at
+      - id
+      - kind
+      - read
+      - read_at
+      - title
+      - urgent
+      - web_url
+    NotificationChannelEnum:
+      enum:
+      - in_app
+      - push
+      - email
+      - sms
+      - whatsapp
+      type: string
+      description: |-
+        * `in_app` - In the app
+        * `push` - Push
+        * `email` - Email
+        * `sms` - SMS
+        * `whatsapp` - WhatsApp
+    NotificationLocaleEnum:
+      enum:
+      - en
+      - hi
+      type: string
+      description: |-
+        * `en` - English
+        * `hi` - हिन्दी (Hindi)
     Offer:
       type: object
       properties:
@@ -8534,6 +9060,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Gig'
+    PaginatedNotificationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
     PaginatedPropertyList:
       type: object
       required:
@@ -9136,6 +9685,50 @@ components:
       - name
       - pincode
       - state
+    PreferenceChange:
+      type: object
+      properties:
+        event_type:
+          $ref: '#/components/schemas/EventTypeEnum'
+        channel:
+          $ref: '#/components/schemas/NotificationChannelEnum'
+        enabled:
+          type: boolean
+      required:
+      - channel
+      - enabled
+      - event_type
+    Preferences:
+      type: object
+      properties:
+        locale:
+          $ref: '#/components/schemas/NotificationLocaleEnum'
+        quiet_hours_enabled:
+          type: boolean
+        quiet_start:
+          type: string
+          format: time
+          description: India time.
+        quiet_end:
+          type: string
+          format: time
+          description: India time.
+        channels_available:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationChannelEnum'
+          description: Channels Barterly can send on right now.
+        event_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventTypeSetting'
+      required:
+      - channels_available
+      - event_types
+      - locale
+      - quiet_end
+      - quiet_hours_enabled
+      - quiet_start
     Property:
       type: object
       description: 'The owner''s view: everything, including the exact address and
@@ -10149,6 +10742,30 @@ components:
       required:
       - conversations
       - unread
+    UnreadCount:
+      type: object
+      properties:
+        unread:
+          type: integer
+      required:
+      - unread
+    UpdatePreferences:
+      type: object
+      properties:
+        locale:
+          $ref: '#/components/schemas/NotificationLocaleEnum'
+        quiet_hours_enabled:
+          type: boolean
+        quiet_start:
+          type: string
+          format: time
+        quiet_end:
+          type: string
+          format: time
+        changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PreferenceChange'
     UploadUrlRequest:
       type: object
       properties:

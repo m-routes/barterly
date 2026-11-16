@@ -26,6 +26,8 @@ from apps.common.services.audit import log_action
 from apps.discovery.alerts import run_alerts
 from apps.gigs.services import close_expired_gigs
 from apps.hiring.services import send_reminders
+from apps.notifications.reminders import send_reminders as send_booking_reminders
+from apps.notifications.services import dispatch_due
 from apps.offers.models import Offer, OfferStatus
 from apps.verification.services.cases import expire_due_cases
 from apps.verification.services.kyc import sync_pending
@@ -128,6 +130,8 @@ JOBS: dict[str, Callable[..., dict]] = {
     "run_search_alerts": lambda now: run_alerts(now),
     "send_interview_reminders": lambda now: send_reminders(now),
     "render_agreements": render_pending,
+    "send_reminders": lambda now: send_booking_reminders(now),
+    "dispatch_notifications": lambda now: dispatch_due(now),
 }
 
 

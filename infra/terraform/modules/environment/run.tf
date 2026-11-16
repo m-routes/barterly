@@ -15,6 +15,15 @@ locals {
     # Only Cloud Scheduler's service account may run jobs (see scheduler.tf).
     SCHEDULER_AUDIENCE      = local.api_url
     SCHEDULER_INVOKER_EMAIL = google_service_account.scheduler.email
+    # Background tasks and notification delivery (see tasks.tf).
+    TASK_QUEUE_CLASS     = "apps.media.tasks.CloudTasksQueue"
+    CLOUD_TASKS_PROJECT  = var.project_id
+    CLOUD_TASKS_LOCATION = var.region
+    CLOUD_TASKS_QUEUE    = google_cloud_tasks_queue.tasks.name
+    TASKS_AUDIENCE       = local.api_url
+    TASKS_INVOKER_EMAIL  = google_service_account.tasks.email
+    # Links in emails, SMS and web push open the web console.
+    WEB_APP_URL = local.web_origins[length(local.web_origins) - 1]
   }
 }
 

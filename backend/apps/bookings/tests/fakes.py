@@ -7,7 +7,7 @@ OTHER_CALLER_TOKEN = "someone-else"  # noqa: S105 (a test value)
 class FakeSchedulerVerifier:
     """Accepts GOOD_TOKEN; OTHER_CALLER_TOKEN is a valid token for the wrong account."""
 
-    def verify(self, token: str) -> dict:
+    def verify(self, token: str, *, audience: str = "", email: str = "") -> dict:
         if token == GOOD_TOKEN:
             return {"email": "scheduler@example.iam.gserviceaccount.com", "email_verified": True}
         if token == OTHER_CALLER_TOKEN:

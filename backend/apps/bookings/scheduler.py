@@ -17,28 +17,44 @@ class SchedulerAuthError(Exception):
 
 
 class GoogleOidcVerifier:
-    def verify(self, token: str) -> dict:
+    """Checks a Google-signed OIDC token for an audience and one service account. The
+    defaults are the scheduler's; the task endpoint passes the tasks account's."""
+
+    def verify(self, token: str, *, audience: str = "", email: str = "") -> dict:
         from google.auth.transport import requests as google_requests
         from google.oauth2 import id_token
 
-        if not settings.SCHEDULER_AUDIENCE or not settings.SCHEDULER_INVOKER_EMAIL:
+        audience = audience or settings.SCHEDULER_AUDIENCE
+        email = email or settings.SCHEDULER_INVOKER_EMAIL
+        if not audience or not email:
             raise SchedulerAuthError("Scheduled jobs aren't configured here.", status=503)
         try:
             claims = id_token.verify_oauth2_token(
-                token, google_requests.Request(), audience=settings.SCHEDULER_AUDIENCE
+                token, google_requests.Request(), audience=audience
             )
         except ValueError as exc:  # bad signature, expired, wrong audience
             raise SchedulerAuthError("Invalid scheduler token.") from exc
-        if claims.get("email") != settings.SCHEDULER_INVOKER_EMAIL or not claims.get(
-            "email_verified"
-        ):
+        if claims.get("email") != email or not claims.get("email_verified"):
             raise SchedulerAuthError("This caller may not run jobs.", status=403)
         return claims
 
 
-def verify_request(request) -> dict:
+def _bearer(request) -> str:
     header = request.headers.get("Authorization", "")
     scheme, _, token = header.partition(" ")
     if scheme.lower() != "bearer" or not token:
         raise SchedulerAuthError("Missing scheduler token.")
-    return import_string(settings.SCHEDULER_TOKEN_VERIFIER)().verify(token)
+    return token
+
+
+def verify_request(request) -> dict:
+    return import_string(settings.SCHEDULER_TOKEN_VERIFIER)().verify(_bearer(request))
+
+
+def verify_task_request(request) -> dict:
+    """Cloud Tasks calls with an OIDC token for the tasks service account."""
+    return import_string(settings.SCHEDULER_TOKEN_VERIFIER)().verify(
+        _bearer(request),
+        audience=settings.TASKS_AUDIENCE,
+        email=settings.TASKS_INVOKER_EMAIL,
+    )

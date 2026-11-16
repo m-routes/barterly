@@ -60,3 +60,8 @@ export type CancelPreview = Schemas["CancelPreview"];
 export type CancellationReason = Schemas["CancellationReasonEnum"];
 export type Unlocked = Schemas["Unlocked"];
 export type Reliability = Schemas["Reliability"];
+
+export type AppNotification = Schemas["Notification"];
+export type NotificationPreferences = Schemas["Preferences"];
+export type NotificationChannel = Schemas["NotificationChannelEnum"];
+export type NotificationPreferenceChange = Schemas["PreferenceChange"];

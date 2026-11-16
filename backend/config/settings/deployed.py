@@ -71,3 +71,10 @@ STATIC_URL = f"https://storage.googleapis.com/{GS_STATIC_BUCKET}/static/"
 
 # Health probes come from inside Cloud Run over plain HTTP.
 SECURE_REDIRECT_EXEMPT = [r"^api/v1/health/$"]
+
+# Email goes out only where SMTP is configured; otherwise the channel is off rather than
+# "sent" to the logs.
+if not env_str("EMAIL_HOST", ""):
+    NOTIFICATION_PROVIDERS = {**NOTIFICATION_PROVIDERS, "email": None}  # noqa: F405
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"

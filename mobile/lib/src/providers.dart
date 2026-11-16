@@ -10,6 +10,9 @@ import 'package:barterly/src/chat/chat_transport.dart';
 import 'package:barterly/src/config/env.dart';
 import 'package:barterly/src/crash/crash_reporter.dart';
 import 'package:barterly/src/discover/gigs_repository.dart';
+import 'package:barterly/src/notifications/notifications_repository.dart';
+import 'package:barterly/src/notifications/push.dart';
+import 'package:barterly/src/notifications/push_registrar.dart';
 import 'package:barterly/src/platform/key_value_store.dart';
 import 'package:barterly/src/platform/media_picker.dart';
 import 'package:barterly/src/platform/network_status.dart';
@@ -139,3 +142,18 @@ final currentUserIdProvider = Provider<String>((ref) {
   final session = ref.watch(sessionProvider);
   return session is SignedIn ? session.user.id : 'signed-out';
 });
+
+final notificationsRepositoryProvider = Provider<NotificationsRepository>(
+  (ref) => NotificationsRepository(ref.watch(dioProvider)),
+);
+
+/// Firebase Cloud Messaging when Firebase started (main.dart), else nothing.
+final pushMessagingProvider = Provider<PushMessaging>(
+  (ref) => const NoPushMessaging(),
+);
+
+final pushRegistrarProvider = Provider<PushRegistrar>(PushRegistrar.new);
+
+final FutureProvider<int> unreadCountProvider = FutureProvider.autoDispose<int>(
+  (ref) => ref.watch(notificationsRepositoryProvider).unreadCount(),
+);
