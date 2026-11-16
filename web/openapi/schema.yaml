@@ -217,6 +217,55 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/applications/{application_id}/conversation/:
+    post:
+      operationId: chat_open
+      description: Vendors only. Talent can reply once the vendor has shortlisted
+        or messaged them. Returns 201 when the conversation is new.
+      summary: Open (or get) the chat with an applicant
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationDetail'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationDetail'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/applications/{application_id}/decline/:
     post:
       operationId: applications_decline
@@ -1215,6 +1264,372 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: ''
         '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/conversations/:
+    get:
+      operationId: chat_conversations_list
+      summary: My conversations, newest first, with unread counts
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedConversationList'
+          description: ''
+  /api/v1/conversations/{conversation_id}/:
+    get:
+      operationId: chat_conversation_detail
+      summary: 'One conversation: who, whether you can send, whether contacts are
+        hidden'
+      parameters:
+      - in: path
+        name: conversation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationDetail'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/conversations/{conversation_id}/block/:
+    post:
+      operationId: chat_block
+      description: Neither side can send while the block is in place.
+      summary: Block the other person in this conversation
+      parameters:
+      - in: path
+        name: conversation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationDetail'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    delete:
+      operationId: chat_unblock
+      summary: Unblock the other person
+      parameters:
+      - in: path
+        name: conversation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationDetail'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/conversations/{conversation_id}/messages/:
+    get:
+      operationId: chat_messages_list
+      description: Poll with `after=<cursor>` every few seconds while the chat is
+        open; the answer's `cursor` is the next `after`. Without `after`, returns
+        the newest page; `before=<cursor>` pages back through history.
+      summary: Messages after a cursor (polling), before one (history), or the newest
+      parameters:
+      - in: query
+        name: after
+        schema:
+          type: string
+        description: Only messages after this cursor.
+      - in: query
+        name: before
+        schema:
+          type: string
+        description: Only messages before this cursor.
+      - in: path
+        name: conversation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: query
+        name: limit
+        schema:
+          type: integer
+        description: Default 50, at most 100.
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessagePage'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    post:
+      operationId: chat_messages_send
+      description: Before the booking is confirmed, phone numbers, emails, links,
+        handles and off-platform contact phrases are replaced with [hidden]; `notice`
+        says so. Rate limited (429). 403 when the chat is closed or a block is in
+        place.
+      summary: Send a message
+      parameters:
+      - in: path
+        name: conversation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Send'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Send'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Send'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sent'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/conversations/{conversation_id}/read/:
+    post:
+      operationId: chat_mark_read
+      summary: Mark the other side's messages read, up to a cursor
+      parameters:
+      - in: path
+        name: conversation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Read'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Read'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Read'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadResult'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/conversations/unread/:
+    get:
+      operationId: chat_unread
+      summary: Unread message count (for a badge)
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unread'
+          description: ''
+        '401':
           content:
             application/json:
               schema:
@@ -2613,6 +3028,71 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: ''
         '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/messages/{message_id}/report/:
+    post:
+      operationId: chat_report
+      summary: Report a message for review
+      parameters:
+      - in: path
+        name: message_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Report'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Report'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Report'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResult'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
           content:
             application/json:
               schema:
@@ -4155,6 +4635,16 @@ components:
         attachment_count:
           type: integer
           readOnly: true
+        conversation:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          description: The chat about this application, once it's open (apps.chat).
+        unread_messages:
+          type: integer
+          readOnly: true
+          default: 0
         applied_at:
           type: string
           format: date-time
@@ -4163,6 +4653,7 @@ components:
       - applicant
       - applied_at
       - attachment_count
+      - conversation
       - fit
       - gig
       - gig_title
@@ -4171,6 +4662,7 @@ components:
       - proposed_start
       - status
       - status_reason
+      - unread_messages
     ApplicationStatusEnum:
       enum:
       - applied
@@ -4778,6 +5270,106 @@ components:
             $ref: '#/components/schemas/CertificateItem'
       required:
       - certificates
+    ChatAttachment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          readOnly: true
+        content_type:
+          type: string
+        size_bytes:
+          type: integer
+        url:
+          type: string
+          nullable: true
+          readOnly: true
+          description: Signed and short-lived.
+        thumb_url:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - content_type
+      - id
+      - kind
+      - size_bytes
+      - thumb_url
+      - url
+    ChatMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        cursor:
+          type: string
+          description: This message's place; ascending.
+        sender:
+          type: string
+          format: uuid
+          readOnly: true
+        mine:
+          type: boolean
+          readOnly: true
+        body:
+          type: string
+          readOnly: true
+          description: 'As shown: contact details already masked.'
+        masked:
+          type: boolean
+          readOnly: true
+          description: True when contact details in it were hidden.
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatAttachment'
+          readOnly: true
+        client_id:
+          type: string
+          readOnly: true
+          description: The sender's id for the send, so retries are safe.
+        read_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: When the other side read it.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - attachments
+      - body
+      - client_id
+      - created_at
+      - cursor
+      - id
+      - masked
+      - mine
+      - read_at
+      - sender
+    ChatReportReasonEnum:
+      enum:
+      - spam
+      - harassment
+      - scam
+      - contact_sharing
+      - inappropriate
+      - other
+      type: string
+      description: |-
+        * `spam` - Spam
+        * `harassment` - Harassment or abuse
+        * `scam` - Scam or fraud
+        * `contact_sharing` - Asking to move off Barterly
+        * `inappropriate` - Inappropriate content
+        * `other` - Something else
     CheckSummary:
       type: object
       properties:
@@ -4891,6 +5483,114 @@ components:
         * `image/png` - image/png
         * `image/webp` - image/webp
         * `video/mp4` - video/mp4
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        application:
+          type: string
+          format: uuid
+        gig_title:
+          type: string
+        application_status:
+          $ref: '#/components/schemas/ApplicationStatusEnum'
+        other:
+          allOf:
+          - $ref: '#/components/schemas/Party'
+          readOnly: true
+        unread:
+          type: integer
+          readOnly: true
+        last_message:
+          allOf:
+          - $ref: '#/components/schemas/LastMessage'
+          nullable: true
+          readOnly: true
+        last_message_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        opened_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - application
+      - application_status
+      - gig_title
+      - id
+      - last_message
+      - last_message_at
+      - opened_at
+      - other
+      - unread
+    ConversationDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        application:
+          type: string
+          format: uuid
+        gig_title:
+          type: string
+        application_status:
+          $ref: '#/components/schemas/ApplicationStatusEnum'
+        other:
+          allOf:
+          - $ref: '#/components/schemas/Party'
+          readOnly: true
+        unread:
+          type: integer
+          readOnly: true
+        last_message:
+          allOf:
+          - $ref: '#/components/schemas/LastMessage'
+          nullable: true
+          readOnly: true
+        last_message_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        opened_at:
+          type: string
+          format: date-time
+          readOnly: true
+        can_send:
+          type: boolean
+          readOnly: true
+        cant_send_reason:
+          type: string
+          readOnly: true
+        contact_sharing_allowed:
+          type: boolean
+          readOnly: true
+          description: 'False until the booking is confirmed: contact details get
+            hidden.'
+        blocked_by_me:
+          type: boolean
+          readOnly: true
+      required:
+      - application
+      - application_status
+      - blocked_by_me
+      - can_send
+      - cant_send_reason
+      - contact_sharing_allowed
+      - gig_title
+      - id
+      - last_message
+      - last_message_at
+      - opened_at
+      - other
+      - unread
     DatabaseEnum:
       enum:
       - ok
@@ -5889,6 +6589,20 @@ components:
         * `te` - Telugu
         * `ur` - Urdu
         * `zh` - Chinese
+    LastMessage:
+      type: object
+      properties:
+        body:
+          type: string
+        mine:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - body
+      - created_at
+      - mine
     MealsEnum:
       enum:
       - none
@@ -5983,6 +6697,27 @@ components:
         * `ready` - Ready
         * `rejected` - Rejected
         * `quarantined` - Quarantined
+    MessagePage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+        cursor:
+          type: string
+          description: Send as `after` on the next poll.
+        has_earlier:
+          type: boolean
+          description: Older messages exist (use `before`).
+        other_read_up_to:
+          type: string
+          description: The newest of your messages the other side has read (a cursor).
+      required:
+      - cursor
+      - has_earlier
+      - other_read_up_to
+      - results
     MyVerification:
       type: object
       properties:
@@ -6098,6 +6833,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BookingListItem'
+    PaginatedConversationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Conversation'
     PaginatedGigList:
       type: object
       required:
@@ -6167,6 +6925,20 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VendorApplicationListItem'
+    Party:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        role:
+          type: string
+      required:
+      - id
+      - name
+      - role
     PatchedGig:
       type: object
       properties:
@@ -6866,6 +7638,21 @@ components:
       - state
       - verified
       - women_friendly
+    Read:
+      type: object
+      properties:
+        up_to:
+          type: string
+          description: A message cursor; everything up to it is read.
+      required:
+      - up_to
+    ReadResult:
+      type: object
+      properties:
+        marked:
+          type: integer
+      required:
+      - marked
     Reason:
       type: object
       properties:
@@ -6921,6 +7708,27 @@ components:
         * `language` - language
         * `incomplete` - incomplete
         * `other` - other
+    Report:
+      type: object
+      properties:
+        reason:
+          $ref: '#/components/schemas/ChatReportReasonEnum'
+        note:
+          type: string
+          maxLength: 500
+      required:
+      - reason
+    ReportResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+      required:
+      - id
+      - status
     RequiredVerificationEnum:
       enum:
       - none
@@ -7049,6 +7857,37 @@ components:
         * `infected` - Infected
         * `skipped` - No scanner configured
         * `error` - Scan failed
+    Send:
+      type: object
+      properties:
+        body:
+          type: string
+          maxLength: 2000
+        attachment_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: 'Confirmed uploads (kind ''photo'' or ''document''): JPEG,
+            PNG, WebP or PDF, up to 10 MB each.'
+          maxItems: 3
+        client_id:
+          type: string
+          description: Your id for this send; sending again with it returns the same
+            message.
+          maxLength: 64
+    Sent:
+      type: object
+      properties:
+        message:
+          $ref: '#/components/schemas/ChatMessage'
+        notice:
+          type: string
+          description: Tell the sender this when it isn't empty (e.g. why a number
+            was hidden).
+      required:
+      - message
+      - notice
     Skill:
       type: object
       properties:
@@ -7353,6 +8192,18 @@ components:
       required:
       - access
       - refresh
+    Unread:
+      type: object
+      properties:
+        unread:
+          type: integer
+          description: Unread messages across all conversations.
+        conversations:
+          type: integer
+          description: Conversations with unread messages.
+      required:
+      - conversations
+      - unread
     UploadUrlRequest:
       type: object
       properties:
@@ -7617,6 +8468,16 @@ components:
         attachment_count:
           type: integer
           readOnly: true
+        conversation:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          description: The chat about this application, once it's open (apps.chat).
+        unread_messages:
+          type: integer
+          readOnly: true
+          default: 0
         applied_at:
           type: string
           format: date-time
@@ -7636,6 +8497,7 @@ components:
       - applicant
       - applied_at
       - attachment_count
+      - conversation
       - fit
       - gig
       - gig_title
@@ -7647,6 +8509,7 @@ components:
       - status
       - status_reason
       - tags
+      - unread_messages
     VendorApplicationMoveEnum:
       enum:
       - shortlisted

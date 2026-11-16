@@ -70,6 +70,7 @@ Surfaces: the vendor console (web), the talent app (mobile) and the admin consol
 | `notifications` | Queued `Notification` rows, created from domain events; delivery arrives later in Phase 3 |
 | `bookings` | The transition table, bookings, the append-only booking event log and scheduled jobs |
 | `hiring` | Rejection reasons, bulk actions, auto-reject rules, private notes and tags, saved filters, interviews |
+| `chat` | One conversation per application, messages with cursors and read receipts, the contact-sharing guard, blocks, reports, the profanity filter hook |
 | `verification` | Verification cases per check, evidence (provider references and masked numbers only), badges, the KYC provider interface and webhook, re-verification on profile edits, the review API |
 
 ### Users and permissions
@@ -310,6 +311,19 @@ Vendor actions on applicants. Every status change still goes through `apps.appli
   - **Times** are stored in UTC. The API returns each one as UTC ISO 8601 plus India-time text (`starts_at_ist`), and reads times sent without an offset as India time.
   - **Reminders:** the `send_interview_reminders` job, every 5 minutes, reminds both sides a day before and an hour before. Each reminder is marked as sent under a row lock, so none goes out twice. An interview booked less than an hour ahead gets only the hour reminder. An interview booked in the future, or held within the last week, stops the application being flagged as a stale interview.
 - **What the applicant sees:** the status, the reason, a timeline of status changes with the reasons (`timeline`, built from the audit log, without saying who on the vendor's side acted), and the interview. They never see the vendor's notes, tags or rejection code.
+
+### Chat (`apps/chat`)
+
+One conversation per application, between its talent and the gig's vendor.
+
+- **Opening:** shortlisting an applicant opens the chat (a handler on `application.shortlisted`), or the vendor opens it with `POST /api/v1/applications/{id}/conversation/` (idempotent). Talent can't start a chat; they reply once it's open. Once the application is rejected, withdrawn, declined or expired, the chat is read-only.
+- **Messages:** each has a `seq` (1, 2, 3... in its conversation), given under a lock on the conversation row, so there are no gaps and the API exposes it as an opaque `cursor`. `client_id` makes a resend return the same message. Up to 2,000 characters and 3 attachments (confirmed uploads: JPEG, PNG, WebP or PDF, 10 MB each).
+- **Transport:** REST only. `POST /conversations/{id}/messages/` sends; `GET .../messages/?after=<cursor>` returns what's new (or `before=` for history, or the newest page), plus `other_read_up_to` for read receipts. `POST .../read/` marks the other side's messages read up to a cursor. Clients poll every 4 seconds, only while a chat screen is open and visible, with backoff after errors. Both clients hide this behind a `ChatTransport` interface (`web/src/lib/chat/transport.ts`, `mobile/lib/src/chat/chat_transport.dart`), so a WebSocket transport can replace polling without changing screens.
+- **Unread counts:** a message is unread while `read_at` is empty. `GET /conversations/` gives each conversation's count and last message; `GET /conversations/unread/` gives the total; application lists carry `conversation` and `unread_messages`.
+- **Push:** `chat.message` events queue a notification for the recipient. While one for the same conversation is still waiting to go out, it is updated (count, latest preview) instead of adding another. Delivery arrives with the rest of notifications in Phase 3.
+- **Contact-sharing guard** (`apps/chat/leakage.py`): until the application has a booking that isn't cancelled, messages are scanned for phone numbers (digits with any spacing, or spelt out in English or Hindi number words), emails (including "at ... dot com"), links, @handles, UPI IDs and phrases such as WhatsApp, Telegram, "insta id", "call me on" or GPay. Matches become `[hidden]`, and the sender is told why (`notice`). The original text is kept only in a `LeakageEvent` for trust review; the audit log records the kinds, never the text. After confirmation, contact details go through untouched.
+- **Safety:** blocking (`POST`/`DELETE /conversations/{id}/block/`) stops both sides sending. `POST /messages/{id}/report/` reports the other side's message with a reason. Reports and leakage events are reviewed in Django admin ("Mark as reviewed" is audited). Sending is rate-limited (`THROTTLE_CHAT_SEND`, 30/minute). `CHAT_PROFANITY_FILTER` names a filter class that can allow, mask or refuse a message. The default allows everything; `WordListProfanityFilter` masks `CHAT_PROFANITY_WORDS`.
+- **Audit:** opening, masking, blocking, unblocking and reporting are all logged.
 
 ### Audit log
 

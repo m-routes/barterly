@@ -4,6 +4,8 @@ import 'package:barterly/src/apply/applications_repository.dart';
 import 'package:barterly/src/auth/auth_repository.dart';
 import 'package:barterly/src/auth/phone_auth.dart';
 import 'package:barterly/src/auth/session.dart';
+import 'package:barterly/src/chat/chat_repository.dart';
+import 'package:barterly/src/chat/chat_transport.dart';
 import 'package:barterly/src/config/env.dart';
 import 'package:barterly/src/crash/crash_reporter.dart';
 import 'package:barterly/src/discover/gigs_repository.dart';
@@ -63,6 +65,16 @@ final gigsRepositoryProvider = Provider<GigsRepository>(
 
 final applicationsRepositoryProvider = Provider<ApplicationsRepository>(
   (ref) => ApplicationsRepository(ref.watch(dioProvider)),
+);
+
+final chatRepositoryProvider = Provider<ChatRepository>(
+  (ref) => ChatRepository(ref.watch(dioProvider)),
+);
+
+/// How chat screens get messages. Polling today; swap for a WebSocket
+/// transport without touching the screens.
+final chatTransportProvider = Provider<ChatTransport>(
+  (ref) => PollingChatTransport(ref.watch(chatRepositoryProvider)),
 );
 
 final verificationRepositoryProvider = Provider<VerificationRepository>(

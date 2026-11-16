@@ -145,6 +145,8 @@ export const applicant = (overrides: Partial<ApplicationListItem> = {}): Applica
   },
   fit: { score: 92, breakdown: {} },
   attachment_count: 1,
+  conversation: null,
+  unread_messages: 0,
   applied_at: "2026-11-10T10:00:00Z",
   ...overrides,
 });

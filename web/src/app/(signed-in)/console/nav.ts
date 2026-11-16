@@ -34,6 +34,14 @@ export const CONSOLE_SECTIONS: readonly ConsoleSection[] = [
     },
   },
   {
+    href: "/console/messages",
+    label: "Messages",
+    empty: {
+      title: "No messages yet",
+      description: "A chat opens when you shortlist or message an applicant.",
+    },
+  },
+  {
     href: "/console/properties",
     label: "Properties",
     empty: {
