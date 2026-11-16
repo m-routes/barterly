@@ -8,12 +8,13 @@ from django.db import DatabaseError, connection, transaction
 from django.utils import timezone
 
 from apps.accounts.tests.factories import AdminUserFactory
+from apps.agreements.services import AgreementError
 from apps.agreements.tests.helpers import sign_both
 from apps.applications.constants import ApplicationStatus as A
 from apps.applications.models import Application
 from apps.applications.services import apply
 from apps.applications.tests.helpers import dates, eligible_talent, live_gig
-from apps.bookings import lifecycle
+from apps.bookings import cancellation, lifecycle
 from apps.bookings.lifecycle import (
     TRANSITIONS,
     Actor,
@@ -27,7 +28,7 @@ from apps.bookings.lifecycle import (
 )
 from apps.bookings.models import Booking, BookingEvent
 from apps.bookings.services import BookingRefused, accept_offer, transition
-from apps.bookings.tests.helpers import booked, offered
+from apps.bookings.tests.helpers import accepted, booked, offered
 from apps.common.events import subscribe, unsubscribe
 from apps.common.models import AuditLog
 from apps.gigs.constants import CompensationModel, GigStatus
@@ -61,8 +62,8 @@ class TestTheTable:
             assert frm in states and to in states, (frm, to)
             assert rule.actors and rule.actors <= set(Actor.values), (frm, to)
 
-    def test_every_booking_state_is_reachable_from_confirmed(self):
-        reachable, frontier = {B.CONFIRMED}, [B.CONFIRMED]
+    def test_every_booking_state_is_reachable_from_signing(self):
+        reachable, frontier = {B.SIGNING}, [B.SIGNING]
         while frontier:
             state = frontier.pop()
             for frm, to in TRANSITIONS:
@@ -84,7 +85,7 @@ class TestTheTable:
 
 
 class TestOffersAndAcceptance:
-    def test_accepting_an_offer_books_the_slot(self, events):
+    def test_accepting_waits_for_signatures_and_signing_books_the_slot(self, events):
         gig = live_gig(slots=1)
         application = offered(gig)
         assert application.offer_expires_at == application.status_changed_at + lifecycle.OFFER_TTL
@@ -93,22 +94,33 @@ class TestOffersAndAcceptance:
 
         application.refresh_from_db()
         assert application.status == A.CONFIRMED
-        assert booking.status == B.CONFIRMED
+        assert booking.status == B.SIGNING and booking.confirmed_at is None
         assert (booking.start_date, booking.end_date) == (
             application.proposed_start,
             application.proposed_end,
         )
         event = BookingEvent.objects.get(booking=booking)
-        assert (event.from_state, event.to_state, event.actor) == ("offered", "confirmed", "talent")
+        assert (event.from_state, event.to_state, event.actor) == ("offered", "signing", "talent")
+        gig.refresh_from_db()
+        assert gig.status == GigStatus.LIVE  # no slot taken until both sign
+        assert [e.name for e in events][-2:] == ["application.confirmed", "booking.signing"]
+
+        sign_both(booking)
+
+        booking.refresh_from_db()
+        assert booking.status == B.CONFIRMED and booking.confirmed_at
+        last = BookingEvent.objects.filter(booking=booking).last()
+        assert (last.from_state, last.to_state, last.actor) == ("signing", "confirmed", "system")
         assert AuditLog.objects.filter(
             action="booking.confirmed", object_id=str(booking.pk)
         ).exists()
         gig.refresh_from_db()
         assert gig.status == GigStatus.FILLED  # its only slot is booked
-        assert [e.name for e in events][-2:] == ["application.confirmed", "booking.confirmed"]
         kinds = {(n.user_id, n.kind) for n in Notification.objects.all()}
         assert (application.talent_id, "application.offered") in kinds
         assert (gig.vendor_id, "booking.confirmed") in kinds
+        assert (application.talent_id, "booking.confirmed") in kinds
+        assert not any(kind == "booking.signing" for _, kind in kinds)
 
     def test_an_expired_offer_cant_be_accepted(self):
         application = offered()
@@ -124,9 +136,13 @@ class TestOffersAndAcceptance:
         waiting = apply(
             eligible_talent(), gig.pk, pitch="Hi", answers=[], attachments=[], **dates()
         )
-        accept_offer(first.pk, talent=first.talent)
-        with pytest.raises(BookingRefused, match="Every slot"):
-            accept_offer(second.pk, talent=second.talent)
+        one = accept_offer(first.pk, talent=first.talent)
+        two = accept_offer(second.pk, talent=second.talent)  # both accepted; nobody signed
+        sign_both(one)
+        with pytest.raises(AgreementError, match="Every place"):
+            sign_both(two)
+        two.refresh_from_db()
+        assert two.status == B.SIGNING
         with pytest.raises(OfferError, match="Every slot"):
             make_offer_for(waiting)
 
@@ -144,36 +160,43 @@ class TestOffersAndAcceptance:
 
 
 @pytest.mark.django_db(transaction=True)
-def test_two_simultaneous_confirmations_cannot_overbook():
+def test_two_simultaneous_last_signatures_cannot_overbook():
+    from apps.agreements.tests.helpers import awaiting, sign
+
     gig = live_gig(slots=1)
-    first, second = offered(gig), offered(gig)
+    bookings = [accepted(gig), accepted(gig)]
+    versions = [awaiting(b) for b in bookings]
+    for booking, version in zip(bookings, versions, strict=True):
+        sign(version, booking.vendor)
     barrier = threading.Barrier(2)
     outcomes = []
 
-    def accept(application):
+    def last_signature(booking, version):
         try:
             barrier.wait()
-            accept_offer(application.pk, talent=application.talent)
+            sign(version, booking.talent)
             outcomes.append("booked")
-        except BookingRefused as exc:
+        except AgreementError as exc:
             outcomes.append(str(exc))
         finally:
             connection.close()
 
-    threads = [threading.Thread(target=accept, args=(a,)) for a in (first, second)]
+    threads = [
+        threading.Thread(target=last_signature, args=pair)
+        for pair in zip(bookings, versions, strict=True)
+    ]
     for t in threads:
         t.start()
     for t in threads:
         t.join()
     assert outcomes.count("booked") == 1
-    assert "Every slot" in next(o for o in outcomes if o != "booked")
-    assert Booking.objects.filter(gig=gig).count() == 1
+    assert "Every place" in next(o for o in outcomes if o != "booked")
+    assert Booking.objects.filter(gig=gig, status=B.CONFIRMED).count() == 1
 
 
 class TestBookingTransitions:
     def test_the_happy_path_writes_an_event_for_each_step(self, events):
         booking = booked()
-        sign_both(booking)
         on_day_one = timezone.make_aware(
             timezone.datetime.combine(booking.start_date, timezone.datetime.min.time())
         )
@@ -189,7 +212,8 @@ class TestBookingTransitions:
             BookingEvent.objects.filter(booking=booking).values_list("from_state", "to_state")
         )
         assert steps == [
-            ("offered", "confirmed"),
+            ("offered", "signing"),
+            ("signing", "confirmed"),
             ("confirmed", "checked_in"),
             ("checked_in", "delivering"),
             ("delivering", "completed"),
@@ -209,9 +233,9 @@ class TestBookingTransitions:
         booking = booked(gig)
         gig.refresh_from_db()
         assert gig.status == GigStatus.FILLED
-        with pytest.raises(BookingRefused, match="Give a reason"):
-            transition(booking.pk, B.CANCELLED, actor=Actor.TALENT, user=booking.talent)
-        transition(booking.pk, B.CANCELLED, actor=Actor.TALENT, user=booking.talent, reason="Exams")
+        with pytest.raises(cancellation.CancellationRefused, match="Say a little"):
+            cancellation.cancel(booking.pk, user=booking.talent, by="talent", reason="other")
+        cancellation.cancel(booking.pk, user=booking.talent, by="talent", reason="illness")
         gig.refresh_from_db()
         assert gig.status == GigStatus.LIVE
         notified = set(
@@ -265,7 +289,7 @@ class TestBookingTransitions:
 
 class TestEventLogIsAppendOnly:
     def test_the_database_refuses_updates_and_deletes(self):
-        event = BookingEvent.objects.get(booking=booked())
+        event = BookingEvent.objects.filter(booking=booked()).first()
         with pytest.raises(DatabaseError, match="append-only"), transaction.atomic():
             BookingEvent.objects.filter(pk=event.pk).update(reason="rewritten")
         with (
@@ -284,10 +308,11 @@ class TestEventLogIsAppendOnly:
 
     def test_inserting_still_works(self):
         booking = booked()
+        before = BookingEvent.objects.filter(booking=booking).count()
         BookingEvent.objects.create(
             booking=booking, from_state="confirmed", to_state="confirmed", actor="system"
         )
-        assert BookingEvent.objects.filter(booking=booking).count() == 2
+        assert BookingEvent.objects.filter(booking=booking).count() == before + 1
 
 
 class TestApi:
@@ -308,14 +333,16 @@ class TestApi:
         accepted = talent.post(f"/api/v1/applications/{application.pk}/accept/")
         assert accepted.status_code == 201, accepted.json()
         booking = accepted.json()
-        assert booking["status"] == "confirmed"
+        assert booking["status"] == "signing"
         assert booking["next_moves"] == ["cancelled"]
-        assert [e["to_state"] for e in booking["events"]] == ["confirmed"]
+        assert [e["to_state"] for e in booking["events"]] == ["signing"]
 
         assert [b["id"] for b in vendor.get("/api/v1/bookings/").json()["results"]] == [
             booking["id"]
         ]
+        sign_both(Booking.objects.get(pk=booking["id"]))
         detail = vendor.get(f"/api/v1/bookings/{booking['id']}/").json()
+        assert detail["status"] == "confirmed"
         assert set(detail["next_moves"]) == {"cancelled", "checked_in", "no_show"}
 
     def test_transition_endpoint_reports_refusals(self):
@@ -326,10 +353,8 @@ class TestApi:
         assert early.status_code == 409 and "Check-in opens" in early.json()["message"]
         not_mine = talent.post(url, {"status": "checked_in"}, format="json")
         assert not_mine.status_code == 409 and "Only the vendor" in not_mine.json()["message"]
-        Booking.objects.filter(pk=booking.pk).update(start_date=timezone.localdate())
-        unsigned = client_for(booking.vendor).post(url, {"status": "checked_in"}, format="json")
-        assert unsigned.status_code == 409 and "sign the agreement" in unsigned.json()["message"]
-        sign_both(booking)  # in force: the booking takes the agreement's dates again
+        no_reason = talent.post(url, {"status": "cancelled"}, format="json")
+        assert no_reason.status_code == 400 and "/cancel/" in str(no_reason.json())
         Booking.objects.filter(pk=booking.pk).update(start_date=timezone.localdate())
         ok = client_for(booking.vendor).post(url, {"status": "checked_in"}, format="json")
         assert ok.status_code == 200 and ok.json()["status"] == "checked_in"
@@ -372,6 +397,8 @@ def test_every_endpoint_is_in_the_openapi_schema(tmp_path):
         "/api/v1/bookings/",
         "/api/v1/bookings/{booking_id}/",
         "/api/v1/bookings/{booking_id}/transition/",
+        "/api/v1/bookings/{booking_id}/cancel/",
+        "/api/v1/bookings/{booking_id}/details/",
         "/api/v1/jobs/{job}/",
     } <= paths
 
@@ -379,8 +406,10 @@ def test_every_endpoint_is_in_the_openapi_schema(tmp_path):
 def test_guests_see_the_exact_location_only_while_booked():
     from apps.properties.services import can_see_exact_location
 
-    booking = booked()
+    booking = accepted()
     prop = booking.gig.property
+    assert not can_see_exact_location(booking.talent, prop)  # not until both sign
+    sign_both(booking)
     assert can_see_exact_location(booking.talent, prop)
     assert not can_see_exact_location(eligible_talent(), prop)
     transition(booking.pk, B.CANCELLED, actor=Actor.TALENT, user=booking.talent, reason="x")

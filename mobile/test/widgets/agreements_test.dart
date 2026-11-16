@@ -1,4 +1,5 @@
 import 'package:barterly/src/agreements/agreement_models.dart';
+import 'package:barterly/src/agreements/agreement_screen.dart';
 import 'package:barterly/src/agreements/offer_screen.dart';
 import 'package:barterly/src/agreements/terms.dart';
 import 'package:barterly/src/api/token_store.dart';
@@ -58,7 +59,13 @@ Map<String, Object?> threadJson(
   String? open,
   bool yourTurn = false,
   bool canCounter = false,
+  Map<String, Object?> host = const {
+    'score': 50,
+    'level': 'new',
+    'version': 'v1',
+  },
 }) => {
+  'host_reliability': host,
   'offers': offers,
   'open_offer': open,
   'your_turn': yourTurn,
@@ -67,10 +74,13 @@ Map<String, Object?> threadJson(
   'offer_expires_at': '2026-11-17T10:00:00Z',
 };
 
-Map<String, Object?> agreementJson({bool signed = false}) => {
+Map<String, Object?> agreementJson({
+  bool signed = false,
+  String bookingStatus = 'signing',
+}) => {
   'id': 'ag1',
   'booking': 'b1',
-  'booking_status': 'confirmed',
+  'booking_status': bookingStatus,
   'gig_title': 'Reception and social media volunteer',
   'in_force': false,
   'current_version': null,
@@ -114,6 +124,29 @@ Map<String, Object?> agreementJson({bool signed = false}) => {
 Finder listOf(Type screen) => find
     .descendant(of: find.byType(screen), matching: find.byType(Scrollable))
     .first;
+
+Future<void> openAgreement(
+  WidgetTester tester,
+  FakeApi api, {
+  FakeUrlOpener? urls,
+}) async {
+  usePhoneScreen(tester);
+  await pumpApp(
+    tester,
+    api: api,
+    tokens: MemoryTokenStore(signedInTokens),
+    urls: urls,
+  );
+  await tester.tap(find.text('My trips'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Agreement'));
+  await tester.pumpAndSettle();
+}
+
+Map<String, Object?> confirmedTrip() => {
+  ...applicationJson(status: 'confirmed'),
+  'agreement': 'ag1',
+};
 
 Future<void> openOffer(WidgetTester tester, FakeApi api) async {
   usePhoneScreen(tester);
@@ -314,5 +347,148 @@ void main() {
     expect(phone.signedOut, isTrue);
     expect(find.textContaining('You: signed'), findsOneWidget);
     expect(find.text('Sign version 1'), findsNothing);
+  });
+
+  testWidgets("a held offer says so, with the host's reliability", (
+    tester,
+  ) async {
+    final api = talentApi({
+      'GET /api/v1/applications/mine/': (_) =>
+          ok([applicationJson(status: 'offered')]),
+      'GET /api/v1/applications/a1/offers/': (_) => ok(
+        threadJson(
+          [offerJson(status: 'held')],
+          host: {'score': 72, 'level': 'good', 'version': 'v1'},
+        ),
+      ),
+    });
+    await openOffer(tester, api);
+    expect(find.text('Offer on hold'), findsOneWidget);
+    expect(find.text('Host: Reliability 72/100 · Good'), findsOneWidget);
+    expect(
+      find.textContaining('Every place on this gig is taken'),
+      findsOneWidget,
+    );
+    expect(find.text('Accept and book'), findsNothing);
+  });
+
+  testWidgets('a confirmed booking unlocks the address and the host', (
+    tester,
+  ) async {
+    final urls = FakeUrlOpener();
+    final api = talentApi({
+      'GET /api/v1/applications/mine/': (_) => ok([confirmedTrip()]),
+      'GET /api/v1/agreements/ag1/': (_) =>
+          ok(agreementJson(signed: true, bookingStatus: 'confirmed')),
+      'GET /api/v1/bookings/b1/details/': (_) => ok({
+        'booking_id': 'b1',
+        'status': 'confirmed',
+        'host': {'name': 'Asha', 'phone': '+919876543210'},
+        'talent': {'name': 'Riya', 'phone': '+919812345678'},
+        'place': {
+          'name': 'Zostel Manali',
+          'address': 'Old Manali Road',
+          'city': 'Manali',
+          'state': 'HP',
+          'pincode': '175131',
+          'latitude': 32.2,
+          'longitude': 77.1,
+          'directions': 'Past the blue gate.',
+          'maps_url':
+              'https://www.google.com/maps/dir/?api=1&destination=32.2,77.1',
+        },
+      }),
+    });
+    await openAgreement(tester, api, urls: urls);
+
+    expect(find.text('Confirmed'), findsOneWidget);
+    expect(find.text('Old Manali Road, Manali, 175131'), findsOneWidget);
+    expect(find.text('How to find it: Past the blue gate.'), findsOneWidget);
+    await tester.ensureVisible(find.text('Directions in Maps'));
+    await tester.tap(find.text('Directions in Maps'));
+    await tester.ensureVisible(find.text('Call the host'));
+    await tester.tap(find.text('Call the host'));
+    await tester.pumpAndSettle();
+    expect(urls.external.map((u) => u.toString()), [
+      'https://www.google.com/maps/dir/?api=1&destination=32.2,77.1',
+      'tel:+919876543210',
+    ]);
+  });
+
+  testWidgets('before both sign, nothing is unlocked', (tester) async {
+    final api = talentApi({
+      'GET /api/v1/applications/mine/': (_) => ok([confirmedTrip()]),
+      'GET /api/v1/agreements/ag1/': (_) => ok(agreementJson()),
+    });
+    await openAgreement(tester, api);
+    expect(find.text('Awaiting signatures'), findsOneWidget);
+    expect(find.textContaining('once you both sign'), findsOneWidget);
+    expect(api.requests.where((r) => r.path.endsWith('/details/')), isEmpty);
+  });
+
+  testWidgets('cancels with a reason after seeing the policy', (tester) async {
+    var cancelled = false;
+    final api = talentApi({
+      'GET /api/v1/applications/mine/': (_) => ok([confirmedTrip()]),
+      'GET /api/v1/agreements/ag1/': (_) => ok(
+        agreementJson(
+          signed: true,
+          bookingStatus: cancelled ? 'cancelled' : 'confirmed',
+        ),
+      ),
+      'GET /api/v1/bookings/b1/details/': (_) => ok({
+        'booking_id': 'b1',
+        'status': 'confirmed',
+        'host': {'name': 'Asha', 'phone': '+919876543210'},
+        'talent': {'name': 'Riya', 'phone': '+919812345678'},
+        'place': null,
+      }),
+      'GET /api/v1/bookings/b1/cancel/': (_) => ok({
+        'reasons': [
+          {'code': 'illness', 'label': 'Illness or injury'},
+          {'code': 'other', 'label': 'Something else'},
+        ],
+        'effect': 'late',
+        'effect_label': 'Late',
+        'policy': 'moderate',
+        'notice_days': 7,
+        'days_before_start': 4,
+      }),
+      'POST /api/v1/bookings/b1/cancel/': (_) {
+        cancelled = true;
+        return ok(<String, Object?>{});
+      },
+    });
+    await openAgreement(tester, api);
+    await tester.ensureVisible(find.text('Cancel this booking'));
+    await tester.tap(find.text('Cancel this booking'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('counts as a late cancellation'),
+      findsOneWidget,
+    );
+    expect(find.textContaining("7 days' notice"), findsOneWidget);
+    FilledButton submit() => tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Cancel the booking'),
+    );
+    expect(submit().onPressed, isNull);
+    await tester.tap(find.text('Something else'));
+    await tester.pumpAndSettle();
+    expect(submit().onPressed, isNull, reason: '"other" needs a note');
+    await tester.enterText(find.byType(TextField), 'Visa delayed');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel the booking'));
+    await tester.pumpAndSettle();
+
+    final sent = api.requests.lastWhere(
+      (r) => r.method == 'POST' && r.path.endsWith('/cancel/'),
+    );
+    expect(sent.data, {'reason': 'other', 'note': 'Visa delayed'});
+    expect(find.text('Booking cancelled.'), findsOneWidget);
+    await tester.drag(listOf(AgreementScreen), const Offset(0, 2000));
+    await tester.pumpAndSettle();
+    expect(find.text('Cancelled'), findsOneWidget);
+    expect(find.text('Cancel this booking'), findsNothing);
   });
 }

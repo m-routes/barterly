@@ -89,6 +89,7 @@ describe("ApplicantDetail", () => {
     expect(screen.getByText(application.pitch)).toBeVisible();
     expect(screen.getByText("Can you commit to the full dates?")).toBeVisible();
     expect(screen.getByText("1 of 1 skills match.")).toBeVisible();
+    expect(screen.getByText("Reliability 62/100 · Good")).toBeVisible();
     expect(screen.getByText("Not enough data yet.")).toBeVisible();
     expect(screen.getByRole("link", { name: "https://example.org/portfolio" })).toHaveAttribute(
       "rel",

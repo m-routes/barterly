@@ -21,6 +21,17 @@ def offered(gig=None, talent=None, **apply_overrides):
     return application
 
 
-def booked(gig=None, talent=None, **apply_overrides):
+def accepted(gig=None, talent=None, **apply_overrides):
+    """An accepted offer: the booking is awaiting both signatures."""
     application = offered(gig, talent, **apply_overrides)
     return accept_offer(application.pk, talent=application.talent)
+
+
+def booked(gig=None, talent=None, **apply_overrides):
+    """A confirmed booking: the offer accepted and the agreement signed by both."""
+    from apps.agreements.tests.helpers import sign_both
+
+    booking = accepted(gig, talent, **apply_overrides)
+    sign_both(booking)
+    booking.refresh_from_db()
+    return booking

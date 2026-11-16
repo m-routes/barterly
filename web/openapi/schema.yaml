@@ -476,9 +476,10 @@ paths:
   /api/v1/applications/{application_id}/accept/:
     post:
       operationId: applications_accept
-      description: 'Books a slot: the application becomes confirmed and a booking
-        is created. Refused (409) when the offer has expired, the gig has no slot
-        left, or you already have a booking for those dates.'
+      description: The application becomes confirmed and a booking is created awaiting
+        signatures; it takes a slot once both sides sign the agreement. Refused (409)
+        when the offer has expired, the gig has no slot left, or you already have
+        a booking for those dates.
       summary: Accept an offer
       parameters:
       - in: path
@@ -1595,6 +1596,7 @@ paths:
           - no_show
           - refunded
           - reviewed
+          - signing
       tags:
       - bookings
       security:
@@ -1776,12 +1778,175 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/bookings/{booking_id}/cancel/:
+    get:
+      operationId: bookings_cancel_preview
+      description: The reasons you can pick, and the effect on your reliability score
+        under the agreement's cancellation policy if you cancel now.
+      summary: What cancelling now would do
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - bookings
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelPreview'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    post:
+      operationId: bookings_cancel
+      description: 'Either side, while the booking is awaiting signatures or confirmed.
+        Pick a reason (say more for other). A confirmed booking''s place is freed
+        and offered on: held offers open again, or the next shortlisted applicant
+        is offered it.'
+      summary: Cancel before check-in
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Cancel'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Cancel'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Cancel'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/bookings/{booking_id}/details/:
+    get:
+      operationId: bookings_details
+      description: 'Once both sides have signed (until the stay ends or is cancelled):
+        each side''s verified phone, and for the talent the exact address, directions
+        and a maps link. 409 before then.'
+      summary: Contact details and the exact address
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - bookings
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unlocked'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/bookings/{booking_id}/transition/:
     post:
       operationId: bookings_transition
-      description: Check in, start delivering, complete, cancel, report a no-show,
-        dispute, review; admins also resolve disputes and refund. The transition table
-        decides who may make each move and when (409 with the reason if not now).
+      description: Check in, start delivering, complete, report a no-show, dispute,
+        review; admins also resolve disputes and refund. Cancelling before check-in
+        goes through bookings/{id}/cancel/ (a reason from the list). The transition
+        table decides who may make each move and when (409 with the reason if not
+        now).
       summary: Move a booking
       parameters:
       - in: path
@@ -4477,6 +4642,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/reliability/me/:
+    get:
+      operationId: reliability_me
+      summary: Your reliability score on each side, with how it is made up
+      tags:
+      - reliability
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReliabilityDetail'
+          description: ''
   /api/v1/verification/admin/cases/:
     get:
       operationId: verification_admin_cases_list
@@ -5188,7 +5371,8 @@ components:
           format: uuid
           readOnly: true
         booking_status:
-          type: string
+          allOf:
+          - $ref: '#/components/schemas/BookingStatusEnum'
           readOnly: true
         gig_title:
           type: string
@@ -5235,7 +5419,8 @@ components:
           format: uuid
           readOnly: true
         booking_status:
-          type: string
+          allOf:
+          - $ref: '#/components/schemas/BookingStatusEnum'
           readOnly: true
         gig_title:
           type: string
@@ -5467,6 +5652,10 @@ components:
           items:
             type: string
           description: Active badge kinds.
+        reliability:
+          allOf:
+          - $ref: '#/components/schemas/Reliability'
+          description: Their reliability as talent (v1).
       required:
       - badges
       - bio
@@ -5474,6 +5663,7 @@ components:
       - home_city
       - instagram_followers
       - languages
+      - reliability
       - skills
       - talent_type
       - user_id
@@ -5885,6 +6075,8 @@ components:
           type: string
           format: date-time
           readOnly: true
+          nullable: true
+          description: When both sides had signed and the slot was taken.
         checked_in_at:
           type: string
           format: date-time
@@ -5907,6 +6099,11 @@ components:
           readOnly: true
           description: Statuses you could move this booking to (rules are checked
             on the move).
+        cancellation:
+          allOf:
+          - $ref: '#/components/schemas/Cancellation'
+          nullable: true
+          readOnly: true
         events:
           type: array
           items:
@@ -5914,6 +6111,7 @@ components:
           readOnly: true
       required:
       - application
+      - cancellation
       - cancelled_at
       - checked_in_at
       - completed_at
@@ -6019,6 +6217,8 @@ components:
           type: string
           format: date-time
           readOnly: true
+          nullable: true
+          description: When both sides had signed and the slot was taken.
         checked_in_at:
           type: string
           format: date-time
@@ -6041,8 +6241,14 @@ components:
           readOnly: true
           description: Statuses you could move this booking to (rules are checked
             on the move).
+        cancellation:
+          allOf:
+          - $ref: '#/components/schemas/Cancellation'
+          nullable: true
+          readOnly: true
       required:
       - application
+      - cancellation
       - cancelled_at
       - checked_in_at
       - completed_at
@@ -6059,6 +6265,7 @@ components:
       - vendor
     BookingStatusEnum:
       enum:
+      - signing
       - confirmed
       - checked_in
       - delivering
@@ -6070,6 +6277,7 @@ components:
       - reviewed
       type: string
       description: |-
+        * `signing` - Awaiting signatures
         * `confirmed` - Confirmed
         * `checked_in` - Checked in
         * `delivering` - Delivering
@@ -6171,6 +6379,99 @@ components:
         * `tour_operator` - Tour operator
         * `coworking` - Co-working / co-living
         * `other` - Other
+    Cancel:
+      type: object
+      properties:
+        reason:
+          $ref: '#/components/schemas/CancellationReasonEnum'
+        note:
+          type: string
+          description: Required for other.
+          maxLength: 1000
+      required:
+      - reason
+    CancelPreview:
+      type: object
+      description: What cancelling now would do, to show before the person confirms.
+      properties:
+        reasons:
+          type: array
+          items:
+            $ref: '#/components/schemas/CancellationReasonOption'
+          description: The reasons you can give, in order.
+        effect:
+          $ref: '#/components/schemas/CancellationEffectEnum'
+        effect_label:
+          type: string
+        policy:
+          type: string
+          description: The agreement's cancellation policy.
+        notice_days:
+          type: integer
+          nullable: true
+        days_before_start:
+          type: integer
+      required:
+      - days_before_start
+      - effect
+      - effect_label
+      - notice_days
+      - policy
+      - reasons
+    Cancellation:
+      type: object
+      properties:
+        by:
+          allOf:
+          - $ref: '#/components/schemas/CancelledByEnum'
+          readOnly: true
+        reason:
+          allOf:
+          - $ref: '#/components/schemas/CancellationReasonEnum'
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+        effect:
+          allOf:
+          - $ref: '#/components/schemas/CancellationEffectEnum'
+          readOnly: true
+        policy:
+          type: string
+          readOnly: true
+          description: The agreement's policy.
+        notice_days:
+          type: integer
+          readOnly: true
+          nullable: true
+        days_before_start:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - by
+      - created_at
+      - days_before_start
+      - effect
+      - note
+      - notice_days
+      - policy
+      - reason
+    CancellationEffectEnum:
+      enum:
+      - none
+      - free
+      - late
+      - last_minute
+      type: string
+      description: |-
+        * `none` - No effect (not yet confirmed, or not cancelled by either side)
+        * `free` - Free: before the policy's notice period
+        * `late` - Late: inside the policy's notice period
+        * `last_minute` - Last minute: a day or less before the stay
     CancellationPolicyEnum:
       enum:
       - flexible
@@ -6181,6 +6482,56 @@ components:
         * `flexible` - Flexible
         * `moderate` - Moderate
         * `strict` - Strict
+    CancellationReasonEnum:
+      enum:
+      - emergency
+      - safety
+      - plans_changed
+      - other
+      - illness
+      - travel
+      - other_work
+      - property_unavailable
+      - staffing
+      - slots_filled
+      - not_signed
+      - admin
+      type: string
+      description: |-
+        * `emergency` - A personal or family emergency
+        * `safety` - A safety or conduct concern
+        * `plans_changed` - Plans changed
+        * `other` - Something else
+        * `illness` - Illness or injury
+        * `travel` - Travel disruption
+        * `other_work` - Took up other work
+        * `property_unavailable` - The property can't host (repairs, closure)
+        * `staffing` - Staffing needs changed
+        * `slots_filled` - Every place was filled before both sides signed
+        * `not_signed` - Not signed by both before the stay started
+        * `admin` - Cancelled by Barterly support
+    CancellationReasonOption:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/CancellationReasonEnum'
+        label:
+          type: string
+      required:
+      - code
+      - label
+    CancelledByEnum:
+      enum:
+      - talent
+      - vendor
+      - system
+      - admin
+      type: string
+      description: |-
+        * `talent` - The talent
+        * `vendor` - The host
+        * `system` - Barterly, automatically
+        * `admin` - Barterly admin
     Case:
       type: object
       properties:
@@ -6526,6 +6877,17 @@ components:
           format: uuid
       required:
       - media_id
+    Contact:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+          description: Verified by OTP at sign-in.
+      required:
+      - name
+      - phone
     ContentTypeEnum:
       enum:
       - application/pdf
@@ -6814,6 +7176,8 @@ components:
       properties:
         address:
           type: string
+        directions:
+          type: string
         pincode:
           type: string
         latitude:
@@ -6826,6 +7190,7 @@ components:
           nullable: true
       required:
       - address
+      - directions
       - latitude
       - longitude
       - pincode
@@ -7703,6 +8068,20 @@ components:
       - body
       - created_at
       - mine
+    LevelEnum:
+      enum:
+      - new
+      - excellent
+      - good
+      - fair
+      - poor
+      type: string
+      description: |-
+        * `new` - new
+        * `excellent` - excellent
+        * `good` - good
+        * `fair` - fair
+        * `poor` - poor
     MakeOffer:
       type: object
       properties:
@@ -7965,6 +8344,7 @@ components:
     OfferStatusEnum:
       enum:
       - open
+      - held
       - accepted
       - declined
       - countered
@@ -7972,6 +8352,7 @@ components:
       type: string
       description: |-
         * `open` - Waiting for an answer
+        * `held` - On hold until a place opens
         * `accepted` - Accepted
         * `declined` - Declined
         * `countered` - Countered
@@ -8003,9 +8384,14 @@ components:
           type: string
           format: date-time
           nullable: true
+        host_reliability:
+          allOf:
+          - $ref: '#/components/schemas/Reliability'
+          description: The host's reliability (v1).
       required:
       - can_counter
       - counterable
+      - host_reliability
       - offer_expires_at
       - offers
       - open_offer
@@ -8382,6 +8768,11 @@ components:
           type: string
           description: Street address. Never shown publicly.
           maxLength: 500
+        directions:
+          type: string
+          description: How to find the place (landmarks, which gate, where to park).
+            Shown only to talent with a confirmed booking, like the address.
+          maxLength: 1000
         city:
           type: string
           maxLength: 80
@@ -8709,6 +9100,42 @@ components:
           type: integer
       required:
       - slot_id
+    Place:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        pincode:
+          type: string
+        latitude:
+          type: number
+          format: double
+          nullable: true
+        longitude:
+          type: number
+          format: double
+          nullable: true
+        directions:
+          type: string
+        maps_url:
+          type: string
+          description: Directions in Google Maps; empty without a pin.
+      required:
+      - address
+      - city
+      - directions
+      - latitude
+      - longitude
+      - maps_url
+      - name
+      - pincode
+      - state
     Property:
       type: object
       description: 'The owner''s view: everything, including the exact address and
@@ -8727,6 +9154,11 @@ components:
           type: string
           description: Street address. Never shown publicly.
           maxLength: 500
+        directions:
+          type: string
+          description: How to find the place (landmarks, which gate, where to park).
+            Shown only to talent with a confirmed booking, like the address.
+          maxLength: 1000
         city:
           type: string
           maxLength: 80
@@ -9014,6 +9446,58 @@ components:
         * `language` - language
         * `incomplete` - incomplete
         * `other` - other
+    Reliability:
+      type: object
+      properties:
+        score:
+          type: integer
+          maximum: 100
+          minimum: 0
+        level:
+          $ref: '#/components/schemas/LevelEnum'
+        version:
+          type: string
+      required:
+      - level
+      - score
+      - version
+    ReliabilityDetail:
+      type: object
+      properties:
+        score:
+          type: integer
+          maximum: 100
+          minimum: 0
+        level:
+          $ref: '#/components/schemas/LevelEnum'
+        version:
+          type: string
+        side:
+          $ref: '#/components/schemas/ReliabilitySideEnum'
+        inputs:
+          type: object
+          additionalProperties:
+            type: integer
+        breakdown:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Each term's points (docs/reliability.md).
+      required:
+      - breakdown
+      - inputs
+      - level
+      - score
+      - side
+      - version
+    ReliabilitySideEnum:
+      enum:
+      - talent
+      - vendor
+      type: string
+      description: |-
+        * `talent` - As talent
+        * `vendor` - As a host
     Report:
       type: object
       properties:
@@ -9627,6 +10111,32 @@ components:
       required:
       - access
       - refresh
+    Unlocked:
+      type: object
+      description: |-
+        Shared once both have signed: each side's verified phone, and for the talent the
+        exact address and directions.
+      properties:
+        booking_id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/BookingStatusEnum'
+        host:
+          $ref: '#/components/schemas/Contact'
+        talent:
+          $ref: '#/components/schemas/Contact'
+        place:
+          allOf:
+          - $ref: '#/components/schemas/Place'
+          nullable: true
+          description: For the talent only.
+      required:
+      - booking_id
+      - host
+      - place
+      - status
+      - talent
     Unread:
       type: object
       properties:

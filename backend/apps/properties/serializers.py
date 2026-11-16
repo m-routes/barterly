@@ -96,6 +96,7 @@ class PropertySerializer(serializers.ModelSerializer):
             "name",
             "property_type",
             "address",
+            "directions",
             "city",
             "state",
             "pincode",
@@ -133,6 +134,7 @@ class ApproximateLocationSerializer(serializers.Serializer):
 
 class ExactLocationSerializer(serializers.Serializer):
     address = serializers.CharField()
+    directions = serializers.CharField()
     pincode = serializers.CharField()
     latitude = serializers.FloatField(allow_null=True)
     longitude = serializers.FloatField(allow_null=True)
@@ -205,6 +207,7 @@ class PublicPropertySerializer(serializers.ModelSerializer):
             return None
         return {
             "address": prop.address,
+            "directions": prop.directions,
             "pincode": prop.pincode,
             "latitude": float(prop.latitude) if prop.has_point else None,
             "longitude": float(prop.longitude) if prop.has_point else None,

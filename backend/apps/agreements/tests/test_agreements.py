@@ -88,7 +88,9 @@ class TestSigning:
         b.agreement.refresh_from_db()
         assert not b.agreement.in_force
         assert Notification.objects.filter(user=b.talent, kind="agreement.signed").exists()
-        with pytest.raises(BookingRefused, match="sign the agreement"):
+        b.refresh_from_db()
+        assert b.status == B.SIGNING  # not confirmed until both have signed
+        with pytest.raises(BookingRefused, match="signing to checked_in"):
             transition(b.pk, B.CHECKED_IN, actor=Actor.VENDOR, user=b.vendor, now=on_day_one(b))
 
         sign(version, b.talent)

@@ -17,5 +17,7 @@ urlpatterns = [
         views.BookingTransitionView.as_view(),
         name="transition",
     ),
+    path("bookings/<uuid:booking_id>/cancel/", views.CancelView.as_view(), name="cancel"),
+    path("bookings/<uuid:booking_id>/details/", views.UnlockedView.as_view(), name="details"),
     path("jobs/<slug:job>/", views.JobView.as_view(), name="job"),
 ]

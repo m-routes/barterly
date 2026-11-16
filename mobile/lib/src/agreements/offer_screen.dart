@@ -47,7 +47,7 @@ class _OfferScreenState extends ConsumerState<OfferScreen> {
       final bookingId = await repository.accept(offer.id);
       final agreement = await repository.agreementForBooking(bookingId);
       if (!mounted) return;
-      _show("You're booked. Now sign the agreement.");
+      _show('Accepted. The place is yours once you both sign.');
       ref.invalidate(myApplicationsProvider);
       context.pushReplacement(Routes.agreement(agreement.id));
     } on ApiError catch (error) {
@@ -149,6 +149,18 @@ class _OfferScreenState extends ConsumerState<OfferScreen> {
               _heading(offer, thread),
               style: Theme.of(context).textTheme.titleLarge,
             ),
+            Padding(
+              padding: const EdgeInsets.only(top: BarterlySpace.xs),
+              child: Text(
+                'Host: ${thread.hostReliability.label}',
+                style: const TextStyle(color: BarterlyColors.inkMuted),
+              ),
+            ),
+            if (offer.isHeld)
+              Padding(
+                padding: const EdgeInsets.only(top: BarterlySpace.sm),
+                child: Text(_heldText(thread.expiresAt)),
+              ),
             if (thread.expiresAt case final due? when offer.isOpen)
               Padding(
                 padding: const EdgeInsets.only(top: BarterlySpace.xs),
@@ -199,9 +211,9 @@ class _OfferScreenState extends ConsumerState<OfferScreen> {
               ),
             const SizedBox(height: BarterlySpace.md),
             const Text(
-              'Accepting books you and draws up an agreement you both sign. '
-              'Its legal text is a placeholder still to be reviewed by a '
-              'lawyer.',
+              'Accepting draws up an agreement you both sign; the place is '
+              'yours once you both have. Its legal text is a placeholder '
+              'still to be reviewed by a lawyer.',
               style: TextStyle(fontSize: 13, color: BarterlyColors.inkMuted),
             ),
           ],
@@ -210,10 +222,19 @@ class _OfferScreenState extends ConsumerState<OfferScreen> {
     ),
   );
 
+  String _heldText(DateTime? until) {
+    const text =
+        'Every place on this gig is taken for now. If one opens up before '
+        "the stay, this offer opens again and we'll tell you.";
+    if (until == null) return text;
+    return '$text It lapses on ${shortDate(until.toLocal())}.';
+  }
+
   String _heading(Offer offer, OfferThread thread) {
     if (offer.mine) return 'Your requested change';
     if (offer.status == 'accepted') return 'Offer accepted';
     if (offer.status == 'declined') return 'Offer declined';
+    if (offer.isHeld) return 'Offer on hold';
     if (!offer.isOpen) return 'Offer closed';
     return offer.revision == 1
         ? 'The host made you an offer'

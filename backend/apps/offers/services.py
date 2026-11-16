@@ -73,8 +73,22 @@ def _payload(offer: Offer, application: Application, **extra) -> dict:
     }
 
 
-def _create(application, *, revision, by, user, terms, now, message="", counter_of=None, final):
+def _create(
+    application,
+    *,
+    revision,
+    by,
+    user,
+    terms,
+    now,
+    message="",
+    counter_of=None,
+    final,
+    step_in_for=None,
+    by_system=False,
+):
     offer = Offer.objects.create(
+        step_in_for=step_in_for,
         application=application,
         revision=revision,
         proposed_by=by,
@@ -87,7 +101,7 @@ def _create(application, *, revision, by, user, terms, now, message="", counter_
         created_at=now,
     )
     log_action(
-        actor=user,
+        actor=None if by_system else user,
         action="offer.sent",
         obj=offer,
         after={
@@ -96,6 +110,7 @@ def _create(application, *, revision, by, user, terms, now, message="", counter_
             "terms_sha256": offer.terms_sha256,
             "stipend_amount": terms["stipend_amount"],
             "final": final,
+            "step_in_for": str(step_in_for.pk) if step_in_for else "",
         },
     )
     return offer
@@ -182,9 +197,47 @@ def make_offer(application_id, *, vendor, terms: dict, message: str = "", reques
         except applications.InvalidApplicationTransition as exc:
             raise OfferError(str(exc)) from exc
         return _create(
-            application, revision=1, by=Party.VENDOR, user=vendor, terms=frozen, now=now,
-            message=message, final=False,
-        )  # fmt: skip
+            application,
+            revision=1,
+            by=Party.VENDOR,
+            user=vendor,
+            terms=frozen,
+            now=now,
+            message=message,
+            final=False,
+        )
+
+
+STEP_IN_MESSAGE = (
+    "A place opened up and you're next in line. The host is offering it to you on the "
+    "terms they agreed for it before."
+)
+
+
+def create_step_in(application, *, terms: dict, vacated, by: str, now) -> Offer:
+    """The system's offer of a freed place (apps.bookings.cancellation.step_in_offer).
+    The application is already locked and offered. It is the host's offer on the host's
+    own agreed terms; the host still signs the agreement, as with any offer."""
+    offer = _create(
+        application,
+        revision=1,
+        by=by,
+        user=application.gig.vendor,
+        terms=terms,
+        now=now,
+        message=STEP_IN_MESSAGE,
+        final=False,
+        step_in_for=vacated,
+        by_system=True,
+    )
+    publish(
+        DomainEvent(
+            "offer.step_in",
+            _payload(offer, application, booking_id=str(vacated.pk), by="system"),
+            occurred_at=now,
+        )
+    )
+    return offer
 
 
 # ---------- Answering ----------
@@ -257,9 +310,16 @@ def decline(offer_id, *, user, reason: str = "", request=None, now=None) -> Offe
             return offer
         original = offer.counter_of
         reissued = _create(
-            application, revision=offer.revision + 1, by=Party.VENDOR, user=user,
-            terms=original.terms, now=now, message=reason, counter_of=offer, final=True,
-        )  # fmt: skip
+            application,
+            revision=offer.revision + 1,
+            by=Party.VENDOR,
+            user=user,
+            terms=original.terms,
+            now=now,
+            message=reason,
+            counter_of=offer,
+            final=True,
+        )
         _give_more_time(application, user=user, now=now, request=request)
         publish(
             DomainEvent(
@@ -301,9 +361,16 @@ def counter(offer_id, *, talent, changes: dict, message: str = "", request=None,
             raise OfferError("Change at least one of the terms.", status=400)
         _answer(offer, OfferStatus.COUNTERED, user=talent, now=now, request=request)
         countered = _create(
-            application, revision=offer.revision + 1, by=Party.TALENT, user=talent,
-            terms=proposed, now=now, message=message, counter_of=offer, final=True,
-        )  # fmt: skip
+            application,
+            revision=offer.revision + 1,
+            by=Party.TALENT,
+            user=talent,
+            terms=proposed,
+            now=now,
+            message=message,
+            counter_of=offer,
+            final=True,
+        )
         _give_more_time(application, user=talent, now=now, request=request)
         publish(
             DomainEvent(
@@ -322,7 +389,8 @@ def lapse_open_offers(event: DomainEvent) -> None:
     """Subscribed to ENDING_EVENTS: an application that ended has no open offer."""
     now = event.occurred_at or timezone.now()
     for offer in Offer.objects.select_for_update().filter(
-        application_id=event.payload["application_id"], status=OfferStatus.OPEN
+        application_id=event.payload["application_id"],
+        status__in=(OfferStatus.OPEN, OfferStatus.HELD),
     ):
         _answer(
             offer,

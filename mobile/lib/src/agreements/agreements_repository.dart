@@ -96,6 +96,32 @@ class AgreementsRepository {
     return Agreement.fromJson(response.data!);
   });
 
+  /// Phones, and the exact address with directions: only once both have signed.
+  Future<UnlockedDetails> details(String bookingId) => guardApi(() async {
+    final response = await _dio.get<Map<String, Object?>>(
+      '/api/v1/bookings/$bookingId/details/',
+    );
+    return UnlockedDetails.fromJson(response.data!);
+  });
+
+  Future<CancelPreview> cancelPreview(String bookingId) => guardApi(() async {
+    final response = await _dio.get<Map<String, Object?>>(
+      '/api/v1/bookings/$bookingId/cancel/',
+    );
+    return CancelPreview.fromJson(response.data!);
+  });
+
+  Future<void> cancel(
+    String bookingId, {
+    required String reason,
+    String note = '',
+  }) => guardApi(() async {
+    await _dio.post<Map<String, Object?>>(
+      '/api/v1/bookings/$bookingId/cancel/',
+      data: {'reason': reason, 'note': note},
+    );
+  });
+
   Future<Agreement> declineChange(String versionId, {String reason = ''}) =>
       guardApi(() async {
         final response = await _dio.post<Map<String, Object?>>(

@@ -148,6 +148,7 @@ export const applicant = (overrides: Partial<ApplicationListItem> = {}): Applica
     skills: ["reception"],
     instagram_followers: 1200,
     badges: ["id_verified"],
+    reliability: { score: 62, level: "good", version: "v1" },
   },
   fit: { score: 92, breakdown: {} },
   attachment_count: 1,
@@ -236,6 +237,7 @@ export const offerThread = (overrides: Partial<OfferThread> = {}): OfferThread =
   can_counter: false,
   counterable: [],
   offer_expires_at: null,
+  host_reliability: { score: 50, level: "new", version: "v1" },
   ...overrides,
 });
 
@@ -265,7 +267,7 @@ export const agreementVersion = (overrides: Partial<AgreementVersion> = {}): Agr
 export const agreement = (overrides: Partial<Agreement> = {}): Agreement => ({
   id: "ag-1",
   booking: "bk-1",
-  booking_status: "confirmed",
+  booking_status: "signing",
   gig_title: "Content creator for the winter season",
   in_force: false,
   current_version: null,
@@ -280,7 +282,7 @@ export const agreementListItem = (
 ): AgreementListItem => ({
   id: "ag-1",
   booking: "bk-1",
-  booking_status: "confirmed",
+  booking_status: "signing",
   gig_title: "Content creator for the winter season",
   other_name: "Aarav Mehta",
   start_date: "2026-12-15",

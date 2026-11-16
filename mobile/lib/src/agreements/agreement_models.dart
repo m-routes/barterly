@@ -43,6 +43,7 @@ class Offer {
   final String message;
 
   bool get isOpen => status == 'open';
+  bool get isHeld => status == 'held';
 }
 
 @immutable
@@ -54,6 +55,7 @@ class OfferThread {
     this.canCounter = false,
     this.counterable = const [],
     this.expiresAt,
+    this.hostReliability = Reliability.neutral,
   });
 
   factory fromJson(Map<String, Object?> json) => OfferThread(
@@ -66,6 +68,10 @@ class OfferThread {
     canCounter: json['can_counter'] as bool? ?? false,
     counterable: _strings(json['counterable']),
     expiresAt: DateTime.tryParse(json['offer_expires_at'] as String? ?? ''),
+    hostReliability: switch (json['host_reliability']) {
+      final Map<String, Object?> r => Reliability.fromJson(r),
+      _ => Reliability.neutral,
+    },
   );
 
   final List<Offer> offers;
@@ -74,6 +80,7 @@ class OfferThread {
   final bool canCounter;
   final List<String> counterable;
   final DateTime? expiresAt;
+  final Reliability hostReliability;
 
   /// The offer to show first: the open one, else the latest.
   Offer? get current =>
@@ -209,4 +216,137 @@ class SignChallenge {
   final String phoneHint;
 
   bool get needsOtp => method == 'otp';
+}
+
+/// Reliability v1, 0 to 100 (backend apps/reliability, docs/reliability.md).
+@immutable
+class Reliability {
+  const new({required this.score, required this.level});
+
+  factory fromJson(Map<String, Object?> json) => Reliability(
+    score: (json['score'] as num?)?.toInt() ?? 50,
+    level: json['level'] as String? ?? 'new',
+  );
+
+  static const neutral = Reliability(score: 50, level: 'new');
+
+  final int score;
+  final String level;
+
+  String get label =>
+      'Reliability $score/100 · ${switch (level) {
+        'excellent' => 'Excellent',
+        'good' => 'Good',
+        'fair' => 'Fair',
+        'poor' => 'Poor',
+        _ => 'New',
+      }}';
+}
+
+const bookingStatusLabels = {
+  'signing': 'Awaiting signatures',
+  'confirmed': 'Confirmed',
+  'checked_in': 'Checked in',
+  'delivering': 'Delivering',
+  'completed': 'Completed',
+  'cancelled': 'Cancelled',
+  'no_show': 'No-show',
+  'disputed': 'Disputed',
+  'refunded': 'Refunded',
+  'reviewed': 'Reviewed',
+};
+
+/// Shared once both have signed (GET /bookings/{id}/details/).
+@immutable
+class UnlockedDetails {
+  const new({required this.hostName, required this.hostPhone, this.place});
+
+  factory fromJson(Map<String, Object?> json) {
+    final host = json['host']! as Map<String, Object?>;
+    return UnlockedDetails(
+      hostName: host['name'] as String? ?? '',
+      hostPhone: host['phone'] as String? ?? '',
+      place: switch (json['place']) {
+        final Map<String, Object?> p => Place.fromJson(p),
+        _ => null,
+      },
+    );
+  }
+
+  final String hostName;
+  final String hostPhone;
+  final Place? place;
+}
+
+@immutable
+class Place {
+  const new({
+    required this.name,
+    required this.address,
+    required this.city,
+    required this.pincode,
+    this.directions = '',
+    this.mapsUrl = '',
+  });
+
+  factory fromJson(Map<String, Object?> json) => Place(
+    name: json['name'] as String? ?? '',
+    address: json['address'] as String? ?? '',
+    city: json['city'] as String? ?? '',
+    pincode: json['pincode'] as String? ?? '',
+    directions: json['directions'] as String? ?? '',
+    mapsUrl: json['maps_url'] as String? ?? '',
+  );
+
+  final String name;
+  final String address;
+  final String city;
+  final String pincode;
+  final String directions;
+  final String mapsUrl;
+
+  String get fullAddress =>
+      [address, city, pincode].where((part) => part.isNotEmpty).join(', ');
+}
+
+/// What cancelling now would do (GET /bookings/{id}/cancel/).
+@immutable
+class CancelPreview {
+  const new({
+    required this.reasons,
+    required this.effect,
+    this.noticeDays,
+    this.daysBeforeStart = 0,
+    this.policy = '',
+  });
+
+  factory fromJson(Map<String, Object?> json) => CancelPreview(
+    reasons: [
+      for (final r in (json['reasons'] as List?) ?? const [])
+        if (r is Map<String, Object?>)
+          (r['code']! as String, r['label'] as String? ?? ''),
+    ],
+    effect: json['effect'] as String? ?? 'none',
+    noticeDays: (json['notice_days'] as num?)?.toInt(),
+    daysBeforeStart: (json['days_before_start'] as num?)?.toInt() ?? 0,
+    policy: json['policy'] as String? ?? '',
+  );
+
+  final List<(String, String)> reasons;
+  final String effect;
+  final int? noticeDays;
+  final int daysBeforeStart;
+  final String policy;
+
+  bool get counts => effect == 'late' || effect == 'last_minute';
+
+  String get effectText => switch (effect) {
+    'late' =>
+      "You're inside the notice period: this counts as a late cancellation "
+          'on your reliability score.',
+    'last_minute' =>
+      'The stay is a day away or less: this counts as a last-minute '
+          'cancellation on your reliability score.',
+    _ => "This won't affect your reliability score.",
+  };
 }

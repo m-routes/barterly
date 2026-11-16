@@ -18,6 +18,7 @@ from apps.agreements.services import render_pending
 from apps.applications import services as applications
 from apps.applications.constants import ApplicationStatus
 from apps.applications.models import Application
+from apps.bookings.cancellation import cancel_unsigned
 from apps.bookings.lifecycle import OFFER_TTL, STALE_INTERVIEW_AFTER, Actor
 from apps.bookings.models import JobRun
 from apps.common.events import DomainEvent, publish
@@ -25,15 +26,23 @@ from apps.common.services.audit import log_action
 from apps.discovery.alerts import run_alerts
 from apps.gigs.services import close_expired_gigs
 from apps.hiring.services import send_reminders
+from apps.offers.models import Offer, OfferStatus
 from apps.verification.services.cases import expire_due_cases
 from apps.verification.services.kyc import sync_pending
 
 
 def expire_offers(now) -> dict[str, int]:
-    """Offers with no reply within 48 hours lapse (offered → expired)."""
+    """Offers with no reply within 48 hours lapse (offered → expired), as do offers held
+    for a place that never opened (their deadline is the stay's start). Bookings still
+    awaiting signatures when the stay starts are cancelled."""
     due = Application.objects.filter(
         status=ApplicationStatus.OFFERED, offer_expires_at__lte=now
     ).values_list("pk", flat=True)
+    held = set(
+        Offer.objects.filter(application_id__in=due, status=OfferStatus.HELD).values_list(
+            "application_id", flat=True
+        )
+    )
     expired = skipped = 0
     for pk in list(due):
         try:
@@ -41,13 +50,17 @@ def expire_offers(now) -> dict[str, int]:
                 pk,
                 ApplicationStatus.EXPIRED,
                 actor=Actor.SYSTEM,
-                reason=f"No reply within {int(OFFER_TTL.total_seconds() // 3600)} hours.",
+                reason=(
+                    "No place opened up before the stay."
+                    if pk in held
+                    else f"No reply within {int(OFFER_TTL.total_seconds() // 3600)} hours."
+                ),
                 now=now,
             )
             expired += 1
         except applications.InvalidApplicationTransition:
             skipped += 1  # answered (or already expired) since we looked
-    return {"expired": expired, "skipped": skipped}
+    return {"expired": expired, "skipped": skipped, **cancel_unsigned(now)}
 
 
 def flag_stale_interviews(now) -> dict[str, int]:

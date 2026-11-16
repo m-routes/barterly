@@ -131,6 +131,14 @@ export function PropertyForm({
           error={errors.address?.message}
           {...form.register("address")}
         />
+        <TextArea
+          label="Directions"
+          optional
+          rows={2}
+          hint="Landmarks, which gate, where to park. Shared with talent only once both of you have signed their agreement, like the address."
+          error={errors.directions?.message}
+          {...form.register("directions")}
+        />
         <div className="form-grid">
           <TextField
             label="City or town"

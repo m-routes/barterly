@@ -173,7 +173,7 @@ export interface paths {
     put?: never;
     /**
      * Accept an offer
-     * @description Books a slot: the application becomes confirmed and a booking is created. Refused (409) when the offer has expired, the gig has no slot left, or you already have a booking for those dates.
+     * @description The application becomes confirmed and a booking is created awaiting signatures; it takes a slot once both sides sign the agreement. Refused (409) when the offer has expired, the gig has no slot left, or you already have a booking for those dates.
      */
     post: operations["applications_accept"];
     delete?: never;
@@ -610,6 +610,50 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/bookings/{booking_id}/cancel/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * What cancelling now would do
+     * @description The reasons you can pick, and the effect on your reliability score under the agreement's cancellation policy if you cancel now.
+     */
+    get: operations["bookings_cancel_preview"];
+    put?: never;
+    /**
+     * Cancel before check-in
+     * @description Either side, while the booking is awaiting signatures or confirmed. Pick a reason (say more for other). A confirmed booking's place is freed and offered on: held offers open again, or the next shortlisted applicant is offered it.
+     */
+    post: operations["bookings_cancel"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/details/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Contact details and the exact address
+     * @description Once both sides have signed (until the stay ends or is cancelled): each side's verified phone, and for the talent the exact address, directions and a maps link. 409 before then.
+     */
+    get: operations["bookings_details"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/bookings/{booking_id}/transition/": {
     parameters: {
       query?: never;
@@ -621,7 +665,7 @@ export interface paths {
     put?: never;
     /**
      * Move a booking
-     * @description Check in, start delivering, complete, cancel, report a no-show, dispute, review; admins also resolve disputes and refund. The transition table decides who may make each move and when (409 with the reason if not now).
+     * @description Check in, start delivering, complete, report a no-show, dispute, review; admins also resolve disputes and refund. Cancelling before check-in goes through bookings/{id}/cancel/ (a reason from the list). The transition table decides who may make each move and when (409 with the reason if not now).
      */
     post: operations["bookings_transition"];
     delete?: never;
@@ -1408,6 +1452,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/reliability/me/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Your reliability score on each side, with how it is made up */
+    get: operations["reliability_me"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/verification/admin/cases/": {
     parameters: {
       query?: never;
@@ -1686,7 +1747,7 @@ export interface components {
       readonly id: string;
       /** Format: uuid */
       readonly booking: string;
-      readonly booking_status: string;
+      readonly booking_status: components["schemas"]["BookingStatusEnum"];
       readonly gig_title: string;
       readonly in_force: boolean;
       readonly current_version: number | null;
@@ -1700,7 +1761,7 @@ export interface components {
       readonly id: string;
       /** Format: uuid */
       readonly booking: string;
-      readonly booking_status: string;
+      readonly booking_status: components["schemas"]["BookingStatusEnum"];
       readonly gig_title: string;
       readonly other_name: string;
       /** Format: date */
@@ -1805,6 +1866,8 @@ export interface components {
       instagram_followers: number | null;
       /** @description Active badge kinds. */
       badges: string[];
+      /** @description Their reliability as talent (v1). */
+      reliability: components["schemas"]["Reliability"];
     };
     /**
      * @description What the applicant (and the vendor) sees. Never the vendor's notes or tags:
@@ -2006,8 +2069,11 @@ export interface components {
       readonly start_date: string;
       /** Format: date */
       readonly end_date: string;
-      /** Format: date-time */
-      readonly confirmed_at: string;
+      /**
+       * Format: date-time
+       * @description When both sides had signed and the slot was taken.
+       */
+      readonly confirmed_at: string | null;
       /** Format: date-time */
       readonly checked_in_at: string | null;
       /** Format: date-time */
@@ -2016,6 +2082,7 @@ export interface components {
       readonly cancelled_at: string | null;
       /** @description Statuses you could move this booking to (rules are checked on the move). */
       readonly next_moves: components["schemas"]["BookingStatusEnum"][];
+      readonly cancellation: components["schemas"]["Cancellation"] | null;
       readonly events: components["schemas"]["BookingEvent"][];
     };
     /**
@@ -2054,8 +2121,11 @@ export interface components {
       readonly start_date: string;
       /** Format: date */
       readonly end_date: string;
-      /** Format: date-time */
-      readonly confirmed_at: string;
+      /**
+       * Format: date-time
+       * @description When both sides had signed and the slot was taken.
+       */
+      readonly confirmed_at: string | null;
       /** Format: date-time */
       readonly checked_in_at: string | null;
       /** Format: date-time */
@@ -2064,9 +2134,11 @@ export interface components {
       readonly cancelled_at: string | null;
       /** @description Statuses you could move this booking to (rules are checked on the move). */
       readonly next_moves: components["schemas"]["BookingStatusEnum"][];
+      readonly cancellation: components["schemas"]["Cancellation"] | null;
     };
     /**
-     * @description * `confirmed` - Confirmed
+     * @description * `signing` - Awaiting signatures
+     *     * `confirmed` - Confirmed
      *     * `checked_in` - Checked in
      *     * `delivering` - Delivering
      *     * `completed` - Completed
@@ -2078,6 +2150,7 @@ export interface components {
      * @enum {string}
      */
     BookingStatusEnum:
+      | "signing"
       | "confirmed"
       | "checked_in"
       | "delivering"
@@ -2142,6 +2215,42 @@ export interface components {
       | "tour_operator"
       | "coworking"
       | "other";
+    Cancel: {
+      reason: components["schemas"]["CancellationReasonEnum"];
+      /** @description Required for other. */
+      note?: string;
+    };
+    /** @description What cancelling now would do, to show before the person confirms. */
+    CancelPreview: {
+      /** @description The reasons you can give, in order. */
+      reasons: components["schemas"]["CancellationReasonOption"][];
+      effect: components["schemas"]["CancellationEffectEnum"];
+      effect_label: string;
+      /** @description The agreement's cancellation policy. */
+      policy: string;
+      notice_days: number | null;
+      days_before_start: number;
+    };
+    Cancellation: {
+      readonly by: components["schemas"]["CancelledByEnum"];
+      readonly reason: components["schemas"]["CancellationReasonEnum"];
+      readonly note: string;
+      readonly effect: components["schemas"]["CancellationEffectEnum"];
+      /** @description The agreement's policy. */
+      readonly policy: string;
+      readonly notice_days: number | null;
+      readonly days_before_start: number;
+      /** Format: date-time */
+      readonly created_at: string;
+    };
+    /**
+     * @description * `none` - No effect (not yet confirmed, or not cancelled by either side)
+     *     * `free` - Free: before the policy's notice period
+     *     * `late` - Late: inside the policy's notice period
+     *     * `last_minute` - Last minute: a day or less before the stay
+     * @enum {string}
+     */
+    CancellationEffectEnum: "none" | "free" | "late" | "last_minute";
     /**
      * @description * `flexible` - Flexible
      *     * `moderate` - Moderate
@@ -2149,6 +2258,46 @@ export interface components {
      * @enum {string}
      */
     CancellationPolicyEnum: "flexible" | "moderate" | "strict";
+    /**
+     * @description * `emergency` - A personal or family emergency
+     *     * `safety` - A safety or conduct concern
+     *     * `plans_changed` - Plans changed
+     *     * `other` - Something else
+     *     * `illness` - Illness or injury
+     *     * `travel` - Travel disruption
+     *     * `other_work` - Took up other work
+     *     * `property_unavailable` - The property can't host (repairs, closure)
+     *     * `staffing` - Staffing needs changed
+     *     * `slots_filled` - Every place was filled before both sides signed
+     *     * `not_signed` - Not signed by both before the stay started
+     *     * `admin` - Cancelled by Barterly support
+     * @enum {string}
+     */
+    CancellationReasonEnum:
+      | "emergency"
+      | "safety"
+      | "plans_changed"
+      | "other"
+      | "illness"
+      | "travel"
+      | "other_work"
+      | "property_unavailable"
+      | "staffing"
+      | "slots_filled"
+      | "not_signed"
+      | "admin";
+    CancellationReasonOption: {
+      code: components["schemas"]["CancellationReasonEnum"];
+      label: string;
+    };
+    /**
+     * @description * `talent` - The talent
+     *     * `vendor` - The host
+     *     * `system` - Barterly, automatically
+     *     * `admin` - Barterly admin
+     * @enum {string}
+     */
+    CancelledByEnum: "talent" | "vendor" | "system" | "admin";
     Case: {
       /** Format: uuid */
       readonly id: string;
@@ -2313,6 +2462,11 @@ export interface components {
       /** Format: uuid */
       media_id: string;
     };
+    Contact: {
+      name: string;
+      /** @description Verified by OTP at sign-in. */
+      phone: string;
+    };
     /**
      * @description * `application/pdf` - application/pdf
      *     * `image/jpeg` - image/jpeg
@@ -2448,6 +2602,7 @@ export interface components {
     };
     ExactLocation: {
       address: string;
+      directions: string;
       pincode: string;
       /** Format: double */
       latitude: number | null;
@@ -2843,6 +2998,15 @@ export interface components {
       /** Format: date-time */
       created_at: string;
     };
+    /**
+     * @description * `new` - new
+     *     * `excellent` - excellent
+     *     * `good` - good
+     *     * `fair` - fair
+     *     * `poor` - poor
+     * @enum {string}
+     */
+    LevelEnum: "new" | "excellent" | "good" | "fair" | "poor";
     MakeOffer: {
       /** @description Checked against the gig's pay model. */
       terms: components["schemas"]["Terms"];
@@ -2952,13 +3116,14 @@ export interface components {
     };
     /**
      * @description * `open` - Waiting for an answer
+     *     * `held` - On hold until a place opens
      *     * `accepted` - Accepted
      *     * `declined` - Declined
      *     * `countered` - Countered
      *     * `lapsed` - Lapsed
      * @enum {string}
      */
-    OfferStatusEnum: "open" | "accepted" | "declined" | "countered" | "lapsed";
+    OfferStatusEnum: "open" | "held" | "accepted" | "declined" | "countered" | "lapsed";
     /** @description Every offer on an application, oldest first, and what you can do next. */
     OfferThread: {
       offers: components["schemas"]["Offer"][];
@@ -2971,6 +3136,8 @@ export interface components {
       counterable: string[];
       /** Format: date-time */
       offer_expires_at: string | null;
+      /** @description The host's reliability (v1). */
+      host_reliability: components["schemas"]["Reliability"];
     };
     PaginatedAdminCaseList: {
       /** @example 123 */
@@ -3175,6 +3342,8 @@ export interface components {
       property_type?: components["schemas"]["PropertyTypeEnum"];
       /** @description Street address. Never shown publicly. */
       address?: string;
+      /** @description How to find the place (landmarks, which gate, where to park). Shown only to talent with a confirmed booking, like the address. */
+      directions?: string;
       city?: string;
       state?: components["schemas"]["StateEnum"];
       pincode?: string;
@@ -3318,6 +3487,20 @@ export interface components {
     PickSlot: {
       slot_id: number;
     };
+    Place: {
+      name: string;
+      address: string;
+      city: string;
+      state: string;
+      pincode: string;
+      /** Format: double */
+      latitude: number | null;
+      /** Format: double */
+      longitude: number | null;
+      directions: string;
+      /** @description Directions in Google Maps; empty without a pin. */
+      maps_url: string;
+    };
     /** @description The owner's view: everything, including the exact address and pin. */
     Property: {
       /** Format: uuid */
@@ -3326,6 +3509,8 @@ export interface components {
       property_type: components["schemas"]["PropertyTypeEnum"];
       /** @description Street address. Never shown publicly. */
       address: string;
+      /** @description How to find the place (landmarks, which gate, where to park). Shown only to talent with a confirmed booking, like the address. */
+      directions?: string;
       city: string;
       state: components["schemas"]["StateEnum"];
       pincode?: string;
@@ -3443,6 +3628,30 @@ export interface components {
      * @enum {string}
      */
     RejectionReasonEnum: "not_a_fit" | "dates" | "filled" | "language" | "incomplete" | "other";
+    Reliability: {
+      score: number;
+      level: components["schemas"]["LevelEnum"];
+      version: string;
+    };
+    ReliabilityDetail: {
+      score: number;
+      level: components["schemas"]["LevelEnum"];
+      version: string;
+      side: components["schemas"]["ReliabilitySideEnum"];
+      inputs: {
+        [key: string]: number;
+      };
+      /** @description Each term's points (docs/reliability.md). */
+      breakdown: {
+        [key: string]: number;
+      };
+    };
+    /**
+     * @description * `talent` - As talent
+     *     * `vendor` - As a host
+     * @enum {string}
+     */
+    ReliabilitySideEnum: "talent" | "vendor";
     Report: {
       reason: components["schemas"]["ChatReportReasonEnum"];
       note?: string;
@@ -3778,6 +3987,19 @@ export interface components {
       access: string;
       /** @description Exchange at /api/v1/auth/refresh/ for new tokens. */
       refresh: string;
+    };
+    /**
+     * @description Shared once both have signed: each side's verified phone, and for the talent the
+     *     exact address and directions.
+     */
+    Unlocked: {
+      /** Format: uuid */
+      booking_id: string;
+      status: components["schemas"]["BookingStatusEnum"];
+      host: components["schemas"]["Contact"];
+      talent: components["schemas"]["Contact"];
+      /** @description For the talent only. */
+      place: components["schemas"]["Place"] | null;
     };
     Unread: {
       /** @description Unread messages across all conversations. */
@@ -5629,7 +5851,8 @@ export interface operations {
           | "disputed"
           | "no_show"
           | "refunded"
-          | "reviewed";
+          | "reviewed"
+          | "signing";
       };
       header?: never;
       path?: never;
@@ -5792,6 +6015,171 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  bookings_cancel_preview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CancelPreview"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  bookings_cancel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Cancel"];
+        "application/x-www-form-urlencoded": components["schemas"]["Cancel"];
+        "multipart/form-data": components["schemas"]["Cancel"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Booking"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  bookings_details: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Unlocked"];
         };
       };
       401: {
@@ -8459,6 +8847,25 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  reliability_me: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReliabilityDetail"][];
         };
       };
     };

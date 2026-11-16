@@ -8,6 +8,9 @@ from apps.offers.terms import (
     TermsSerializer,
     UsageRightsSerializer,
 )
+from apps.reliability import services as reliability
+from apps.reliability.models import Side
+from apps.reliability.serializers import ReliabilitySerializer
 
 
 class OfferSerializer(serializers.ModelSerializer):
@@ -57,11 +60,13 @@ class OfferThreadSerializer(serializers.Serializer):
     )
     counterable = serializers.ListField(child=serializers.CharField())
     offer_expires_at = serializers.DateTimeField(allow_null=True)
+    host_reliability = ReliabilitySerializer(help_text="The host's reliability (v1).")
 
 
 def thread(application, user, offers) -> dict:
     offers = list(offers)
     open_offer = next((o for o in offers if o.status == OfferStatus.OPEN), None)
+    held = next((o for o in offers if o.status == OfferStatus.HELD), None)
     is_talent = application.talent_id == user.pk
     mine = Party.TALENT if is_talent else Party.VENDOR
     your_turn = bool(open_offer and open_offer.recipient == mine)
@@ -76,7 +81,8 @@ def thread(application, user, offers) -> dict:
             and not any(o.proposed_by == Party.TALENT for o in offers)
         ),
         "counterable": list(COUNTERABLE),
-        "offer_expires_at": application.offer_expires_at if open_offer else None,
+        "offer_expires_at": application.offer_expires_at if open_offer or held else None,
+        "host_reliability": reliability.for_user(application.gig.vendor, Side.VENDOR),
     }
 
 

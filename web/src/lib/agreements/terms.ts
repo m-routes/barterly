@@ -31,6 +31,7 @@ export const USAGE_SCOPE_LABELS: Record<UsageScope, string> = {
 
 export const OFFER_STATUS_LABELS: Record<OfferStatus, string> = {
   open: "Waiting for an answer",
+  held: "On hold until a place opens",
   accepted: "Accepted",
   declined: "Declined",
   countered: "Change asked for",

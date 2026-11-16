@@ -34,12 +34,21 @@ APPLICATION_RECIPIENTS: dict[str, tuple[str, ...]] = {
     # Offers (apps.offers).
     "offer.countered": (VENDOR,),
     "offer.counter_declined": (TALENT,),
+    "offer.held": (TALENT,),
+    "offer.reopened": (TALENT,),
+    "offer.step_in": (VENDOR,),
+    # Bookings (apps.bookings.confirmation and .cancellation).
+    "booking.place_opened": (VENDOR,),
 }
+# Covered by agreement.ready, which both sides get at the same moment.
+SILENT = frozenset({"booking.signing"})
 # Agreement events both sides hear about; the rest go to the side that didn't act.
 AGREEMENT_TO_BOTH = frozenset({"agreement.ready", "agreement.in_force"})
 
 
 def recipients(event: DomainEvent) -> tuple[str, ...]:
+    if event.name in SILENT:
+        return ()
     if event.name in APPLICATION_RECIPIENTS:
         sides = APPLICATION_RECIPIENTS[event.name]
         # A lapsed offer: the vendor should know the slot is free again too.

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { ReliabilityBadge } from "@/components/reliability/ReliabilityBadge";
 import { Button } from "@/components/ui/Button";
 
 import { ApplicationStatusChip, Chip } from "@/components/ui/StatusChip";
@@ -148,17 +149,15 @@ export function ApplicantDetail() {
           <h2 id="about-title" className="panel__title">
             About
           </h2>
-          {person.badges.length ? (
-            <div className="chip-row">
-              {person.badges.map((b) => (
-                <Chip key={b} tone="success">
-                  {badgeLabel(b)}
-                </Chip>
-              ))}
-            </div>
-          ) : (
-            <p className="field__hint">No verification badges yet.</p>
-          )}
+          <div className="chip-row">
+            <ReliabilityBadge reliability={person.reliability} />
+            {person.badges.map((b) => (
+              <Chip key={b} tone="success">
+                {badgeLabel(b)}
+              </Chip>
+            ))}
+          </div>
+          {person.badges.length ? null : <p className="field__hint">No verification badges yet.</p>}
           {person.bio ? <p>{person.bio}</p> : null}
           <dl className="summary">
             <div>
