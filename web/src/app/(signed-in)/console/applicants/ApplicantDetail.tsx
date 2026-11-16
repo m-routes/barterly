@@ -15,6 +15,7 @@ import { formatDate } from "@/lib/format";
 import { useLoad } from "@/lib/hooks/useLoad";
 
 import { FitScore, badgeLabel } from "./ApplicantTable";
+import { OfferPanel } from "./OfferPanel";
 
 type Answer = { question: string; answer: string };
 
@@ -95,7 +96,7 @@ function Attachments({ items }: { items: Application["attachments"] }) {
 /** One applicant: who they are, their pitch and files. Never their contact details. */
 export function ApplicantDetail() {
   const { applicationId } = useParams<{ applicationId: string }>();
-  const { state, reload } = useLoad(
+  const { state, reload, refresh } = useLoad(
     () =>
       unwrap(
         api.GET("/api/v1/applications/{application_id}/", {
@@ -141,6 +142,8 @@ export function ApplicantDetail() {
       </header>
 
       <div className="stack">
+        <OfferPanel application={a} onChange={() => void refresh()} />
+
         <section className="panel stack-sm" aria-labelledby="about-title">
           <h2 id="about-title" className="panel__title">
             About

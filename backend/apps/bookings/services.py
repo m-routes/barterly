@@ -1,4 +1,4 @@
-"""Accepting offers and moving bookings, as the one transition table allows.
+"""Booking accepted offers and moving bookings, as the one transition table allows.
 
 Locks are always taken gig first, then the application or booking, so two requests
 for the same gig queue up instead of deadlocking, and slot counts are read while the
@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from apps.applications import services as applications
 from apps.applications.constants import ApplicationStatus
+from apps.applications.models import Application
 from apps.bookings import lifecycle
 from apps.bookings.lifecycle import HOLDS_SLOT, Actor, BookingStatus
 from apps.bookings.models import Booking, BookingEvent
@@ -90,51 +91,72 @@ def _sync_slots(gig_id) -> None:
     on_confirmed_bookings_changed(gig_id, taken)
 
 
-def accept_offer(application_id, *, talent, request=None, now=None) -> Booking:
-    """The talent accepts an offer: offered → confirmed, and the booking is created.
+def confirm(
+    application, *, start, end, actor: str, user, request=None, now=None, metadata=None
+) -> Booking:
+    """Book an accepted offer: offered → confirmed, and the booking is created.
 
-    The gig row stays locked from the slot check to the insert, so the last slot goes
-    to exactly one of two people accepting at the same moment.
+    The caller (apps.offers.services.accept) holds the gig and application locks from
+    the slot check to the insert, so the last slot goes to exactly one of two people
+    accepting at the same moment.
     """
     now = now or timezone.now()
-    with transaction.atomic():
-        application = applications.lock(application_id)
-        if application.talent_id != talent.pk:
-            raise Booking.DoesNotExist
-        try:
-            applications.move(
-                application,
-                ApplicationStatus.CONFIRMED,
-                actor=Actor.TALENT,
-                user=talent,
-                request=request,
-                now=now,
-            )
-        except applications.InvalidApplicationTransition as exc:
-            raise BookingRefused(str(exc)) from exc
-        booking = Booking.objects.create(
-            application=application,
-            gig=application.gig,
-            talent=application.talent,
-            vendor=application.gig.vendor,
-            start_date=application.proposed_start,
-            end_date=application.proposed_end,
-            confirmed_at=now,
-            status_changed_at=now,
-        )
-        _record(
-            booking,
-            ApplicationStatus.OFFERED,
-            actor=Actor.TALENT,
-            user=talent,
-            reason="",
-            metadata={"offer_expires_at": application.offer_expires_at},
+    application.booking_dates = (start, end)
+    try:
+        applications.move(
+            application,
+            ApplicationStatus.CONFIRMED,
+            actor=actor,
+            user=user,
             request=request,
             now=now,
-            before={"status": ApplicationStatus.OFFERED},
         )
-        _sync_slots(booking.gig_id)
+    except applications.InvalidApplicationTransition as exc:
+        raise BookingRefused(str(exc)) from exc
+    booking = Booking.objects.create(
+        application=application,
+        gig=application.gig,
+        talent=application.talent,
+        vendor=application.gig.vendor,
+        start_date=start,
+        end_date=end,
+        confirmed_at=now,
+        status_changed_at=now,
+    )
+    _record(
+        booking,
+        ApplicationStatus.OFFERED,
+        actor=actor,
+        user=user,
+        reason="",
+        metadata={"offer_expires_at": application.offer_expires_at, **(metadata or {})},
+        request=request,
+        now=now,
+        before={"status": ApplicationStatus.OFFERED},
+    )
+    _sync_slots(booking.gig_id)
     return booking
+
+
+def accept_offer(application_id, *, talent, request=None, now=None) -> Booking:
+    """The talent accepts the open offer on their application (see apps.offers)."""
+    from apps.offers import services as offers
+    from apps.offers.models import Offer, OfferStatus, Party
+
+    offer = Offer.objects.filter(
+        application_id=application_id,
+        application__talent=talent,
+        status=OfferStatus.OPEN,
+        proposed_by=Party.VENDOR,
+    ).first()
+    if offer is None:
+        if not Application.objects.filter(pk=application_id, talent=talent).exists():
+            raise Booking.DoesNotExist
+        raise BookingRefused("There's no offer waiting for your answer.")
+    try:
+        return offers.accept(offer.pk, user=talent, request=request, now=now)
+    except offers.OfferError as exc:
+        raise BookingRefused(exc.message) from exc
 
 
 def transition(

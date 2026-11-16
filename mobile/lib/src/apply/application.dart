@@ -207,6 +207,7 @@ class Application {
     this.fitScore,
     this.conversationId,
     this.unreadMessages = 0,
+    this.agreementId,
   });
 
   factory fromJson(Map<String, Object?> json) => Application(
@@ -224,6 +225,7 @@ class Application {
     fitScore: ((json['fit'] as Map?)?['score'] as num?)?.round(),
     conversationId: json['conversation'] as String?,
     unreadMessages: (json['unread_messages'] as num?)?.toInt() ?? 0,
+    agreementId: json['agreement'] as String?,
   );
 
   final String id;
@@ -239,6 +241,9 @@ class Application {
   /// The chat with the host, once they've shortlisted or messaged you.
   final String? conversationId;
   final int unreadMessages;
+
+  /// The agreement to sign, once the offer is accepted.
+  final String? agreementId;
 }
 
 enum ApplicationStatus {

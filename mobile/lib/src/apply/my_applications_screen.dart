@@ -322,11 +322,28 @@ class _ApplicationCardState extends ConsumerState<_ApplicationCard> {
                 ].join(' · '),
                 style: const TextStyle(color: BarterlyColors.inkMuted),
               ),
-            if (active || a.conversationId != null)
+            if (active || a.conversationId != null || a.agreementId != null)
               Wrap(
                 alignment: WrapAlignment.end,
                 spacing: 4,
                 children: [
+                  if (a.status == ApplicationStatus.offered)
+                    FilledButton.tonal(
+                      onPressed: () async {
+                        await context.push(Routes.offer(a.id));
+                        ref.invalidate(myApplicationsProvider);
+                      },
+                      child: const Text('See offer'),
+                    ),
+                  if (a.agreementId case final id?)
+                    TextButton.icon(
+                      onPressed: () async {
+                        await context.push(Routes.agreement(id));
+                        ref.invalidate(myApplicationsProvider);
+                      },
+                      icon: const Icon(Icons.description_outlined, size: 18),
+                      label: const Text('Agreement'),
+                    ),
                   if (a.conversationId case final id?)
                     TextButton.icon(
                       onPressed: () async {

@@ -192,9 +192,11 @@ def transition(
     application_id, to: str, *, actor: str, user=None, reason: str = "", request=None, now=None
 ) -> Application:
     """Move an application as the transition table allows. Audited; publishes
-    application.<status>. Accepting an offer is bookings.services.accept_offer."""
+    application.<status>. Offers go through apps.offers.services."""
     if to == ApplicationStatus.CONFIRMED:
-        raise InvalidApplicationTransition("Accept an offer through bookings.accept_offer.")
+        raise InvalidApplicationTransition("Accept an offer through offers.accept.")
+    if to == ApplicationStatus.OFFERED:
+        raise InvalidApplicationTransition("Make an offer with its terms (offers.make_offer).")
     with transaction.atomic():
         return move(
             lock(application_id),

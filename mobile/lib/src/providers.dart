@@ -1,3 +1,4 @@
+import 'package:barterly/src/agreements/agreements_repository.dart';
 import 'package:barterly/src/api/api_client.dart';
 import 'package:barterly/src/api/token_store.dart';
 import 'package:barterly/src/apply/applications_repository.dart';
@@ -65,6 +66,10 @@ final gigsRepositoryProvider = Provider<GigsRepository>(
 
 final applicationsRepositoryProvider = Provider<ApplicationsRepository>(
   (ref) => ApplicationsRepository(ref.watch(dioProvider)),
+);
+
+final agreementsRepositoryProvider = Provider<AgreementsRepository>(
+  (ref) => AgreementsRepository(ref.watch(dioProvider)),
 );
 
 final chatRepositoryProvider = Provider<ChatRepository>(

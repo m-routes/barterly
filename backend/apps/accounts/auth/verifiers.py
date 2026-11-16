@@ -7,6 +7,7 @@ AUTH_TOKEN_VERIFIER setting at it.
 """
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from functools import cache
 from typing import Protocol
 
@@ -22,6 +23,9 @@ class VerifiedIdentity:
     phone: str  # E.164
     provider: str  # e.g. "firebase"
     provider_uid: str  # the provider's id for this person
+    # When the person completed the OTP (Firebase's auth_time). Signing an agreement
+    # needs a recent one (apps.agreements.esign.inapp).
+    auth_time: datetime | None = None
 
 
 class InvalidSignInToken(Exception):
@@ -42,13 +46,17 @@ class TokenVerifier(Protocol):
         ...
 
 
-def identity(*, phone: str | None, provider: str, provider_uid: str) -> VerifiedIdentity:
+def identity(
+    *, phone: str | None, provider: str, provider_uid: str, auth_time: datetime | None = None
+) -> VerifiedIdentity:
     """Build a VerifiedIdentity, rejecting tokens without a usable phone number."""
     try:
         normalized = normalize_phone(phone or "")
     except ValidationError as exc:
         raise InvalidSignInToken("The token has no valid phone number.") from exc
-    return VerifiedIdentity(phone=normalized, provider=provider, provider_uid=provider_uid)
+    return VerifiedIdentity(
+        phone=normalized, provider=provider, provider_uid=provider_uid, auth_time=auth_time
+    )
 
 
 def _public_keys_only_credential():
@@ -107,8 +115,12 @@ class FirebaseTokenVerifier:
         sign_in_provider = claims.get("firebase", {}).get("sign_in_provider")
         if sign_in_provider != "phone":
             raise InvalidSignInToken("Only phone sign-in is accepted.")
+        auth_time = claims.get("auth_time")
         return identity(
-            phone=claims.get("phone_number"), provider=self.provider, provider_uid=claims["uid"]
+            phone=claims.get("phone_number"),
+            provider=self.provider,
+            provider_uid=claims["uid"],
+            auth_time=datetime.fromtimestamp(auth_time, UTC) if auth_time else None,
         )
 
 

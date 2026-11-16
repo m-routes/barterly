@@ -14,6 +14,7 @@ from datetime import timedelta
 from django.db import connection, transaction
 from django.utils import timezone
 
+from apps.agreements.services import render_pending
 from apps.applications import services as applications
 from apps.applications.constants import ApplicationStatus
 from apps.applications.models import Application
@@ -113,6 +114,7 @@ JOBS: dict[str, Callable[..., dict]] = {
     "sync_kyc_results": lambda now: sync_pending(timedelta(minutes=30)),
     "run_search_alerts": lambda now: run_alerts(now),
     "send_interview_reminders": lambda now: send_reminders(now),
+    "render_agreements": render_pending,
 }
 
 

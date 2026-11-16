@@ -1,7 +1,8 @@
 """THE transition table for an engagement, from application to booking.
 
-An application moves applied → shortlisted → interview → offered. When the talent
-accepts an offer (offered → confirmed) a Booking is created, and the booking carries
+An application moves applied → shortlisted → interview → offered. When an offer is
+accepted (offered → confirmed: the talent accepts the host's offer, or the host accepts
+the talent's counter; see apps.offers) a Booking is created, and the booking carries
 on: confirmed → checked_in → delivering → completed → reviewed, with cancelled,
 no_show, disputed and refunded along the way.
 
@@ -111,6 +112,8 @@ def _can_offer(ctx: Context) -> str | None:
 
 
 def _can_accept(ctx: Context) -> str | None:
+    """The booking's dates are the accepted offer's: bookings.services.confirm() puts them
+    on the application as `booking_dates` before the move."""
     from apps.bookings.models import Booking
 
     application = ctx.subject
@@ -118,11 +121,14 @@ def _can_accept(ctx: Context) -> str | None:
         return "This offer has expired."
     if problem := _open_slot(ctx):
         return problem
+    start, end = getattr(
+        application, "booking_dates", (application.proposed_start, application.proposed_end)
+    )
     overlapping = Booking.objects.filter(
         talent_id=application.talent_id,
         status__in=HOLDS_SLOT,
-        start_date__lt=application.proposed_end,
-        end_date__gt=application.proposed_start,
+        start_date__lt=end,
+        end_date__gt=start,
     )
     if overlapping.exists():
         return "You already have a booking for some of these dates."
@@ -134,6 +140,20 @@ def _offer_lapsed(ctx: Context) -> str | None:
     if expires is None or expires > ctx.now:
         return "The offer hasn't expired yet."
     return None
+
+
+def _agreement_in_force(ctx: Context) -> str | None:
+    from apps.agreements.models import Agreement
+
+    if not Agreement.objects.filter(
+        booking_id=ctx.subject.pk, current_version__isnull=False
+    ).exists():
+        return "Both of you need to sign the agreement before check-in."
+    return None
+
+
+def _can_check_in(ctx: Context) -> str | None:
+    return _check_in_window(ctx) or _agreement_in_force(ctx)
 
 
 def _check_in_window(ctx: Context) -> str | None:
@@ -185,12 +205,18 @@ TRANSITIONS: dict[tuple[str, str], Rule] = {
     # The talent: withdraw any time until accepting; answer an offer.
     **{(s, A.WITHDRAWN): Rule(frozenset({T})) for s in ACTIVE},
     (A.OFFERED, A.DECLINED): Rule(frozenset({T})),
-    (A.OFFERED, A.CONFIRMED): Rule(frozenset({T}), _can_accept, note="Creates the booking."),
+    (A.OFFERED, A.CONFIRMED): Rule(
+        frozenset({T, V}),
+        _can_accept,
+        note="Creates the booking. The host confirms only by accepting the talent's counter.",
+    ),
     # The system: an unanswered offer lapses; a closed or filled gig ends the rest.
     (A.OFFERED, A.EXPIRED): Rule(frozenset({SYS}), _offer_lapsed),
     **{(s, A.EXPIRED): Rule(frozenset({SYS})) for s in _ACTIVE_BEFORE_OFFER},
     # Booking.
-    (B.CONFIRMED, B.CHECKED_IN): Rule(frozenset({V}), _check_in_window),
+    (B.CONFIRMED, B.CHECKED_IN): Rule(
+        frozenset({V}), _can_check_in, note="Needs the agreement signed by both."
+    ),
     (B.CONFIRMED, B.CANCELLED): Rule(frozenset({T, V, ADM}), needs_reason=True),
     (B.CONFIRMED, B.NO_SHOW): Rule(frozenset({V}), _stay_started, needs_reason=True),
     (B.CHECKED_IN, B.DELIVERING): Rule(frozenset({T, V})),

@@ -22,6 +22,7 @@ from apps.bookings.tests.fakes import GOOD_TOKEN, OTHER_CALLER_TOKEN
 from apps.bookings.tests.helpers import offered
 from apps.common.models import AuditLog
 from apps.notifications.models import Notification
+from apps.offers.tests.helpers import make_offer_for
 
 pytestmark = pytest.mark.django_db
 
@@ -79,7 +80,7 @@ class TestStaleInterviews:
     def test_moving_on_clears_the_flag(self):
         stale = interviewing(days_ago=8)
         jobs.flag_stale_interviews(timezone.now())
-        transition(stale.pk, A.OFFERED, actor=Actor.VENDOR, user=stale.gig.vendor)
+        make_offer_for(stale)
         stale.refresh_from_db()
         assert stale.stale_flagged_at is None
         assert STALE_INTERVIEW_AFTER.days == 7

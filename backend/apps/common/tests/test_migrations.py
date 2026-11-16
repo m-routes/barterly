@@ -6,6 +6,8 @@ from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 
 OUR_APPS = [
+    "agreements",
+    "offers",
     "chat",
     "hiring",
     "bookings",

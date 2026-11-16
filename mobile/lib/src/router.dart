@@ -1,3 +1,5 @@
+import 'package:barterly/src/agreements/agreement_screen.dart';
+import 'package:barterly/src/agreements/offer_screen.dart';
 import 'package:barterly/src/apply/apply_screen.dart';
 import 'package:barterly/src/apply/my_applications_screen.dart';
 import 'package:barterly/src/auth/login_screen.dart';
@@ -30,6 +32,9 @@ abstract final class Routes {
   static String gig(String id) => '/discover/gig/$id';
   static String apply(String id) => '/discover/gig/$id/apply';
   static String chat(String conversationId) => '/trips/chat/$conversationId';
+  static String offer(String applicationId) => '/trips/offer/$applicationId';
+  static String agreement(String agreementId) =>
+      '/trips/agreement/$agreementId';
 
   /// Screens that only make sense before the person is fully in.
   static const Set<String> gates = {splash, login, join, wrongApp, setup};
@@ -110,6 +115,17 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: 'chat/:id',
                     builder: (_, state) =>
                         ChatScreen(conversationId: state.pathParameters['id']!),
+                  ),
+                  GoRoute(
+                    path: 'offer/:id',
+                    builder: (_, state) =>
+                        OfferScreen(applicationId: state.pathParameters['id']!),
+                  ),
+                  GoRoute(
+                    path: 'agreement/:id',
+                    builder: (_, state) => AgreementScreen(
+                      agreementId: state.pathParameters['id']!,
+                    ),
                   ),
                 ],
               ),

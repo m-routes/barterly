@@ -1,12 +1,11 @@
-from apps.applications.constants import ApplicationStatus
-from apps.applications.services import apply, transition
+from apps.applications.services import apply
 from apps.applications.tests.helpers import dates, eligible_talent, live_gig
-from apps.bookings.lifecycle import Actor
 from apps.bookings.services import accept_offer
+from apps.offers.tests.helpers import make_offer_for
 
 
 def offered(gig=None, talent=None, **apply_overrides):
-    """An application with an offer on it."""
+    """An application with an offer on it (the gig's terms, the applicant's dates)."""
     gig = gig or live_gig()
     talent = talent or eligible_talent()
     application = apply(
@@ -17,9 +16,9 @@ def offered(gig=None, talent=None, **apply_overrides):
         attachments=[],
         **{**dates(), **apply_overrides},
     )
-    return transition(
-        application.pk, ApplicationStatus.OFFERED, actor=Actor.VENDOR, user=gig.vendor
-    )
+    make_offer_for(application)
+    application.refresh_from_db()
+    return application
 
 
 def booked(gig=None, talent=None, **apply_overrides):

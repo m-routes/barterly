@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
-import { SectionPage } from "../SectionPage";
+import { AgreementsIndex } from "./AgreementsIndex";
 
 export const metadata: Metadata = { title: "Agreements · Barterly" };
 
 export default function AgreementsPage() {
-  return <SectionPage href="/console/agreements" />;
+  return <AgreementsIndex />;
 }

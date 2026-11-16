@@ -8,10 +8,10 @@ from django.db import DatabaseError, connection, transaction
 from django.utils import timezone
 
 from apps.accounts.tests.factories import AdminUserFactory
+from apps.agreements.tests.helpers import sign_both
 from apps.applications.constants import ApplicationStatus as A
 from apps.applications.models import Application
-from apps.applications.services import InvalidApplicationTransition, apply
-from apps.applications.services import transition as application_transition
+from apps.applications.services import apply
 from apps.applications.tests.helpers import dates, eligible_talent, live_gig
 from apps.bookings import lifecycle
 from apps.bookings.lifecycle import (
@@ -33,6 +33,8 @@ from apps.common.models import AuditLog
 from apps.gigs.constants import CompensationModel, GigStatus
 from apps.gigs.tests.factories import in_days
 from apps.notifications.models import Notification
+from apps.offers.services import OfferError
+from apps.offers.tests.helpers import make_offer_for
 from apps.verification.tests.factories import client_for
 
 pytestmark = pytest.mark.django_db
@@ -125,8 +127,8 @@ class TestOffersAndAcceptance:
         accept_offer(first.pk, talent=first.talent)
         with pytest.raises(BookingRefused, match="Every slot"):
             accept_offer(second.pk, talent=second.talent)
-        with pytest.raises(InvalidApplicationTransition, match="Every slot"):
-            application_transition(waiting.pk, A.OFFERED, actor=Actor.VENDOR, user=gig.vendor)
+        with pytest.raises(OfferError, match="Every slot"):
+            make_offer_for(waiting)
 
     def test_overlapping_bookings_are_refused(self):
         talent = eligible_talent()
@@ -171,6 +173,7 @@ def test_two_simultaneous_confirmations_cannot_overbook():
 class TestBookingTransitions:
     def test_the_happy_path_writes_an_event_for_each_step(self, events):
         booking = booked()
+        sign_both(booking)
         on_day_one = timezone.make_aware(
             timezone.datetime.combine(booking.start_date, timezone.datetime.min.time())
         )
@@ -290,14 +293,16 @@ class TestEventLogIsAppendOnly:
 class TestApi:
     def test_vendor_offers_talent_accepts_and_both_see_the_booking(self):
         gig = live_gig()
-        application = offered(gig)
-        Application.objects.filter(pk=application.pk).update(status=A.SHORTLISTED)
+        application = apply(
+            eligible_talent(), gig.pk, pitch="Hi", answers=[], attachments=[], **dates()
+        )
         vendor, talent = client_for(gig.vendor), client_for(application.talent)
 
+        draft = vendor.get(f"/api/v1/applications/{application.pk}/offer-draft/").json()
         made = vendor.post(
-            f"/api/v1/applications/{application.pk}/status/", {"status": "offered"}, format="json"
+            f"/api/v1/applications/{application.pk}/offer/", {"terms": draft}, format="json"
         )
-        assert made.status_code == 200, made.json()
+        assert made.status_code == 201, made.json()
         assert made.json()["offer_expires_at"]
 
         accepted = talent.post(f"/api/v1/applications/{application.pk}/accept/")
@@ -321,6 +326,10 @@ class TestApi:
         assert early.status_code == 409 and "Check-in opens" in early.json()["message"]
         not_mine = talent.post(url, {"status": "checked_in"}, format="json")
         assert not_mine.status_code == 409 and "Only the vendor" in not_mine.json()["message"]
+        Booking.objects.filter(pk=booking.pk).update(start_date=timezone.localdate())
+        unsigned = client_for(booking.vendor).post(url, {"status": "checked_in"}, format="json")
+        assert unsigned.status_code == 409 and "sign the agreement" in unsigned.json()["message"]
+        sign_both(booking)  # in force: the booking takes the agreement's dates again
         Booking.objects.filter(pk=booking.pk).update(start_date=timezone.localdate())
         ok = client_for(booking.vendor).post(url, {"status": "checked_in"}, format="json")
         assert ok.status_code == 200 and ok.json()["status"] == "checked_in"

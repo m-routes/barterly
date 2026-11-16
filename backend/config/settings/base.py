@@ -33,6 +33,8 @@ INSTALLED_APPS = [
     "apps.bookings",
     "apps.hiring",
     "apps.chat",
+    "apps.offers",
+    "apps.agreements",
     "apps.backoffice.apps.BackofficeConfig",
 ]
 
@@ -169,6 +171,7 @@ SPECTACULAR_SETTINGS = {
         "RejectionReasonEnum": ["not_a_fit", "dates", "filled", "language", "incomplete", "other"],
         "InterviewStatusEnum": "apps.hiring.models.InterviewStatus",
         "ChatReportReasonEnum": "apps.chat.models.ReportReason",
+        "PartyEnum": "apps.offers.models.Party",
     },
 }
 
@@ -237,3 +240,8 @@ SCHEDULER_INVOKER_EMAIL = env_str("SCHEDULER_INVOKER_EMAIL", "")
 # the default lets everything through; WordListProfanityFilter masks the listed words.
 CHAT_PROFANITY_FILTER = "apps.chat.filters.NoopProfanityFilter"
 CHAT_PROFANITY_WORDS = env_list("CHAT_PROFANITY_WORDS")
+
+# Agreements (apps.agreements). Code settings, like KYC_PROVIDER: a deployed service
+# can't be pointed at a fake from the environment.
+AGREEMENT_RENDERER = "apps.agreements.pdf.WeasyPrintRenderer"
+ESIGN_PROVIDER = "apps.agreements.esign.inapp.InAppESignProvider"
