@@ -65,3 +65,12 @@ export type AppNotification = Schemas["Notification"];
 export type NotificationPreferences = Schemas["Preferences"];
 export type NotificationChannel = Schemas["NotificationChannelEnum"];
 export type NotificationPreferenceChange = Schemas["PreferenceChange"];
+
+/**
+ * A request body for an endpoint whose schema reuses its response shape: the generated
+ * types mark the server-filled fields (id, created_at, ...) as required there too.
+ */
+export type RequestBody<T, K extends keyof T> = Pick<T, K>;
+export function requestBody<T>(body: Partial<T>): T {
+  return body as T;
+}

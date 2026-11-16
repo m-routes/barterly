@@ -2830,6 +2830,8 @@ export interface components {
       min_score?: number;
       sort?: components["schemas"]["SortEnum"];
       tag?: string;
+      q?: string;
+      badge?: components["schemas"]["BadgeKindEnum"];
     };
     Fit: {
       /** @description 0 to 100. */
@@ -7248,11 +7250,21 @@ export interface operations {
   gig_applications_list: {
     parameters: {
       query?: {
+        /** @description Only applicants with it. */
+        badge?:
+          | "id_verified"
+          | "licence_verified"
+          | "property_verified"
+          | "reference_checked"
+          | "social_verified"
+          | "trusted_member";
         min_score?: number;
         /** @description A page number within the paginated result set. */
         page?: number;
         /** @description Number of results to return per page. */
         page_size?: number;
+        /** @description Part of the applicant's name. */
+        q?: string;
         sort?: "fit" | "newest" | "oldest";
         /** @description Comma list of statuses. */
         status?: string;

@@ -12,7 +12,8 @@ const TOAST_MS = 8000;
 
 /**
  * The visible half of the global error handler: API failures no screen handles
- * itself (server errors, rate limits, permission errors, offline) appear here.
+ * itself (server errors, rate limits, permission errors, offline) appear here, and
+ * notices screens send with notify().
  */
 export function Toaster() {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -21,9 +22,9 @@ export function Toaster() {
     let nextId = 1;
     const timers = new Set<ReturnType<typeof setTimeout>>();
     const unsubscribe = onApiEvent((event) => {
-      if (event.type !== "error") return;
+      if (event.type !== "error" && event.type !== "notice") return;
       const id = nextId++;
-      const message = describeError(event.error);
+      const message = event.type === "notice" ? event.message : describeError(event.error);
       setToasts((current) => {
         // The same failure from parallel calls shows once.
         if (current.some((t) => t.message === message)) return current;

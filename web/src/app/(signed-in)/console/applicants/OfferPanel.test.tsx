@@ -72,6 +72,20 @@ describe("OfferPanel", () => {
     expect(body.message).toBe("See you in December");
   });
 
+  it("previews the terms as they're edited", async () => {
+    const user = userEvent.setup();
+    render(
+      <OfferPanel application={{ ...application, status: "shortlisted" }} onChange={onChange} />,
+    );
+    await user.click(await screen.findByRole("button", { name: "Make an offer" }));
+    const preview = await screen.findByRole("complementary", { name: "What they'll see" });
+    expect(within(preview).getByText(/4 a day/)).toBeVisible();
+    const hours = screen.getByLabelText(/Hours a day/);
+    await user.clear(hours);
+    await user.type(hours, "3");
+    expect(within(preview).getByText(/3 a day/)).toBeVisible();
+  });
+
   it("shows the API's field errors", async () => {
     const user = userEvent.setup();
     render(<OfferPanel application={{ ...application, status: "applied" }} onChange={onChange} />);
