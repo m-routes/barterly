@@ -21,6 +21,7 @@ def _fake_sign_in_and_fresh_cache(settings):
     settings.KYC_PROVIDER = "apps.verification.providers.fake.FakeKycProvider"
     settings.KYC_WEBHOOK_SECRET = "test-kyc-webhook-secret"  # noqa: S105
     settings.GEOCODER = "apps.geo.geocoders.FakeGeocoder"
+    settings.SCHEDULER_TOKEN_VERIFIER = "apps.bookings.tests.fakes.FakeSchedulerVerifier"  # noqa: S105
     settings.CACHES = {
         "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"},
     }

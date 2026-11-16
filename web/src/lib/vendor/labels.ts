@@ -192,6 +192,7 @@ export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
   shortlisted: "Shortlisted",
   interview: "Interview",
   offered: "Offered",
+  confirmed: "Booked",
   withdrawn: "Withdrawn",
   declined: "Declined",
   rejected: "Rejected",

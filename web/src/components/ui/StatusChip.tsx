@@ -43,6 +43,7 @@ const APPLICATION_TONES: Record<ApplicationStatus, ChipTone> = {
   shortlisted: "success",
   interview: "success",
   offered: "success",
+  confirmed: "success",
   withdrawn: "neutral",
   declined: "neutral",
   rejected: "danger",

@@ -11,6 +11,7 @@ from apps.applications.serializers import (
     ApplicationSerializer,
     ApplySerializer,
     BlockedSerializer,
+    VendorStatusSerializer,
     WithdrawSerializer,
 )
 from apps.applications.services import (
@@ -18,8 +19,10 @@ from apps.applications.services import (
     AttachmentInput,
     InvalidApplicationTransition,
     apply,
+    transition,
     withdraw,
 )
+from apps.bookings.lifecycle import Actor
 from apps.common.exceptions import error_body
 from apps.common.permissions import IsAdminRole, IsTalent, IsVendor
 from apps.common.serializers import ErrorSerializer
@@ -234,3 +237,71 @@ class WithdrawView(APIView):
             raise Conflict(str(exc)) from exc
         application = with_attachments(applications()).get(pk=application_id)
         return Response(ApplicationSerializer(application).data)
+
+
+def _respond(application_id) -> Response:
+    application = with_attachments(applications()).get(pk=application_id)
+    return Response(ApplicationSerializer(application).data)
+
+
+class VendorStatusView(APIView):
+    permission_classes = [IsVendor]
+
+    @extend_schema(
+        operation_id="applications_status_change",
+        summary="Shortlist, interview, offer or reject",
+        description=(
+            "The gig's vendor moves an application along. An offer reserves nothing yet: the "
+            "talent has 48 hours to accept (which books a slot) or decline, and offers need "
+            "an open slot on a running gig."
+        ),
+        request=VendorStatusSerializer,
+        responses={200: ApplicationSerializer, 409: ErrorSerializer, **ERRORS},
+        tags=TAG,
+    )
+    def post(self, request: Request, application_id) -> Response:
+        if not Application.objects.filter(pk=application_id, gig__vendor=request.user).exists():
+            raise exceptions.NotFound("No such application.")
+        serializer = VendorStatusSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            transition(
+                application_id,
+                serializer.validated_data["status"],
+                actor=Actor.VENDOR,
+                user=request.user,
+                reason=serializer.validated_data.get("reason", ""),
+                request=request,
+            )
+        except InvalidApplicationTransition as exc:
+            raise Conflict(str(exc)) from exc
+        return _respond(application_id)
+
+
+class DeclineView(APIView):
+    permission_classes = [IsTalent]
+
+    @extend_schema(
+        operation_id="applications_decline",
+        summary="Decline an offer",
+        request=WithdrawSerializer,
+        responses={200: ApplicationSerializer, 409: ErrorSerializer, **ERRORS},
+        tags=TAG,
+    )
+    def post(self, request: Request, application_id) -> Response:
+        if not Application.objects.filter(pk=application_id, talent=request.user).exists():
+            raise exceptions.NotFound("No such application.")
+        serializer = WithdrawSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            transition(
+                application_id,
+                "declined",
+                actor=Actor.TALENT,
+                user=request.user,
+                reason=serializer.validated_data.get("reason", ""),
+                request=request,
+            )
+        except InvalidApplicationTransition as exc:
+            raise Conflict(str(exc)) from exc
+        return _respond(application_id)

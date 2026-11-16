@@ -12,6 +12,9 @@ locals {
     # Firebase Auth lives in the same Google Cloud project; ID tokens are checked
     # against it (public certificates only, no key).
     FIREBASE_PROJECT_ID = var.project_id
+    # Only Cloud Scheduler's service account may run jobs (see scheduler.tf).
+    SCHEDULER_AUDIENCE      = local.api_url
+    SCHEDULER_INVOKER_EMAIL = google_service_account.scheduler.email
   }
 }
 

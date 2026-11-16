@@ -4,10 +4,9 @@ import pytest
 from django.db import IntegrityError, transaction
 
 from apps.accounts.tests.factories import TalentFactory
-from apps.applications.constants import ACTIVE, TRANSITIONS, Actor, ApplicationStatus
+from apps.applications.constants import ACTIVE, ApplicationStatus
 from apps.applications.models import Application
 from apps.applications.services import (
-    NEW_APPLICATION_KIND,
     ApplicationBlocked,
     AttachmentInput,
     InvalidApplicationTransition,
@@ -16,6 +15,7 @@ from apps.applications.services import (
     withdraw,
 )
 from apps.applications.tests.helpers import dates, eligible_talent, live_gig
+from apps.bookings.lifecycle import TRANSITIONS, Actor
 from apps.common.models import AuditLog
 from apps.gigs.constants import GigStatus, RequiredVerification
 from apps.notifications.models import Notification
@@ -68,7 +68,7 @@ def test_apply_snapshots_fit_audits_and_notifies_the_vendor():
     assert [a.kind for a in application.attachments.all()] == ["photo", "link"]
     assert AuditLog.objects.get(action="application.applied").actor == talent
     note = Notification.objects.get()
-    assert note.user == gig.vendor and note.kind == NEW_APPLICATION_KIND
+    assert note.user == gig.vendor and note.kind == "application.applied"
     assert note.payload["application_id"] == str(application.pk)
 
 
@@ -164,7 +164,7 @@ def test_one_active_application_per_gig_and_reapply_after_withdrawing():
 class TestTransitions:
     def test_withdraw_any_time_until_offer_accepted(self):
         for status in sorted(ACTIVE):
-            assert TRANSITIONS[(status, S.WITHDRAWN)] == {Actor.TALENT}
+            assert TRANSITIONS[(status, S.WITHDRAWN)].actors == {Actor.TALENT}
         talent, gig = eligible_talent(), live_gig()
         application = do_apply(talent, gig)
         transition(application.pk, S.SHORTLISTED, actor=Actor.VENDOR, user=gig.vendor)
@@ -184,6 +184,7 @@ class TestTransitions:
         withdraw(application.pk, talent=talent)
         with pytest.raises(InvalidApplicationTransition):
             withdraw(application.pk, talent=talent)
+        # Confirmed is final for the application; the booking carries on from there.
         final = {S.WITHDRAWN, S.DECLINED, S.REJECTED, S.EXPIRED}
         assert not [pair for pair in TRANSITIONS if pair[0] in final]
 

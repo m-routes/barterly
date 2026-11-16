@@ -238,6 +238,7 @@ enum ApplicationStatus {
   shortlisted('shortlisted', 'Shortlisted', active: true),
   interview('interview', 'Interview', active: true),
   offered('offered', 'Offered', active: true),
+  confirmed('confirmed', 'Booked'),
   withdrawn('withdrawn', 'Withdrawn'),
   declined('declined', 'Declined'),
   rejected('rejected', 'Not selected'),
