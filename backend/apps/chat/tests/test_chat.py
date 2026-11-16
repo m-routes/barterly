@@ -12,6 +12,7 @@ from apps.chat.models import Block, Conversation, LeakageEvent, Message, Message
 from apps.chat.throttles import ChatSendThrottle
 from apps.common.models import AuditLog
 from apps.notifications.models import Notification
+from apps.offers.tests.helpers import make_offer_for
 from apps.verification.tests.factories import MediaFileFactory
 
 pytestmark = pytest.mark.django_db
@@ -203,9 +204,7 @@ class TestLeakageGuard:
 
     def test_contacts_allowed_once_booking_is_confirmed(self):
         conversation, talent, _ = chat()
-        transition(
-            conversation.application_id, A.OFFERED, actor=Actor.VENDOR, user=conversation.vendor
-        )
+        make_offer_for(conversation.application)
         accept_offer(conversation.application_id, talent=conversation.talent)
         detail = talent.get(f"/api/v1/conversations/{conversation.pk}/").json()
         assert detail["contact_sharing_allowed"] is True

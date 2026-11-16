@@ -124,6 +124,13 @@ class ApplicationListItemSerializer(_ApplicationBase):
         help_text="The chat about this application, once it's open (apps.chat).",
     )
     unread_messages = serializers.IntegerField(read_only=True, default=0)
+    agreement = serializers.UUIDField(
+        source="agreement_ref",
+        read_only=True,
+        allow_null=True,
+        default=None,
+        help_text="The agreement, once the application is booked (apps.agreements).",
+    )
 
     class Meta:
         model = Application
@@ -140,6 +147,7 @@ class ApplicationListItemSerializer(_ApplicationBase):
             "attachment_count",
             "conversation",
             "unread_messages",
+            "agreement",
             "applied_at",
         ]
         read_only_fields = fields
@@ -204,7 +212,10 @@ class VendorStatusSerializer(serializers.Serializer):
     they're allowed from the current status). Rejecting needs a reason_code; the
     applicant sees its text plus the optional message."""
 
-    status = serializers.ChoiceField(choices=["shortlisted", "interview", "offered", "rejected"])
+    status = serializers.ChoiceField(
+        choices=["shortlisted", "interview", "rejected"],
+        help_text="To offer, send the terms: POST /api/v1/applications/{id}/offer/.",
+    )
     reason_code = serializers.ChoiceField(
         choices=["not_a_fit", "dates", "filled", "language", "incomplete", "other"], required=False
     )

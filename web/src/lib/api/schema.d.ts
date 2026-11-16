@@ -4,6 +4,107 @@
  */
 
 export interface paths {
+  "/api/v1/agreement-versions/{version_id}/decline/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Decline a change
+     * @description Turn down a new version (or withdraw your own). The version in force stays.
+     */
+    post: operations["agreements_decline_change"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/agreement-versions/{version_id}/pdf/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Open a version's PDF
+     * @description A link valid for 10 minutes, with the SHA-256 the PDF must match.
+     */
+    get: operations["agreements_pdf"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/agreement-versions/{version_id}/sign/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * What signing needs
+     * @description The consent statement and how to prove it: method otp means re-run phone OTP sign-in just before signing and send the new ID token.
+     */
+    get: operations["agreements_sign_challenge"];
+    put?: never;
+    /**
+     * Sign a version
+     * @description Records your consent with the time, IP address and device. The agreement is in force once both sides have signed the same version.
+     */
+    post: operations["agreements_sign"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/agreements/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Your agreements
+     * @description Newest first, with whether one is waiting for your signature.
+     */
+    get: operations["agreements_list"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/agreements/{agreement_id}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** An agreement */
+    get: operations["agreements_retrieve"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/applicant-filters/": {
     parameters: {
       query?: never;
@@ -110,7 +211,10 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Decline an offer */
+    /**
+     * Decline an offer
+     * @description Declines the host's offer waiting for your answer (see offers_decline).
+     */
     post: operations["applications_decline"];
     delete?: never;
     options?: never;
@@ -231,6 +335,66 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/applications/{application_id}/offer/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Make an offer
+     * @description Sends the terms to the applicant, frozen. The application becomes offered and the talent has 48 hours to accept, decline or ask for one change. Needs an open slot on a running gig.
+     */
+    post: operations["offers_make"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/applications/{application_id}/offer-draft/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Terms to start an offer from
+     * @description The gig's terms with the applicant's dates. Edit them, then make the offer.
+     */
+    get: operations["offers_draft"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/applications/{application_id}/offers/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Offers on an application
+     * @description Every offer and counter, oldest first, for the talent or the host.
+     */
+    get: operations["offers_thread"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/applications/{application_id}/status/": {
     parameters: {
       query?: never;
@@ -241,8 +405,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Shortlist, interview, offer or reject
-     * @description The gig's vendor moves an application along. Rejecting needs a reason_code (GET /api/v1/hiring/rejection-reasons/); the applicant reads its text and the optional message. An offer reserves nothing yet: the talent has 48 hours to accept (which books a slot) or decline, and offers need an open slot on a running gig.
+     * Shortlist, interview or reject
+     * @description The gig's vendor moves an application along. Rejecting needs a reason_code (GET /api/v1/hiring/rejection-reasons/); the applicant reads its text and the optional message. Offers carry terms, so they have their own endpoint: POST /api/v1/applications/{id}/offer/.
      */
     post: operations["applications_status_change"];
     delete?: never;
@@ -400,6 +564,46 @@ export interface paths {
     get: operations["bookings_retrieve"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/agreement/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A booking's agreement
+     * @description Every version, newest first, with its signatures.
+     */
+    get: operations["agreements_for_booking"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/agreement/changes/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Change the terms
+     * @description Draws up a new version with your changes. Both sides must sign it; until then the version in force stays in force. Dates can't change once the stay starts.
+     */
+    post: operations["agreements_propose_change"];
     delete?: never;
     options?: never;
     head?: never;
@@ -830,7 +1034,7 @@ export interface paths {
     put?: never;
     /**
      * Run a scheduled job (Cloud Scheduler only)
-     * @description Jobs: close_expired_gigs, expire_offers, expire_verifications, flag_stale_interviews, run_search_alerts, send_interview_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
+     * @description Jobs: close_expired_gigs, expire_offers, expire_verifications, flag_stale_interviews, render_agreements, run_search_alerts, send_interview_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
      */
     post: operations["jobs_run"];
     delete?: never;
@@ -947,6 +1151,66 @@ export interface paths {
     put?: never;
     /** Report a message for review */
     post: operations["chat_report"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/offers/{offer_id}/accept/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Accept an offer
+     * @description Accept the open offer addressed to you: the talent accepts the host's offer, the host accepts the talent's counter. Books the slot and draws up version 1 of the agreement, for both of you to sign.
+     */
+    post: operations["offers_accept"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/offers/{offer_id}/counter/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Ask for a change
+     * @description Once per application, the talent proposes different terms: only the dates, hours, stipend, deliverables and usage rights. The host accepts the change (which books it) or declines it (the original terms come back as a final offer).
+     */
+    post: operations["offers_counter"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/offers/{offer_id}/decline/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Decline an offer
+     * @description Say no to the open offer addressed to you. The talent declining ends the application. The host declining the talent's counter sends the original terms back as a final offer, which the talent can only accept or decline.
+     */
+    post: operations["offers_decline"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1336,6 +1600,15 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    Accepted: {
+      /** Format: uuid */
+      booking: string;
+      /**
+       * Format: uuid
+       * @description Version 1 of the agreement, for both of you to sign.
+       */
+      agreement_version: string;
+    };
     /**
      * @description * `shortlist` - shortlist
      *     * `reject` - reject
@@ -1408,6 +1681,77 @@ export interface components {
        */
       provider_reference: string;
     };
+    Agreement: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly booking: string;
+      readonly booking_status: string;
+      readonly gig_title: string;
+      readonly in_force: boolean;
+      readonly current_version: number | null;
+      readonly my_side: components["schemas"]["PartyEnum"];
+      readonly versions: components["schemas"]["AgreementVersion"][];
+      /** Format: date-time */
+      readonly created_at: string;
+    };
+    AgreementListItem: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly booking: string;
+      readonly booking_status: string;
+      readonly gig_title: string;
+      readonly other_name: string;
+      /** Format: date */
+      readonly start_date: string;
+      /** Format: date */
+      readonly end_date: string;
+      readonly in_force: boolean;
+      readonly current_version: number | null;
+      /** @description The version waiting for signatures, if any. */
+      readonly awaiting_version: number | null;
+      readonly awaiting_my_signature: boolean;
+      /** Format: date-time */
+      readonly created_at: string;
+    };
+    AgreementVersion: {
+      /** Format: uuid */
+      readonly id: string;
+      readonly number: number;
+      readonly status: components["schemas"]["AgreementVersionStatusEnum"];
+      readonly status_reason: string;
+      readonly terms: components["schemas"]["Terms"];
+      readonly terms_sha256: string;
+      /** @description What this version changes. */
+      readonly changed_fields: string[];
+      readonly change_reason: string;
+      /** @description Which side asked for this change; empty for version 1. */
+      readonly proposed_by: components["schemas"]["PartyEnum"] | components["schemas"]["BlankEnum"];
+      /** @description The template the PDF was drawn up with (apps.agreements.pdf). */
+      readonly template: string;
+      /** @description False while the legal text is a placeholder no lawyer has reviewed. */
+      readonly template_reviewed: boolean;
+      readonly pdf_ready: boolean;
+      readonly pdf_sha256: string;
+      readonly pdf_size: number | null;
+      readonly signatures: components["schemas"]["Signature"][];
+      readonly signed_by_me: boolean;
+      readonly can_sign: boolean;
+      /** Format: date-time */
+      readonly created_at: string;
+      /** Format: date-time */
+      readonly in_force_at: string | null;
+    };
+    /**
+     * @description * `awaiting` - Waiting for signatures
+     *     * `active` - In force
+     *     * `superseded` - Replaced by a later version
+     *     * `declined` - Change declined
+     *     * `voided` - Replaced before it was signed
+     * @enum {string}
+     */
+    AgreementVersionStatusEnum: "awaiting" | "active" | "superseded" | "declined" | "voided";
     /**
      * @description * `air_conditioning` - Air conditioning
      *     * `breakfast` - Breakfast
@@ -1442,6 +1786,9 @@ export interface components {
       | "power_backup"
       | "wifi"
       | "workspace";
+    Answer: {
+      reason?: string;
+    };
     /**
      * @description Who applied. Deliberately no phone, email, emergency contact, birth date or
      *     social handle: contact happens on Barterly once there's a booking.
@@ -1523,6 +1870,11 @@ export interface components {
       readonly conversation: string | null;
       /** @default 0 */
       readonly unread_messages: number;
+      /**
+       * Format: uuid
+       * @description The agreement, once the application is booked (apps.agreements).
+       */
+      readonly agreement: string | null;
       /** Format: date-time */
       readonly applied_at: string;
     };
@@ -1790,6 +2142,13 @@ export interface components {
       | "tour_operator"
       | "coworking"
       | "other";
+    /**
+     * @description * `flexible` - Flexible
+     *     * `moderate` - Moderate
+     *     * `strict` - Strict
+     * @enum {string}
+     */
+    CancellationPolicyEnum: "flexible" | "moderate" | "strict";
     Case: {
       /** Format: uuid */
       readonly id: string;
@@ -1822,6 +2181,30 @@ export interface components {
     };
     CertificatesCheck: {
       certificates: components["schemas"]["CertificateItem"][];
+    };
+    Challenge: {
+      method: components["schemas"]["MethodEnum"];
+      consent_text: string;
+      phone_hint: string;
+      max_age_seconds: number;
+      document_sha256: string;
+    };
+    /** @description Send only the terms that should change. */
+    Changes: {
+      /** Format: date */
+      start_date?: string;
+      /** Format: date */
+      end_date?: string;
+      hours_per_day?: number;
+      days_per_week?: number;
+      stay_type?: string;
+      meals?: string;
+      /** Format: decimal */
+      stipend_amount?: string | null;
+      stipend_period?: string;
+      deliverables?: components["schemas"]["TermsDeliverable"][];
+      usage_rights?: components["schemas"]["UsageRights"] | null;
+      cancellation_policy?: components["schemas"]["CancellationPolicyEnum"];
     };
     ChatAttachment: {
       /** Format: uuid */
@@ -1974,6 +2357,23 @@ export interface components {
       readonly contact_sharing_allowed: boolean;
       readonly blocked_by_me: boolean;
     };
+    Counter: {
+      changes: components["schemas"]["CounterChanges"];
+      message?: string;
+    };
+    /** @description The terms the talent may change. Send only the ones you want different. */
+    CounterChanges: {
+      /** Format: date */
+      start_date?: string;
+      /** Format: date */
+      end_date?: string;
+      hours_per_day?: number;
+      days_per_week?: number;
+      /** Format: decimal */
+      stipend_amount?: string | null;
+      deliverables?: components["schemas"]["TermsDeliverable"][];
+      usage_rights?: components["schemas"]["UsageRights"] | null;
+    };
     /**
      * @description * `ok` - ok
      *     * `unavailable` - unavailable
@@ -1994,6 +2394,9 @@ export interface components {
      * @enum {string}
      */
     DecisionEnum: "start_review" | "approve" | "reject" | "request_changes" | "revoke";
+    DeclineChange: {
+      reason?: string;
+    };
     Deliverable: {
       type: components["schemas"]["DeliverableTypeEnum"];
       quantity: number;
@@ -2440,6 +2843,11 @@ export interface components {
       /** Format: date-time */
       created_at: string;
     };
+    MakeOffer: {
+      /** @description Checked against the gig's pay model. */
+      terms: components["schemas"]["Terms"];
+      message?: string;
+    };
     /**
      * @description * `none` - No meals
      *     * `breakfast` - Breakfast
@@ -2492,6 +2900,12 @@ export interface components {
       /** @description The newest of your messages the other side has read (a cursor). */
       other_read_up_to: string;
     };
+    /**
+     * @description * `otp` - Re-confirm your phone by OTP
+     *     * `none` - Consent only (tests)
+     * @enum {string}
+     */
+    MethodEnum: "otp" | "none";
     MyVerification: {
       checks: components["schemas"]["CheckSummary"][];
       /** @description Active badges. */
@@ -2509,6 +2923,55 @@ export interface components {
     NoteIn: {
       note?: string;
     };
+    Offer: {
+      /** Format: uuid */
+      readonly id: string;
+      /** @description 1 for the first offer, then 2, 3. */
+      readonly revision: number;
+      readonly proposed_by: components["schemas"]["PartyEnum"];
+      /** @description You sent this one. */
+      readonly mine: boolean;
+      readonly terms: components["schemas"]["Terms"];
+      readonly terms_sha256: string;
+      /**
+       * Format: uuid
+       * @description The offer this one answers (a counter, or the host's reply to it).
+       */
+      readonly counter_of: string | null;
+      /** @description For a counter or the host's reply: what differs from the offer it answers. */
+      readonly changed_fields: string[];
+      /** @description No counter allowed: the one counter has been used. */
+      readonly final: boolean;
+      readonly message: string;
+      readonly status: components["schemas"]["OfferStatusEnum"];
+      readonly status_reason: string;
+      /** Format: date-time */
+      readonly created_at: string;
+      /** Format: date-time */
+      readonly answered_at: string | null;
+    };
+    /**
+     * @description * `open` - Waiting for an answer
+     *     * `accepted` - Accepted
+     *     * `declined` - Declined
+     *     * `countered` - Countered
+     *     * `lapsed` - Lapsed
+     * @enum {string}
+     */
+    OfferStatusEnum: "open" | "accepted" | "declined" | "countered" | "lapsed";
+    /** @description Every offer on an application, oldest first, and what you can do next. */
+    OfferThread: {
+      offers: components["schemas"]["Offer"][];
+      /** Format: uuid */
+      open_offer: string | null;
+      /** @description The open offer is waiting for your answer. */
+      your_turn: boolean;
+      /** @description You may still ask for a change (the talent, once per application). */
+      can_counter: boolean;
+      counterable: string[];
+      /** Format: date-time */
+      offer_expires_at: string | null;
+    };
     PaginatedAdminCaseList: {
       /** @example 123 */
       count: number;
@@ -2523,6 +2986,21 @@ export interface components {
        */
       previous?: string | null;
       results: components["schemas"]["AdminCase"][];
+    };
+    PaginatedAgreementListItemList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["AgreementListItem"][];
     };
     PaginatedApplicationListItemList: {
       /** @example 123 */
@@ -2620,6 +3098,12 @@ export interface components {
       name: string;
       role: string;
     };
+    /**
+     * @description * `vendor` - The host
+     *     * `talent` - The talent
+     * @enum {string}
+     */
+    PartyEnum: "vendor" | "talent";
     PatchedGig: {
       /** Format: uuid */
       readonly id?: string;
@@ -2798,6 +3282,14 @@ export interface components {
       /** Format: date-time */
       readonly updated_at?: string;
     };
+    PdfLink: {
+      /** Format: uri */
+      url: string;
+      /** @description Seconds. */
+      expires_in: number;
+      sha256: string;
+      size: number;
+    };
     Photo: {
       /** Format: uuid */
       readonly id: string;
@@ -2875,6 +3367,10 @@ export interface components {
      * @enum {string}
      */
     PropertyTypeEnum: "hostel" | "homestay" | "cafe" | "hotel" | "trek_operator";
+    ProposeChange: {
+      changes: components["schemas"]["Changes"];
+      reason: string;
+    };
     ProposeInterview: {
       /** @description ISO 8601. Times without an offset are read as India time (Asia/Kolkata). */
       slots: string[];
@@ -3022,6 +3518,12 @@ export interface components {
      * @enum {string}
      */
     ScanStatusEnum: "pending" | "clean" | "infected" | "skipped" | "error";
+    /**
+     * @description * `organic` - The host's own social channels and website
+     *     * `organic_and_ads` - Own channels, website and paid ads
+     * @enum {string}
+     */
+    ScopeEnum: "organic" | "organic_and_ads";
     Send: {
       body?: string;
       /** @description Confirmed uploads (kind 'photo' or 'document'): JPEG, PNG, WebP or PDF, up to 10 MB each. */
@@ -3033,6 +3535,27 @@ export interface components {
       message: components["schemas"]["ChatMessage"];
       /** @description Tell the sender this when it isn't empty (e.g. why a number was hidden). */
       notice: string;
+    };
+    Sign: {
+      /** @description The signer ticked the consent statement. */
+      consent: boolean;
+      /** @description The fingerprint of the PDF the signer read. */
+      document_sha256: string;
+      /**
+       * @description A fresh ID token from re-running phone OTP (method otp).
+       * @default
+       */
+      otp_token: string;
+    };
+    Signature: {
+      readonly party: components["schemas"]["PartyEnum"];
+      /** Format: date-time */
+      readonly signed_at: string;
+      /** @description The ESignProvider that took it. */
+      readonly provider: string;
+      readonly otp_confirmed: boolean;
+      /** @description The PDF the signer saw: equal to the version's pdf_sha256. */
+      readonly document_sha256: string;
     };
     Skill: {
       slug: string;
@@ -3213,6 +3736,37 @@ export interface components {
       | "tech"
       | "outdoor"
       | "other";
+    /** @description Everything both sides agree to. Validated against the gig's pay model. */
+    Terms: {
+      readonly compensation_model: components["schemas"]["CompensationModelEnum"];
+      /** Format: date */
+      start_date: string;
+      /** Format: date */
+      end_date: string;
+      hours_per_day: number;
+      /** @description At most 6: everyone gets at least one day off. */
+      days_per_week: number;
+      stay_type: components["schemas"]["StayTypeEnum"];
+      meals: components["schemas"]["MealsEnum"];
+      /**
+       * Format: decimal
+       * @description INR. Hybrid and paid gigs only.
+       */
+      stipend_amount?: string | null;
+      /** @default  */
+      stipend_period:
+        components["schemas"]["StipendPeriodEnum"] | components["schemas"]["BlankEnum"];
+      deliverables?: components["schemas"]["TermsDeliverable"][];
+      /** @description How the host may use the talent's content. Barter and hybrid gigs only. */
+      usage_rights?: components["schemas"]["UsageRights"] | null;
+      cancellation_policy: components["schemas"]["CancellationPolicyEnum"];
+    };
+    TermsDeliverable: {
+      type: components["schemas"]["DeliverableTypeEnum"];
+      quantity: number;
+      /** @default  */
+      notes: string;
+    };
     TimelineEntry: {
       status: string;
       /** Format: date-time */
@@ -3250,6 +3804,12 @@ export interface components {
       };
       /** Format: date-time */
       expires_at: string;
+    };
+    UsageRights: {
+      scope: components["schemas"]["ScopeEnum"];
+      duration_months: number;
+      /** @description The host credits the talent (name or handle) when using the content. */
+      credit_required: boolean;
     };
     User: {
       /** Format: uuid */
@@ -3345,20 +3905,17 @@ export interface components {
       readonly conversation: string | null;
       /** @default 0 */
       readonly unread_messages: number;
+      /**
+       * Format: uuid
+       * @description The agreement, once the application is booked (apps.agreements).
+       */
+      readonly agreement: string | null;
       /** Format: date-time */
       readonly applied_at: string;
       readonly rejection_code: string;
       readonly tags: string[];
       readonly note_count: number;
     };
-    /**
-     * @description * `shortlisted` - shortlisted
-     *     * `interview` - interview
-     *     * `offered` - offered
-     *     * `rejected` - rejected
-     * @enum {string}
-     */
-    VendorApplicationMoveEnum: "shortlisted" | "interview" | "offered" | "rejected";
     VendorProfile: {
       /** Format: uuid */
       readonly id: string;
@@ -3387,10 +3944,24 @@ export interface components {
      *     applicant sees its text plus the optional message.
      */
     VendorStatus: {
-      status: components["schemas"]["VendorApplicationMoveEnum"];
+      /**
+       * @description To offer, send the terms: POST /api/v1/applications/{id}/offer/.
+       *
+       *     * `shortlisted` - shortlisted
+       *     * `interview` - interview
+       *     * `rejected` - rejected
+       */
+      status: components["schemas"]["VendorStatusStatusEnum"];
       reason_code?: components["schemas"]["RejectionReasonEnum"];
       message?: string;
     };
+    /**
+     * @description * `shortlisted` - shortlisted
+     *     * `interview` - interview
+     *     * `rejected` - rejected
+     * @enum {string}
+     */
+    VendorStatusStatusEnum: "shortlisted" | "interview" | "rejected";
     /**
      * @description * `pending` - Pending
      *     * `verified` - Verified
@@ -3453,6 +4024,323 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  agreements_decline_change: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        version_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["DeclineChange"];
+        "application/x-www-form-urlencoded": components["schemas"]["DeclineChange"];
+        "multipart/form-data": components["schemas"]["DeclineChange"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Agreement"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  agreements_pdf: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        version_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PdfLink"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  agreements_sign_challenge: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        version_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Challenge"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  agreements_sign: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        version_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Sign"];
+        "application/x-www-form-urlencoded": components["schemas"]["Sign"];
+        "multipart/form-data": components["schemas"]["Sign"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Agreement"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  agreements_list: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedAgreementListItemList"];
+        };
+      };
+    };
+  };
+  agreements_retrieve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        agreement_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Agreement"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
   hiring_filters_list: {
     parameters: {
       query?: never;
@@ -4205,6 +5093,163 @@ export interface operations {
       };
     };
   };
+  offers_make: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        application_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MakeOffer"];
+        "application/x-www-form-urlencoded": components["schemas"]["MakeOffer"];
+        "multipart/form-data": components["schemas"]["MakeOffer"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OfferThread"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  offers_draft: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        application_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Terms"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  offers_thread: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        application_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OfferThread"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
   applications_status_change: {
     parameters: {
       query?: never;
@@ -4662,6 +5707,118 @@ export interface operations {
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  agreements_for_booking: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Agreement"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  agreements_propose_change: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ProposeChange"];
+        "application/x-www-form-urlencoded": components["schemas"]["ProposeChange"];
+        "multipart/form-data": components["schemas"]["ProposeChange"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Agreement"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -6417,6 +7574,185 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  offers_accept: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        offer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Accepted"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  offers_counter: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        offer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Counter"];
+        "application/x-www-form-urlencoded": components["schemas"]["Counter"];
+        "multipart/form-data": components["schemas"]["Counter"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OfferThread"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  offers_decline: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        offer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["Answer"];
+        "application/x-www-form-urlencoded": components["schemas"]["Answer"];
+        "multipart/form-data": components["schemas"]["Answer"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OfferThread"];
         };
       };
       401: {

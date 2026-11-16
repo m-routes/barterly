@@ -4,6 +4,312 @@ info:
   version: 0.1.0
   description: Work-exchange marketplace for travel and hospitality in India.
 paths:
+  /api/v1/agreement-versions/{version_id}/decline/:
+    post:
+      operationId: agreements_decline_change
+      description: Turn down a new version (or withdraw your own). The version in
+        force stays.
+      summary: Decline a change
+      parameters:
+      - in: path
+        name: version_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - agreements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeclineChange'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DeclineChange'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DeclineChange'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agreement'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/agreement-versions/{version_id}/pdf/:
+    get:
+      operationId: agreements_pdf
+      description: A link valid for 10 minutes, with the SHA-256 the PDF must match.
+      summary: Open a version's PDF
+      parameters:
+      - in: path
+        name: version_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - agreements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PdfLink'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/agreement-versions/{version_id}/sign/:
+    get:
+      operationId: agreements_sign_challenge
+      description: 'The consent statement and how to prove it: method otp means re-run
+        phone OTP sign-in just before signing and send the new ID token.'
+      summary: What signing needs
+      parameters:
+      - in: path
+        name: version_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - agreements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Challenge'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    post:
+      operationId: agreements_sign
+      description: Records your consent with the time, IP address and device. The
+        agreement is in force once both sides have signed the same version.
+      summary: Sign a version
+      parameters:
+      - in: path
+        name: version_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - agreements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Sign'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Sign'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Sign'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agreement'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/agreements/:
+    get:
+      operationId: agreements_list
+      description: Newest first, with whether one is waiting for your signature.
+      summary: Your agreements
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - agreements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAgreementListItemList'
+          description: ''
+  /api/v1/agreements/{agreement_id}/:
+    get:
+      operationId: agreements_retrieve
+      summary: An agreement
+      parameters:
+      - in: path
+        name: agreement_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - agreements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agreement'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/applicant-filters/:
     get:
       operationId: hiring_filters_list
@@ -269,6 +575,7 @@ paths:
   /api/v1/applications/{application_id}/decline/:
     post:
       operationId: applications_decline
+      description: Declines the host's offer waiting for your answer (see offers_decline).
       summary: Decline an offer
       parameters:
       - in: path
@@ -747,15 +1054,167 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/applications/{application_id}/offer/:
+    post:
+      operationId: offers_make
+      description: Sends the terms to the applicant, frozen. The application becomes
+        offered and the talent has 48 hours to accept, decline or ask for one change.
+        Needs an open slot on a running gig.
+      summary: Make an offer
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - offers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MakeOffer'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MakeOffer'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MakeOffer'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferThread'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/applications/{application_id}/offer-draft/:
+    get:
+      operationId: offers_draft
+      description: The gig's terms with the applicant's dates. Edit them, then make
+        the offer.
+      summary: Terms to start an offer from
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - offers
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Terms'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/applications/{application_id}/offers/:
+    get:
+      operationId: offers_thread
+      description: Every offer and counter, oldest first, for the talent or the host.
+      summary: Offers on an application
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - offers
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferThread'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/applications/{application_id}/status/:
     post:
       operationId: applications_status_change
       description: 'The gig''s vendor moves an application along. Rejecting needs
         a reason_code (GET /api/v1/hiring/rejection-reasons/); the applicant reads
-        its text and the optional message. An offer reserves nothing yet: the talent
-        has 48 hours to accept (which books a slot) or decline, and offers need an
-        open slot on a running gig.'
-      summary: Shortlist, interview, offer or reject
+        its text and the optional message. Offers carry terms, so they have their
+        own endpoint: POST /api/v1/applications/{id}/offer/.'
+      summary: Shortlist, interview or reject
       parameters:
       - in: path
         name: application_id
@@ -1188,6 +1647,116 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Booking'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/bookings/{booking_id}/agreement/:
+    get:
+      operationId: agreements_for_booking
+      description: Every version, newest first, with its signatures.
+      summary: A booking's agreement
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - agreements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agreement'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/bookings/{booking_id}/agreement/changes/:
+    post:
+      operationId: agreements_propose_change
+      description: Draws up a new version with your changes. Both sides must sign
+        it; until then the version in force stays in force. Dates can't change once
+        the stay starts.
+      summary: Change the terms
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - agreements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposeChange'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProposeChange'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProposeChange'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agreement'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
           description: ''
         '401':
           content:
@@ -2753,9 +3322,9 @@ paths:
     post:
       operationId: jobs_run
       description: 'Jobs: close_expired_gigs, expire_offers, expire_verifications,
-        flag_stale_interviews, run_search_alerts, send_interview_reminders, sync_kyc_results.
-        Needs a Google-signed OIDC token for the scheduler service account. Idempotent;
-        overlapping runs of one job are skipped.'
+        flag_stale_interviews, render_agreements, run_search_alerts, send_interview_reminders,
+        sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service
+        account. Idempotent; overlapping runs of one job are skipped.'
       summary: Run a scheduled job (Cloud Scheduler only)
       parameters:
       - in: path
@@ -3073,6 +3642,186 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/offers/{offer_id}/accept/:
+    post:
+      operationId: offers_accept
+      description: 'Accept the open offer addressed to you: the talent accepts the
+        host''s offer, the host accepts the talent''s counter. Books the slot and
+        draws up version 1 of the agreement, for both of you to sign.'
+      summary: Accept an offer
+      parameters:
+      - in: path
+        name: offer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - offers
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Accepted'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/offers/{offer_id}/counter/:
+    post:
+      operationId: offers_counter
+      description: 'Once per application, the talent proposes different terms: only
+        the dates, hours, stipend, deliverables and usage rights. The host accepts
+        the change (which books it) or declines it (the original terms come back as
+        a final offer).'
+      summary: Ask for a change
+      parameters:
+      - in: path
+        name: offer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - offers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Counter'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Counter'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Counter'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferThread'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/offers/{offer_id}/decline/:
+    post:
+      operationId: offers_decline
+      description: Say no to the open offer addressed to you. The talent declining
+        ends the application. The host declining the talent's counter sends the original
+        terms back as a final offer, which the talent can only accept or decline.
+      summary: Decline an offer
+      parameters:
+      - in: path
+        name: offer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - offers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Answer'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Answer'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Answer'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferThread'
           description: ''
         '409':
           content:
@@ -4253,6 +5002,19 @@ paths:
           description: ''
 components:
   schemas:
+    Accepted:
+      type: object
+      properties:
+        booking:
+          type: string
+          format: uuid
+        agreement_version:
+          type: string
+          format: uuid
+          description: Version 1 of the agreement, for both of you to sign.
+      required:
+      - agreement_version
+      - booking
     ActionEnum:
       enum:
       - shortlist
@@ -4414,6 +5176,224 @@ components:
       - document_type
       - id
       - media_id
+    Agreement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        booking:
+          type: string
+          format: uuid
+          readOnly: true
+        booking_status:
+          type: string
+          readOnly: true
+        gig_title:
+          type: string
+          readOnly: true
+        in_force:
+          type: boolean
+          readOnly: true
+        current_version:
+          type: integer
+          readOnly: true
+          nullable: true
+        my_side:
+          allOf:
+          - $ref: '#/components/schemas/PartyEnum'
+          readOnly: true
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgreementVersion'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - booking
+      - booking_status
+      - created_at
+      - current_version
+      - gig_title
+      - id
+      - in_force
+      - my_side
+      - versions
+    AgreementListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        booking:
+          type: string
+          format: uuid
+          readOnly: true
+        booking_status:
+          type: string
+          readOnly: true
+        gig_title:
+          type: string
+          readOnly: true
+        other_name:
+          type: string
+          readOnly: true
+        start_date:
+          type: string
+          format: date
+          readOnly: true
+        end_date:
+          type: string
+          format: date
+          readOnly: true
+        in_force:
+          type: boolean
+          readOnly: true
+        current_version:
+          type: integer
+          readOnly: true
+          nullable: true
+        awaiting_version:
+          type: integer
+          nullable: true
+          readOnly: true
+          description: The version waiting for signatures, if any.
+        awaiting_my_signature:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - awaiting_my_signature
+      - awaiting_version
+      - booking
+      - booking_status
+      - created_at
+      - current_version
+      - end_date
+      - gig_title
+      - id
+      - in_force
+      - other_name
+      - start_date
+    AgreementVersion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AgreementVersionStatusEnum'
+          readOnly: true
+        status_reason:
+          type: string
+          readOnly: true
+        terms:
+          allOf:
+          - $ref: '#/components/schemas/Terms'
+          readOnly: true
+        terms_sha256:
+          type: string
+          readOnly: true
+        changed_fields:
+          type: array
+          items:
+            type: string
+          readOnly: true
+          description: What this version changes.
+        change_reason:
+          type: string
+          readOnly: true
+        proposed_by:
+          description: Which side asked for this change; empty for version 1.
+          readOnly: true
+          oneOf:
+          - $ref: '#/components/schemas/PartyEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        template:
+          type: string
+          readOnly: true
+          description: The template the PDF was drawn up with (apps.agreements.pdf).
+        template_reviewed:
+          type: boolean
+          readOnly: true
+          description: False while the legal text is a placeholder no lawyer has reviewed.
+        pdf_ready:
+          type: boolean
+          readOnly: true
+        pdf_sha256:
+          type: string
+          readOnly: true
+        pdf_size:
+          type: integer
+          readOnly: true
+          nullable: true
+        signatures:
+          type: array
+          items:
+            $ref: '#/components/schemas/Signature'
+          readOnly: true
+        signed_by_me:
+          type: boolean
+          readOnly: true
+        can_sign:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        in_force_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - can_sign
+      - change_reason
+      - changed_fields
+      - created_at
+      - id
+      - in_force_at
+      - number
+      - pdf_ready
+      - pdf_sha256
+      - pdf_size
+      - proposed_by
+      - signatures
+      - signed_by_me
+      - status
+      - status_reason
+      - template
+      - template_reviewed
+      - terms
+      - terms_sha256
+    AgreementVersionStatusEnum:
+      enum:
+      - awaiting
+      - active
+      - superseded
+      - declined
+      - voided
+      type: string
+      description: |-
+        * `awaiting` - Waiting for signatures
+        * `active` - In force
+        * `superseded` - Replaced by a later version
+        * `declined` - Change declined
+        * `voided` - Replaced before it was signed
     AmenitiesEnum:
       enum:
       - air_conditioning
@@ -4448,6 +5428,12 @@ components:
         * `power_backup` - Power backup
         * `wifi` - Wi-Fi
         * `workspace` - Workspace
+    Answer:
+      type: object
+      properties:
+        reason:
+          type: string
+          maxLength: 500
     Applicant:
       type: object
       description: |-
@@ -4645,11 +5631,18 @@ components:
           type: integer
           readOnly: true
           default: 0
+        agreement:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          description: The agreement, once the application is booked (apps.agreements).
         applied_at:
           type: string
           format: date-time
           readOnly: true
       required:
+      - agreement
       - applicant
       - applied_at
       - attachment_count
@@ -5178,6 +6171,16 @@ components:
         * `tour_operator` - Tour operator
         * `coworking` - Co-working / co-living
         * `other` - Other
+    CancellationPolicyEnum:
+      enum:
+      - flexible
+      - moderate
+      - strict
+      type: string
+      description: |-
+        * `flexible` - Flexible
+        * `moderate` - Moderate
+        * `strict` - Strict
     Case:
       type: object
       properties:
@@ -5270,6 +6273,60 @@ components:
             $ref: '#/components/schemas/CertificateItem'
       required:
       - certificates
+    Challenge:
+      type: object
+      properties:
+        method:
+          $ref: '#/components/schemas/MethodEnum'
+        consent_text:
+          type: string
+        phone_hint:
+          type: string
+        max_age_seconds:
+          type: integer
+        document_sha256:
+          type: string
+      required:
+      - consent_text
+      - document_sha256
+      - max_age_seconds
+      - method
+      - phone_hint
+    Changes:
+      type: object
+      description: Send only the terms that should change.
+      properties:
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        hours_per_day:
+          type: integer
+        days_per_week:
+          type: integer
+        stay_type:
+          type: string
+        meals:
+          type: string
+        stipend_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        stipend_period:
+          type: string
+        deliverables:
+          type: array
+          items:
+            $ref: '#/components/schemas/TermsDeliverable'
+        usage_rights:
+          allOf:
+          - $ref: '#/components/schemas/UsageRights'
+          nullable: true
+        cancellation_policy:
+          $ref: '#/components/schemas/CancellationPolicyEnum'
     ChatAttachment:
       type: object
       properties:
@@ -5591,6 +6648,43 @@ components:
       - opened_at
       - other
       - unread
+    Counter:
+      type: object
+      properties:
+        changes:
+          $ref: '#/components/schemas/CounterChanges'
+        message:
+          type: string
+          maxLength: 1000
+      required:
+      - changes
+    CounterChanges:
+      type: object
+      description: The terms the talent may change. Send only the ones you want different.
+      properties:
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        hours_per_day:
+          type: integer
+        days_per_week:
+          type: integer
+        stipend_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        deliverables:
+          type: array
+          items:
+            $ref: '#/components/schemas/TermsDeliverable'
+        usage_rights:
+          allOf:
+          - $ref: '#/components/schemas/UsageRights'
+          nullable: true
     DatabaseEnum:
       enum:
       - ok
@@ -5625,6 +6719,12 @@ components:
         * `reject` - reject
         * `request_changes` - request_changes
         * `revoke` - revoke
+    DeclineChange:
+      type: object
+      properties:
+        reason:
+          type: string
+          maxLength: 500
     Deliverable:
       type: object
       properties:
@@ -6603,6 +7703,18 @@ components:
       - body
       - created_at
       - mine
+    MakeOffer:
+      type: object
+      properties:
+        terms:
+          allOf:
+          - $ref: '#/components/schemas/Terms'
+          description: Checked against the gig's pay model.
+        message:
+          type: string
+          maxLength: 1000
+      required:
+      - terms
     MealsEnum:
       enum:
       - none
@@ -6718,6 +7830,14 @@ components:
       - has_earlier
       - other_read_up_to
       - results
+    MethodEnum:
+      enum:
+      - otp
+      - none
+      type: string
+      description: |-
+        * `otp` - Re-confirm your phone by OTP
+        * `none` - Consent only (tests)
     MyVerification:
       type: object
       properties:
@@ -6764,6 +7884,132 @@ components:
         note:
           type: string
           maxLength: 500
+    Offer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+          description: 1 for the first offer, then 2, 3.
+        proposed_by:
+          allOf:
+          - $ref: '#/components/schemas/PartyEnum'
+          readOnly: true
+        mine:
+          type: boolean
+          readOnly: true
+          description: You sent this one.
+        terms:
+          allOf:
+          - $ref: '#/components/schemas/Terms'
+          readOnly: true
+        terms_sha256:
+          type: string
+          readOnly: true
+        counter_of:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          description: The offer this one answers (a counter, or the host's reply
+            to it).
+        changed_fields:
+          type: array
+          items:
+            type: string
+          readOnly: true
+          description: 'For a counter or the host''s reply: what differs from the
+            offer it answers.'
+        final:
+          type: boolean
+          readOnly: true
+          description: 'No counter allowed: the one counter has been used.'
+        message:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OfferStatusEnum'
+          readOnly: true
+        status_reason:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        answered_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - answered_at
+      - changed_fields
+      - counter_of
+      - created_at
+      - final
+      - id
+      - message
+      - mine
+      - proposed_by
+      - revision
+      - status
+      - status_reason
+      - terms
+      - terms_sha256
+    OfferStatusEnum:
+      enum:
+      - open
+      - accepted
+      - declined
+      - countered
+      - lapsed
+      type: string
+      description: |-
+        * `open` - Waiting for an answer
+        * `accepted` - Accepted
+        * `declined` - Declined
+        * `countered` - Countered
+        * `lapsed` - Lapsed
+    OfferThread:
+      type: object
+      description: Every offer on an application, oldest first, and what you can do
+        next.
+      properties:
+        offers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Offer'
+        open_offer:
+          type: string
+          format: uuid
+          nullable: true
+        your_turn:
+          type: boolean
+          description: The open offer is waiting for your answer.
+        can_counter:
+          type: boolean
+          description: You may still ask for a change (the talent, once per application).
+        counterable:
+          type: array
+          items:
+            type: string
+        offer_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - can_counter
+      - counterable
+      - offer_expires_at
+      - offers
+      - open_offer
+      - your_turn
     PaginatedAdminCaseList:
       type: object
       required:
@@ -6787,6 +8033,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AdminCase'
+    PaginatedAgreementListItemList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgreementListItem'
     PaginatedApplicationListItemList:
       type: object
       required:
@@ -6939,6 +8208,14 @@ components:
       - id
       - name
       - role
+    PartyEnum:
+      enum:
+      - vendor
+      - talent
+      type: string
+      description: |-
+        * `vendor` - The host
+        * `talent` - The talent
     PatchedGig:
       type: object
       properties:
@@ -7347,6 +8624,24 @@ components:
           type: string
           format: date-time
           readOnly: true
+    PdfLink:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+        expires_in:
+          type: integer
+          description: Seconds.
+        sha256:
+          type: string
+        size:
+          type: integer
+      required:
+      - expires_in
+      - sha256
+      - size
+      - url
     Photo:
       type: object
       properties:
@@ -7524,6 +8819,17 @@ components:
         * `cafe` - Café
         * `hotel` - Hotel
         * `trek_operator` - Trek operator
+    ProposeChange:
+      type: object
+      properties:
+        changes:
+          $ref: '#/components/schemas/Changes'
+        reason:
+          type: string
+          maxLength: 1000
+      required:
+      - changes
+      - reason
     ProposeInterview:
       type: object
       properties:
@@ -7857,6 +9163,14 @@ components:
         * `infected` - Infected
         * `skipped` - No scanner configured
         * `error` - Scan failed
+    ScopeEnum:
+      enum:
+      - organic
+      - organic_and_ads
+      type: string
+      description: |-
+        * `organic` - The host's own social channels and website
+        * `organic_and_ads` - Own channels, website and paid ads
     Send:
       type: object
       properties:
@@ -7888,6 +9202,51 @@ components:
       required:
       - message
       - notice
+    Sign:
+      type: object
+      properties:
+        consent:
+          type: boolean
+          description: The signer ticked the consent statement.
+        document_sha256:
+          type: string
+          description: The fingerprint of the PDF the signer read.
+          maxLength: 64
+        otp_token:
+          type: string
+          default: ''
+          description: A fresh ID token from re-running phone OTP (method otp).
+      required:
+      - consent
+      - document_sha256
+    Signature:
+      type: object
+      properties:
+        party:
+          allOf:
+          - $ref: '#/components/schemas/PartyEnum'
+          readOnly: true
+        signed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        provider:
+          type: string
+          readOnly: true
+          description: The ESignProvider that took it.
+        otp_confirmed:
+          type: boolean
+          readOnly: true
+        document_sha256:
+          type: string
+          readOnly: true
+          description: 'The PDF the signer saw: equal to the version''s pdf_sha256.'
+      required:
+      - document_sha256
+      - otp_confirmed
+      - party
+      - provider
+      - signed_at
     Skill:
       type: object
       properties:
@@ -8166,6 +9525,82 @@ components:
         * `tech` - Tech / design
         * `outdoor` - Outdoor / trek guide
         * `other` - Other
+    Terms:
+      type: object
+      description: Everything both sides agree to. Validated against the gig's pay
+        model.
+      properties:
+        compensation_model:
+          allOf:
+          - $ref: '#/components/schemas/CompensationModelEnum'
+          readOnly: true
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        hours_per_day:
+          type: integer
+          maximum: 6
+          minimum: 1
+        days_per_week:
+          type: integer
+          maximum: 6
+          minimum: 1
+          description: 'At most 6: everyone gets at least one day off.'
+        stay_type:
+          $ref: '#/components/schemas/StayTypeEnum'
+        meals:
+          $ref: '#/components/schemas/MealsEnum'
+        stipend_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: INR. Hybrid and paid gigs only.
+        stipend_period:
+          default: ''
+          oneOf:
+          - $ref: '#/components/schemas/StipendPeriodEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        deliverables:
+          type: array
+          items:
+            $ref: '#/components/schemas/TermsDeliverable'
+        usage_rights:
+          allOf:
+          - $ref: '#/components/schemas/UsageRights'
+          nullable: true
+          description: How the host may use the talent's content. Barter and hybrid
+            gigs only.
+        cancellation_policy:
+          $ref: '#/components/schemas/CancellationPolicyEnum'
+      required:
+      - cancellation_policy
+      - compensation_model
+      - days_per_week
+      - end_date
+      - hours_per_day
+      - meals
+      - start_date
+      - stay_type
+    TermsDeliverable:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/DeliverableTypeEnum'
+        quantity:
+          type: integer
+          maximum: 50
+          minimum: 1
+        notes:
+          type: string
+          default: ''
+          maxLength: 300
+      required:
+      - quantity
+      - type
     TimelineEntry:
       type: object
       properties:
@@ -8251,6 +9686,23 @@ components:
       - media_id
       - method
       - upload_url
+    UsageRights:
+      type: object
+      properties:
+        scope:
+          $ref: '#/components/schemas/ScopeEnum'
+        duration_months:
+          type: integer
+          maximum: 36
+          minimum: 1
+        credit_required:
+          type: boolean
+          description: The host credits the talent (name or handle) when using the
+            content.
+      required:
+      - credit_required
+      - duration_months
+      - scope
     User:
       type: object
       properties:
@@ -8478,6 +9930,12 @@ components:
           type: integer
           readOnly: true
           default: 0
+        agreement:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          description: The agreement, once the application is booked (apps.agreements).
         applied_at:
           type: string
           format: date-time
@@ -8494,6 +9952,7 @@ components:
           type: integer
           readOnly: true
       required:
+      - agreement
       - applicant
       - applied_at
       - attachment_count
@@ -8510,18 +9969,6 @@ components:
       - status_reason
       - tags
       - unread_messages
-    VendorApplicationMoveEnum:
-      enum:
-      - shortlisted
-      - interview
-      - offered
-      - rejected
-      type: string
-      description: |-
-        * `shortlisted` - shortlisted
-        * `interview` - interview
-        * `offered` - offered
-        * `rejected` - rejected
     VendorProfile:
       type: object
       properties:
@@ -8594,7 +10041,14 @@ components:
         applicant sees its text plus the optional message.
       properties:
         status:
-          $ref: '#/components/schemas/VendorApplicationMoveEnum'
+          allOf:
+          - $ref: '#/components/schemas/VendorStatusStatusEnum'
+          description: |-
+            To offer, send the terms: POST /api/v1/applications/{id}/offer/.
+
+            * `shortlisted` - shortlisted
+            * `interview` - interview
+            * `rejected` - rejected
         reason_code:
           $ref: '#/components/schemas/RejectionReasonEnum'
         message:
@@ -8602,6 +10056,16 @@ components:
           maxLength: 400
       required:
       - status
+    VendorStatusStatusEnum:
+      enum:
+      - shortlisted
+      - interview
+      - rejected
+      type: string
+      description: |-
+        * `shortlisted` - shortlisted
+        * `interview` - interview
+        * `rejected` - rejected
     VerificationDocumentStatusEnum:
       enum:
       - pending

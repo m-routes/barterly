@@ -31,7 +31,12 @@ APPLICATION_RECIPIENTS: dict[str, tuple[str, ...]] = {
     "interview.cancelled": (TALENT,),
     "interview.reminder_day": (TALENT, VENDOR),
     "interview.reminder_hour": (TALENT, VENDOR),
+    # Offers (apps.offers).
+    "offer.countered": (VENDOR,),
+    "offer.counter_declined": (TALENT,),
 }
+# Agreement events both sides hear about; the rest go to the side that didn't act.
+AGREEMENT_TO_BOTH = frozenset({"agreement.ready", "agreement.in_force"})
 
 
 def recipients(event: DomainEvent) -> tuple[str, ...]:
@@ -40,8 +45,13 @@ def recipients(event: DomainEvent) -> tuple[str, ...]:
         # A lapsed offer: the vendor should know the slot is free again too.
         if event.name == "application.expired" and event.payload.get("from") == "offered":
             sides = (TALENT, VENDOR)
+        # The host confirms by accepting the talent's counter: then the talent hears.
+        if event.name == "application.confirmed" and event.payload.get("by") == VENDOR:
+            sides = (TALENT,)
         return sides
-    if event.name.startswith("booking."):
+    if event.name in AGREEMENT_TO_BOTH:
+        return (TALENT, VENDOR)
+    if event.name.startswith(("booking.", "agreement.")):
         # The other side hears about it; changes by the system or an admin go to both.
         by = event.payload.get("by")
         return {TALENT: (VENDOR,), VENDOR: (TALENT,)}.get(by, (TALENT, VENDOR))
@@ -83,4 +93,6 @@ def register() -> None:
     subscribe("application.", notify)
     subscribe("booking.", notify)
     subscribe("interview.", notify)
+    subscribe("offer.", notify)
+    subscribe("agreement.", notify)
     subscribe("chat.message", notify_chat_message)

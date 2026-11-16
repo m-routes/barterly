@@ -42,3 +42,15 @@ export type Skill = Schemas["Skill"];
 export type ApplicationListItem = Schemas["ApplicationListItem"];
 export type Application = Schemas["Application"];
 export type ApplicationStatus = Schemas["ApplicationStatusEnum"];
+
+export type Terms = Schemas["Terms"];
+export type CancellationPolicy = Schemas["CancellationPolicyEnum"];
+export type UsageScope = Schemas["ScopeEnum"];
+export type Offer = Schemas["Offer"];
+export type OfferThread = Schemas["OfferThread"];
+export type Agreement = Schemas["Agreement"];
+export type AgreementVersion = Schemas["AgreementVersion"];
+export type AgreementListItem = Schemas["AgreementListItem"];
+export type SignChallenge = Schemas["Challenge"];
+export type Party = Schemas["PartyEnum"];
+export type OfferStatus = Schemas["OfferStatusEnum"];

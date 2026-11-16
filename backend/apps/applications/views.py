@@ -1,4 +1,4 @@
-from django.db.models import Count, Prefetch
+from django.db.models import Count, F, Prefetch
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import exceptions, generics, status
 from rest_framework.request import Request
@@ -19,10 +19,8 @@ from apps.applications.services import (
     AttachmentInput,
     InvalidApplicationTransition,
     apply,
-    transition,
     withdraw,
 )
-from apps.bookings.lifecycle import Actor
 from apps.chat.services import with_chat
 from apps.common.exceptions import error_body
 from apps.common.permissions import IsAdminRole, IsTalent, IsVendor
@@ -85,6 +83,7 @@ class GigApplicationsView(generics.ListAPIView):
         gig = generics.get_object_or_404(Gig, pk=self.kwargs["gig_id"], vendor=self.request.user)
         qs = (
             with_chat(applications(), self.request.user)
+            .annotate(agreement_ref=F("booking__agreement__id"))
             .filter(gig=gig)
             .prefetch_related("private_tags")
             .annotate(note_count=Count("private_notes", distinct=True))
@@ -186,6 +185,7 @@ class MyApplicationsView(generics.ListAPIView):
     def get_queryset(self):
         return (
             with_chat(applications(), self.request.user)
+            .annotate(agreement_ref=F("booking__agreement__id"))
             .filter(talent=self.request.user)
             .order_by("-applied_at", "id")
         )
@@ -282,13 +282,12 @@ class VendorStatusView(APIView):
 
     @extend_schema(
         operation_id="applications_status_change",
-        summary="Shortlist, interview, offer or reject",
+        summary="Shortlist, interview or reject",
         description=(
             "The gig's vendor moves an application along. Rejecting needs a reason_code "
             "(GET /api/v1/hiring/rejection-reasons/); the applicant reads its text and the "
-            "optional message. An offer reserves nothing yet: the "
-            "talent has 48 hours to accept (which books a slot) or decline, and offers need "
-            "an open slot on a running gig."
+            "optional message. Offers carry terms, so they have their own endpoint: "
+            "POST /api/v1/applications/{id}/offer/."
         ),
         request=VendorStatusSerializer,
         responses={200: VendorApplicationSerializer, 409: ErrorSerializer, **ERRORS},
@@ -320,6 +319,7 @@ class DeclineView(APIView):
     @extend_schema(
         operation_id="applications_decline",
         summary="Decline an offer",
+        description="Declines the host's offer waiting for your answer (see offers_decline).",
         request=WithdrawSerializer,
         responses={200: ApplicationSerializer, 409: ErrorSerializer, **ERRORS},
         tags=TAG,
@@ -329,15 +329,19 @@ class DeclineView(APIView):
             raise exceptions.NotFound("No such application.")
         serializer = WithdrawSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        from apps.offers import services as offers
+        from apps.offers.models import Party
+
+        offer = offers.open_offer(application_id)
+        if offer is None or offer.proposed_by != Party.VENDOR:
+            raise Conflict("There's no offer waiting for your answer.")
         try:
-            transition(
-                application_id,
-                "declined",
-                actor=Actor.TALENT,
+            offers.decline(
+                offer.pk,
                 user=request.user,
                 reason=serializer.validated_data.get("reason", ""),
                 request=request,
             )
-        except InvalidApplicationTransition as exc:
-            raise Conflict(str(exc)) from exc
+        except offers.OfferError as exc:
+            raise Conflict(exc.message) from exc
         return _respond(application_id)

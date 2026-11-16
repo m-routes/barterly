@@ -14,6 +14,7 @@ from apps.bookings import jobs
 from apps.hiring import services
 from apps.hiring.models import Interview, InterviewStatus
 from apps.notifications.models import Notification
+from apps.offers.tests.helpers import make_offer_for
 from apps.profiles.tests.factories import SkillFactory
 from apps.verification.tests.factories import client_for
 
@@ -346,7 +347,7 @@ class TestInterviews:
     def test_moving_past_interview_closes_it(self):
         application = applied()
         self.propose(application, [at(2, 10).isoformat()])
-        services.move(application.pk, A.OFFERED, vendor=application.gig.vendor)
+        make_offer_for(application)
         assert Interview.objects.get(application=application).status == InterviewStatus.CANCELLED
 
 
