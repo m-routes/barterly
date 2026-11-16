@@ -88,6 +88,11 @@ class Gig(TimeStampedModel):
     languages = models.JSONField(default=list, blank=True, help_text="ISO 639 codes.")
     min_followers = models.PositiveIntegerField(null=True, blank=True)
     min_stay_days = models.PositiveSmallIntegerField(null=True, blank=True)
+    auto_reject_rules = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Vendor requirements checked on submit (apps.hiring.autoreject).",
+    )
     screening_questions = models.JSONField(default=list, blank=True)
     required_verification = models.CharField(
         max_length=20,

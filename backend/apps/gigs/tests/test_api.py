@@ -151,6 +151,8 @@ def test_every_endpoint_is_in_the_openapi_schema(tmp_path):
         "/api/v1/gigs/{gig_id}/status/",
         "/api/v1/gigs/{gig_id}/public/",
         "/api/v1/gigs/{gig_id}/applications/",
+        "/api/v1/gigs/{gig_id}/applications/bulk/",
+        "/api/v1/gigs/{gig_id}/auto-reject-rules/",
     }
 
 

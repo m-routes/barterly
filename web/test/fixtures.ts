@@ -129,6 +129,7 @@ export const applicant = (overrides: Partial<ApplicationListItem> = {}): Applica
   gig: gig.id,
   gig_title: gig.title,
   status: "applied",
+  status_reason: "",
   proposed_start: "2026-12-12",
   proposed_end: "2027-01-05",
   applicant: {
@@ -178,6 +179,8 @@ export const application: Application = {
   decided_at: null,
   status_changed_at: "2026-11-10T10:00:00Z",
   offer_expires_at: null,
+  timeline: [{ status: "applied", at: "2026-11-10T10:00:00Z", reason: "" }],
+  interview: null,
 };
 
 export function page<T>(results: T[], count = results.length) {

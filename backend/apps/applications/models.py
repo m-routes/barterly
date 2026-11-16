@@ -27,7 +27,12 @@ class Application(TimeStampedModel):
     status = models.CharField(
         max_length=20, choices=ApplicationStatus.choices, default=ApplicationStatus.APPLIED
     )
-    status_reason = models.CharField(max_length=500, blank=True)
+    status_reason = models.CharField(
+        max_length=500, blank=True, help_text="Shown to the applicant (e.g. why it was rejected)."
+    )
+    rejection_code = models.CharField(
+        max_length=20, blank=True, help_text="apps.hiring.templates.RejectionReason, when rejected."
+    )
     fit_score = models.PositiveSmallIntegerField(help_text="Fit score when the talent applied.")
     fit_breakdown = models.JSONField(help_text="The score's breakdown when the talent applied.")
     applied_at = models.DateTimeField(auto_now_add=True)

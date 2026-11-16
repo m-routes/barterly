@@ -69,6 +69,7 @@ Surfaces: the vendor console (web), the talent app (mobile) and the admin consol
 | `applications` | `Application` and its attachments, the apply rules (with every blocking reason), the status table, applicant views for vendors |
 | `notifications` | Queued `Notification` rows, created from domain events; delivery arrives later in Phase 3 |
 | `bookings` | The transition table, bookings, the append-only booking event log and scheduled jobs |
+| `hiring` | Rejection reasons, bulk actions, auto-reject rules, private notes and tags, saved filters, interviews |
 | `verification` | Verification cases per check, evidence (provider references and masked numbers only), badges, the KYC provider interface and webhook, re-verification on profile edits, the review API |
 
 ### Users and permissions
@@ -263,6 +264,7 @@ Each row lists the actors allowed to make the move (talent, vendor, system, admi
 | `expire_verifications` | Daily at 0:30 | Verifications past their validity expire |
 | `sync_kyc_results` | Every 30 minutes | The KYC provider is asked for missing results |
 | `run_search_alerts` | Every 6 hours | Saved-search alerts go out for new gigs |
+| `send_interview_reminders` | Every 5 minutes | Interview reminders go out a day and an hour before |
 
 Every job is idempotent: it re-checks each row under a lock before changing it. A Postgres advisory lock skips overlapping runs of the same job, and each run is recorded as a `JobRun` (shown in the admin). Run one by hand with `manage.py run_job <name>`.
 
@@ -290,6 +292,24 @@ Each user has one `VerificationCase` per check, kept across attempts. Statuses: 
 **Re-verification.** Profile saves are watched through model signals, so the API, the admin and scripts all trigger it. Changing a verified field moves an approved case back to `in_review` and revokes its badge until a reviewer approves again. The watched fields are a property's name, address, city, state and pin (that property's case), the business name and GSTIN (business check), and the Instagram handle (social check). Starting a new ID check on an approved case does the same for the ID badge.
 
 **Review.** Admins use `GET /api/v1/verification/admin/cases/?status=submitted` (oldest first), then `POST …/cases/{id}/decision/ {decision, reason}`. The decision is one of `start_review`, `approve`, `reject`, `request_changes`, or `revoke` for an approved case. The Django admin is read-only. `manage.py expire_verifications` expires approved cases after their validity (ID 2 years; business, property and reference 1 year; social 6 months) and should run daily.
+
+### Hiring (`apps/hiring`)
+
+Vendor actions on applicants. Every status change still goes through `apps.applications.services` and the one transition table.
+
+- **Rejecting** needs a reason code (`GET /api/v1/hiring/rejection-reasons/`): not a fit, dates, filled, language, missing information, or other. The applicant reads the template's text plus the vendor's optional message. Both are stored, in `status_reason` (shown to the applicant) and `rejection_code` (for the vendor).
+- **Status moves:** `POST /api/v1/applications/{id}/status/` shortlists, moves to interview, offers or rejects.
+- **Bulk:** `POST /api/v1/gigs/{id}/applications/bulk/` shortlists or rejects up to 100 at once. Each application is its own change, and the response lists which worked and why the others didn't.
+- **Auto-reject rules** live on the gig (`GET`/`PUT /api/v1/gigs/{id}/auto-reject-rules/`), up to 10. The types are a language, a skill, a minimum number of followers and a minimum stay. They run when someone applies: an application that misses a rule is let in and rejected at once by the system (`rejection_code` `auto_rule`), and the reason names each requirement it missed. They're different from the hard eligibility checks, which stop an application being sent at all.
+- **Private notes and tags:** `/applications/{id}/notes/` (add, list, delete your own) and `PUT /applications/{id}/tags/` (up to 10, lower-cased). The applicant list can filter by `tag` and shows tags and note counts. They appear only in the vendor serializers (`VendorApplicationSerializer` and the list item). Tests check that no applicant response contains them.
+- **Saved filters:** `/api/v1/applicant-filters/` stores named filters (status, minimum score, sort, tag), each for one gig or for all of the vendor's gigs.
+- **Interviews:**
+  - The vendor proposes 1 to 3 times, at least an hour ahead and within 60 days, plus an https video link (Google Meet or similar) with `POST /applications/{id}/interview/`. This moves the application to `interview` if needed, and replaces an interview still being arranged.
+  - The talent picks a time (`/interview/pick/`) or asks for others (`/interview/new-times/`). The vendor can cancel (`/interview/cancel/`). The video link is shown only once a time is picked.
+  - Moving the application past the interview stage ends any interview still active.
+  - **Times** are stored in UTC. The API returns each one as UTC ISO 8601 plus India-time text (`starts_at_ist`), and reads times sent without an offset as India time.
+  - **Reminders:** the `send_interview_reminders` job, every 5 minutes, reminds both sides a day before and an hour before. Each reminder is marked as sent under a row lock, so none goes out twice. An interview booked less than an hour ahead gets only the hour reminder. An interview booked in the future, or held within the last week, stops the application being flagged as a stale interview.
+- **What the applicant sees:** the status, the reason, a timeline of status changes with the reasons (`timeline`, built from the audit log, without saying who on the vendor's side acted), and the interview. They never see the vendor's notes, tags or rejection code.
 
 ### Audit log
 

@@ -4,6 +4,43 @@
  */
 
 export interface paths {
+  "/api/v1/applicant-filters/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My saved applicant filters */
+    get: operations["hiring_filters_list"];
+    put?: never;
+    /** Save an applicant filter */
+    post: operations["hiring_filters_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/applicant-filters/{filter_id}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One saved filter */
+    get: operations["hiring_filters_retrieve"];
+    put?: never;
+    post?: never;
+    /** Delete a saved filter */
+    delete: operations["hiring_filters_delete"];
+    options?: never;
+    head?: never;
+    /** Rename or change a filter */
+    patch: operations["hiring_filters_update"];
+    trace?: never;
+  };
   "/api/v1/applications/{application_id}/": {
     parameters: {
       query?: never;
@@ -61,6 +98,119 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/applications/{application_id}/interview/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The interview being arranged (applicant or vendor)
+     * @description Times are UTC (ISO 8601) with India-time text alongside.
+     */
+    get: operations["hiring_interview_retrieve"];
+    put?: never;
+    /**
+     * Propose interview times (vendor)
+     * @description Up to three times, at least an hour ahead and within 60 days, plus a video link. Moves the application to the interview stage if it isn't there yet, and replaces an interview still being arranged.
+     */
+    post: operations["hiring_interview_propose"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/applications/{application_id}/interview/cancel/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Cancel the interview (vendor) */
+    post: operations["hiring_interview_cancel"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/applications/{application_id}/interview/new-times/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Ask for other interview times (applicant) */
+    post: operations["hiring_interview_new_times"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/applications/{application_id}/interview/pick/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Pick an interview time (applicant) */
+    post: operations["hiring_interview_pick"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/applications/{application_id}/notes/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * My private notes on an applicant
+     * @description Only the gig's vendor sees these. The applicant never does.
+     */
+    get: operations["hiring_notes_list"];
+    put?: never;
+    /** Add a private note */
+    post: operations["hiring_notes_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/applications/{application_id}/notes/{note_id}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete my private note */
+    delete: operations["hiring_notes_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/applications/{application_id}/status/": {
     parameters: {
       query?: never;
@@ -72,9 +222,29 @@ export interface paths {
     put?: never;
     /**
      * Shortlist, interview, offer or reject
-     * @description The gig's vendor moves an application along. An offer reserves nothing yet: the talent has 48 hours to accept (which books a slot) or decline, and offers need an open slot on a running gig.
+     * @description The gig's vendor moves an application along. Rejecting needs a reason_code (GET /api/v1/hiring/rejection-reasons/); the applicant reads its text and the optional message. An offer reserves nothing yet: the talent has 48 hours to accept (which books a slot) or decline, and offers need an open slot on a running gig.
      */
     post: operations["applications_status_change"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/applications/{application_id}/tags/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Set my private tags on an applicant
+     * @description Replaces the tags. Lower-cased; at most 10. The applicant never sees them.
+     */
+    put: operations["hiring_tags_set"];
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -325,6 +495,47 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/gigs/{gig_id}/applications/bulk/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Shortlist or reject many applicants
+     * @description Each application is changed on its own; the results say which worked and why the others didn't (e.g. already rejected). Rejecting needs a reason_code.
+     */
+    post: operations["hiring_bulk"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/gigs/{gig_id}/auto-reject-rules/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A gig's auto-reject rules */
+    get: operations["hiring_rules_retrieve"];
+    /**
+     * Set a gig's auto-reject rules
+     * @description Checked when someone applies: an application that misses a rule is rejected at once, and the applicant is told which requirement they missed. Types: language (languages), skill (skills), min_followers (value), min_stay_days (value).
+     */
+    put: operations["hiring_rules_set"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/gigs/{gig_id}/public/": {
     parameters: {
       query?: never;
@@ -458,6 +669,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/hiring/rejection-reasons/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Rejection reasons to choose from */
+    get: operations["hiring_rejection_reasons"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/jobs/{job}/": {
     parameters: {
       query?: never;
@@ -469,7 +697,7 @@ export interface paths {
     put?: never;
     /**
      * Run a scheduled job (Cloud Scheduler only)
-     * @description Jobs: close_expired_gigs, expire_offers, expire_verifications, flag_stale_interviews, run_search_alerts, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
+     * @description Jobs: close_expired_gigs, expire_offers, expire_verifications, flag_stale_interviews, run_search_alerts, send_interview_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
      */
     post: operations["jobs_run"];
     delete?: never;
@@ -958,6 +1186,12 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /**
+     * @description * `shortlist` - shortlist
+     *     * `reject` - reject
+     * @enum {string}
+     */
+    ActionEnum: "shortlist" | "reject";
     AddPhoto: {
       /**
        * Format: uuid
@@ -1075,6 +1309,10 @@ export interface components {
       /** @description Active badge kinds. */
       badges: string[];
     };
+    /**
+     * @description What the applicant (and the vendor) sees. Never the vendor's notes or tags:
+     *     those are only in apps.hiring.serializers.VendorApplicationSerializer.
+     */
     Application: {
       /** Format: uuid */
       readonly id: string;
@@ -1082,6 +1320,7 @@ export interface components {
       readonly gig: string;
       readonly gig_title: string;
       readonly status: components["schemas"]["ApplicationStatusEnum"];
+      /** @description Shown to the applicant (e.g. why it was rejected). */
       readonly status_reason: string;
       readonly pitch: string;
       /** @description Answers to the gig's screening questions, in order. */
@@ -1107,6 +1346,9 @@ export interface components {
        * @description Set when an offer is made; the talent must answer by then.
        */
       readonly offer_expires_at: string | null;
+      /** @description Every status change, with the reason given. */
+      readonly timeline: components["schemas"]["TimelineEntry"][];
+      readonly interview: components["schemas"]["Interview"] | null;
     };
     ApplicationListItem: {
       /** Format: uuid */
@@ -1115,6 +1357,8 @@ export interface components {
       readonly gig: string;
       readonly gig_title: string;
       readonly status: components["schemas"]["ApplicationStatusEnum"];
+      /** @description Shown to the applicant (e.g. why it was rejected). */
+      readonly status_reason: string;
       /** Format: date */
       readonly proposed_start: string;
       /** Format: date */
@@ -1341,6 +1585,19 @@ export interface components {
       metadata?: {
         [key: string]: unknown;
       };
+    };
+    Bulk: {
+      action: components["schemas"]["ActionEnum"];
+      application_ids: string[];
+      reason_code?: components["schemas"]["RejectionReasonEnum"];
+      message?: string;
+    };
+    BulkResult: {
+      /** Format: uuid */
+      id: string;
+      ok: boolean;
+      status: string;
+      error: string;
     };
     BusinessCheck: {
       /** @description 10 characters, e.g. ABCPE1234F. */
@@ -1572,6 +1829,13 @@ export interface components {
       /** @description True until the user picks vendor or talent at /api/v1/me/role/. */
       needs_role: boolean;
       user: components["schemas"]["User"];
+    };
+    FilterParams: {
+      /** @description Comma list. */
+      status?: string;
+      min_score?: number;
+      sort?: components["schemas"]["SortEnum"];
+      tag?: string;
     };
     Fit: {
       /** @description 0 to 100. */
@@ -1815,6 +2079,40 @@ export interface components {
      * @enum {string}
      */
     IdDocumentTypeEnum: "aadhaar" | "passport" | "driving_licence" | "voter_id";
+    Interview: {
+      /** Format: uuid */
+      readonly id: string;
+      readonly status: components["schemas"]["InterviewStatusEnum"];
+      readonly slots: components["schemas"]["InterviewSlot"][];
+      /** Format: date-time */
+      readonly starts_at: string | null;
+      readonly starts_at_ist: string;
+      readonly duration_minutes: number;
+      /**
+       * Format: uri
+       * @description Shown once a time is picked.
+       */
+      readonly video_link: string;
+      /** @description Shown to the talent. */
+      readonly note: string;
+      readonly timezone: string;
+      /** Format: date-time */
+      readonly created_at: string;
+    };
+    InterviewSlot: {
+      readonly id: number;
+      /** Format: date-time */
+      readonly starts_at: string;
+      readonly starts_at_ist: string;
+    };
+    /**
+     * @description * `proposed` - Waiting for the talent to pick a time
+     *     * `scheduled` - Scheduled
+     *     * `new_times_requested` - Talent asked for other times
+     *     * `cancelled` - Cancelled
+     * @enum {string}
+     */
+    InterviewStatusEnum: "proposed" | "scheduled" | "new_times_requested" | "cancelled";
     JobResult: {
       job: string;
       run_id: number | null;
@@ -1949,6 +2247,17 @@ export interface components {
       badges: components["schemas"]["Badge"][];
       trusted_member: boolean;
     };
+    Note: {
+      /** Format: uuid */
+      readonly id: string;
+      body: string;
+      readonly author: string;
+      /** Format: date-time */
+      readonly created_at: string;
+    };
+    NoteIn: {
+      note?: string;
+    };
     PaginatedAdminCaseList: {
       /** @example 123 */
       count: number;
@@ -2023,6 +2332,21 @@ export interface components {
        */
       previous?: string | null;
       results: components["schemas"]["Property"][];
+    };
+    PaginatedVendorApplicationListItemList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["VendorApplicationListItem"][];
     };
     PatchedGig: {
       /** Format: uuid */
@@ -2127,6 +2451,16 @@ export interface components {
       /** Format: date-time */
       readonly updated_at?: string;
     };
+    PatchedSavedFilter: {
+      /** Format: uuid */
+      readonly id?: string;
+      name?: string;
+      /** Format: uuid */
+      gig?: string | null;
+      params?: components["schemas"]["FilterParams"];
+      /** Format: date-time */
+      readonly created_at?: string;
+    };
     PatchedSavedSearch: {
       /** Format: uuid */
       readonly id?: string;
@@ -2217,6 +2551,9 @@ export interface components {
       /** Format: uri */
       readonly thumb_url: string | null;
     };
+    PickSlot: {
+      slot_id: number;
+    };
     /** @description The owner's view: everything, including the exact address and pin. */
     Property: {
       /** Format: uuid */
@@ -2266,6 +2603,18 @@ export interface components {
      * @enum {string}
      */
     PropertyTypeEnum: "hostel" | "homestay" | "cafe" | "hotel" | "trek_operator";
+    ProposeInterview: {
+      /** @description ISO 8601. Times without an offset are read as India time (Asia/Kolkata). */
+      slots: string[];
+      /**
+       * Format: uri
+       * @description Google Meet, Zoom or similar.
+       */
+      video_link: string;
+      /** @default 30 */
+      duration_minutes: number;
+      note?: string;
+    };
     PublicPhoto: {
       /** Format: uuid */
       readonly id: string;
@@ -2293,6 +2642,12 @@ export interface components {
       readonly exact_location: components["schemas"]["ExactLocation"] | null;
       readonly photos: components["schemas"]["PublicPhoto"][];
     };
+    Reason: {
+      code: string;
+      label: string;
+      /** @description What the applicant reads. */
+      text: string;
+    };
     ReferenceCheck: {
       name: string;
       /** @description Indian mobile number. */
@@ -2303,6 +2658,16 @@ export interface components {
     RefreshRequest: {
       refresh: string;
     };
+    /**
+     * @description * `not_a_fit` - not_a_fit
+     *     * `dates` - dates
+     *     * `filled` - filled
+     *     * `language` - language
+     *     * `incomplete` - incomplete
+     *     * `other` - other
+     * @enum {string}
+     */
+    RejectionReasonEnum: "not_a_fit" | "dates" | "filled" | "language" | "incomplete" | "other";
     /**
      * @description * `none` - No verification needed
      *     * `id_verified` - ID verified
@@ -2318,6 +2683,33 @@ export interface components {
      * @enum {string}
      */
     RoleTemplateEnum: "volunteer" | "content_creator" | "trip_leader" | "specialist";
+    Rule: {
+      type: components["schemas"]["RuleTypeEnum"];
+      languages?: string[];
+      skills?: string[];
+      value?: number;
+    };
+    /**
+     * @description * `language` - language
+     *     * `skill` - skill
+     *     * `min_followers` - min_followers
+     *     * `min_stay_days` - min_stay_days
+     * @enum {string}
+     */
+    RuleTypeEnum: "language" | "skill" | "min_followers" | "min_stay_days";
+    Rules: {
+      rules: components["schemas"]["Rule"][];
+    };
+    SavedFilter: {
+      /** Format: uuid */
+      readonly id: string;
+      name: string;
+      /** Format: uuid */
+      gig?: string | null;
+      params: components["schemas"]["FilterParams"];
+      /** Format: date-time */
+      readonly created_at: string;
+    };
     SavedSearch: {
       /** Format: uuid */
       readonly id: string;
@@ -2346,6 +2738,13 @@ export interface components {
       slug: string;
       name: string;
     };
+    /**
+     * @description * `fit` - fit
+     *     * `newest` - newest
+     *     * `oldest` - oldest
+     * @enum {string}
+     */
+    SortEnum: "fit" | "newest" | "oldest";
     StartIdCheck: {
       document_type: components["schemas"]["IdDocumentTypeEnum"];
     };
@@ -2457,6 +2856,9 @@ export interface components {
      * @enum {string}
      */
     SubjectTypeEnum: "user" | "property" | "social_account";
+    Tags: {
+      tags: string[];
+    };
     TalentProfile: {
       /** Format: uuid */
       readonly id: string;
@@ -2511,6 +2913,12 @@ export interface components {
       | "tech"
       | "outdoor"
       | "other";
+    TimelineEntry: {
+      status: string;
+      /** Format: date-time */
+      at: string;
+      reason: string;
+    };
     TokenPair: {
       /** @description Short-lived JWT. Send as `Authorization: Bearer`. */
       access: string;
@@ -2566,6 +2974,70 @@ export interface components {
      * @enum {string}
      */
     UserRoleEnum: "vendor" | "talent" | "admin";
+    /** @description The applicant view plus the vendor's private notes, tags and rejection code. */
+    VendorApplication: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly gig: string;
+      readonly gig_title: string;
+      readonly status: components["schemas"]["ApplicationStatusEnum"];
+      /** @description Shown to the applicant (e.g. why it was rejected). */
+      readonly status_reason: string;
+      readonly pitch: string;
+      /** @description Answers to the gig's screening questions, in order. */
+      readonly answers: unknown;
+      /** Format: date */
+      readonly proposed_start: string;
+      /** Format: date */
+      readonly proposed_end: string;
+      readonly applicant: components["schemas"]["Applicant"];
+      readonly fit: components["schemas"]["Fit"];
+      readonly attachments: components["schemas"]["Attachment"][];
+      /** Format: date-time */
+      readonly applied_at: string;
+      /** Format: date-time */
+      readonly decided_at: string | null;
+      /**
+       * Format: date-time
+       * @description When the status last changed (for stale interviews).
+       */
+      readonly status_changed_at: string | null;
+      /**
+       * Format: date-time
+       * @description Set when an offer is made; the talent must answer by then.
+       */
+      readonly offer_expires_at: string | null;
+      /** @description Every status change, with the reason given. */
+      readonly timeline: components["schemas"]["TimelineEntry"][];
+      readonly interview: components["schemas"]["Interview"] | null;
+      /** @description apps.hiring.templates.RejectionReason, when rejected. */
+      readonly rejection_code: string;
+      readonly notes: components["schemas"]["Note"][];
+      readonly tags: string[];
+    };
+    VendorApplicationListItem: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly gig: string;
+      readonly gig_title: string;
+      readonly status: components["schemas"]["ApplicationStatusEnum"];
+      /** @description Shown to the applicant (e.g. why it was rejected). */
+      readonly status_reason: string;
+      /** Format: date */
+      readonly proposed_start: string;
+      /** Format: date */
+      readonly proposed_end: string;
+      readonly applicant: components["schemas"]["Applicant"];
+      readonly fit: components["schemas"]["Fit"];
+      readonly attachment_count: number;
+      /** Format: date-time */
+      readonly applied_at: string;
+      readonly rejection_code: string;
+      readonly tags: string[];
+      readonly note_count: number;
+    };
     /**
      * @description * `shortlisted` - shortlisted
      *     * `interview` - interview
@@ -2598,11 +3070,13 @@ export interface components {
     };
     /**
      * @description The moves a vendor makes on an application (the transition table decides if
-     *     they're allowed from the current status).
+     *     they're allowed from the current status). Rejecting needs a reason_code; the
+     *     applicant sees its text plus the optional message.
      */
     VendorStatus: {
       status: components["schemas"]["VendorApplicationMoveEnum"];
-      reason?: string;
+      reason_code?: components["schemas"]["RejectionReasonEnum"];
+      message?: string;
     };
     /**
      * @description * `pending` - Pending
@@ -2666,6 +3140,118 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  hiring_filters_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SavedFilter"][];
+        };
+      };
+    };
+  };
+  hiring_filters_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SavedFilter"];
+        "application/x-www-form-urlencoded": components["schemas"]["SavedFilter"];
+        "multipart/form-data": components["schemas"]["SavedFilter"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SavedFilter"];
+        };
+      };
+    };
+  };
+  hiring_filters_retrieve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        filter_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SavedFilter"];
+        };
+      };
+    };
+  };
+  hiring_filters_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        filter_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No response body */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  hiring_filters_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        filter_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["PatchedSavedFilter"];
+        "application/x-www-form-urlencoded": components["schemas"]["PatchedSavedFilter"];
+        "multipart/form-data": components["schemas"]["PatchedSavedFilter"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SavedFilter"];
+        };
+      };
+    };
+  };
   applications_retrieve: {
     parameters: {
       query?: never;
@@ -2682,7 +3268,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Application"];
+          "application/json": components["schemas"]["VendorApplication"];
         };
       };
       401: {
@@ -2823,7 +3409,52 @@ export interface operations {
       };
     };
   };
-  applications_status_change: {
+  hiring_interview_retrieve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        application_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Interview"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  hiring_interview_propose: {
     parameters: {
       query?: never;
       header?: never;
@@ -2834,18 +3465,18 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["VendorStatus"];
-        "application/x-www-form-urlencoded": components["schemas"]["VendorStatus"];
-        "multipart/form-data": components["schemas"]["VendorStatus"];
+        "application/json": components["schemas"]["ProposeInterview"];
+        "application/x-www-form-urlencoded": components["schemas"]["ProposeInterview"];
+        "multipart/form-data": components["schemas"]["ProposeInterview"];
       };
     };
     responses: {
-      200: {
+      201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Application"];
+          "application/json": components["schemas"]["Interview"];
         };
       };
       401: {
@@ -2873,6 +3504,450 @@ export interface operations {
         };
       };
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  hiring_interview_cancel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        application_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["NoteIn"];
+        "application/x-www-form-urlencoded": components["schemas"]["NoteIn"];
+        "multipart/form-data": components["schemas"]["NoteIn"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Interview"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  hiring_interview_new_times: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        application_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["NoteIn"];
+        "application/x-www-form-urlencoded": components["schemas"]["NoteIn"];
+        "multipart/form-data": components["schemas"]["NoteIn"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Interview"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  hiring_interview_pick: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        application_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PickSlot"];
+        "application/x-www-form-urlencoded": components["schemas"]["PickSlot"];
+        "multipart/form-data": components["schemas"]["PickSlot"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Interview"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  hiring_notes_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        application_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Note"][];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  hiring_notes_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        application_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Note"];
+        "application/x-www-form-urlencoded": components["schemas"]["Note"];
+        "multipart/form-data": components["schemas"]["Note"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Note"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  hiring_notes_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        application_id: string;
+        note_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No response body */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  applications_status_change: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        application_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["VendorStatus"];
+        "application/x-www-form-urlencoded": components["schemas"]["VendorStatus"];
+        "multipart/form-data": components["schemas"]["VendorStatus"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["VendorApplication"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  hiring_tags_set: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        application_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Tags"];
+        "application/x-www-form-urlencoded": components["schemas"]["Tags"];
+        "multipart/form-data": components["schemas"]["Tags"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Tags"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -3602,6 +4677,8 @@ export interface operations {
         sort?: "fit" | "newest" | "oldest";
         /** @description Comma list of statuses. */
         status?: string;
+        /** @description Only applicants with this private tag. */
+        tag?: string;
       };
       header?: never;
       path: {
@@ -3616,7 +4693,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["PaginatedApplicationListItemList"];
+          "application/json": components["schemas"]["PaginatedVendorApplicationListItemList"];
         };
       };
       400: {
@@ -3716,6 +4793,161 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Blocked"];
+        };
+      };
+    };
+  };
+  hiring_bulk: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        gig_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Bulk"];
+        "application/x-www-form-urlencoded": components["schemas"]["Bulk"];
+        "multipart/form-data": components["schemas"]["Bulk"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BulkResult"][];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  hiring_rules_retrieve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        gig_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Rules"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  hiring_rules_set: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        gig_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Rules"];
+        "application/x-www-form-urlencoded": components["schemas"]["Rules"];
+        "multipart/form-data": components["schemas"]["Rules"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Rules"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
         };
       };
     };
@@ -4065,6 +5297,49 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Health"];
+        };
+      };
+    };
+  };
+  hiring_rejection_reasons: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Reason"][];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
         };
       };
     };
