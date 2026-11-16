@@ -63,6 +63,11 @@ void main() {
     expect(find.text('Asha Rao'), findsOneWidget);
     expect(find.text('Artist / muralist'), findsOneWidget);
 
+    await tester.scrollUntilVisible(
+      find.text('Sign out'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.tap(find.text('Sign out'));
     await tester.pumpAndSettle();
     expect(find.text('Sign in to Barterly'), findsOneWidget);

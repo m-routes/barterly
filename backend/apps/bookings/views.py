@@ -1,3 +1,5 @@
+import logging
+
 from django.db.models import Q
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import exceptions, generics, status
@@ -10,7 +12,7 @@ from apps.applications.models import Application
 from apps.bookings import cancellation, confirmation, jobs
 from apps.bookings.lifecycle import BEFORE_CHECK_IN, Actor, BookingStatus
 from apps.bookings.models import REASONS_FOR, Booking, CancellationEffect, CancellationReason
-from apps.bookings.scheduler import SchedulerAuthError, verify_request
+from apps.bookings.scheduler import SchedulerAuthError, verify_request, verify_task_request
 from apps.bookings.serializers import (
     BookingListItemSerializer,
     BookingSerializer,
@@ -24,6 +26,7 @@ from apps.bookings.services import BookingRefused, accept_offer, actor_for, tran
 from apps.common.permissions import IsTalent
 from apps.common.serializers import ErrorSerializer
 
+logger = logging.getLogger(__name__)
 TAG = ["bookings"]
 ERRORS = {401: ErrorSerializer, 403: ErrorSerializer, 404: ErrorSerializer}
 
@@ -328,3 +331,54 @@ class JobView(APIView):
         except jobs.JobAlreadyRunning:
             return Response({"job": job, "run_id": None, "skipped": True, "result": {}})
         return Response({"job": job, "run_id": run.pk, "skipped": False, "result": run.result})
+
+
+class TaskFailed(exceptions.APIException):
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    default_detail = "The task failed; Cloud Tasks will retry it."
+    default_code = "task_retry"
+
+
+class TaskView(APIView):
+    """Cloud Tasks calls this with an OIDC token for the tasks service account. A task
+    that raises answers 503, so Cloud Tasks retries it with the queue's backoff."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    throttle_classes = []
+
+    @extend_schema(
+        operation_id="tasks_run",
+        summary="Run a queued task (Cloud Tasks only)",
+        description=(
+            "Needs a Google-signed OIDC token for the tasks service account. The body is the "
+            "task's payload. 503 asks Cloud Tasks to retry."
+        ),
+        request={"application/json": {"type": "object", "additionalProperties": True}},
+        responses={
+            204: None,
+            401: ErrorSerializer,
+            403: ErrorSerializer,
+            404: ErrorSerializer,
+            503: ErrorSerializer,
+        },
+        tags=["jobs"],
+    )
+    def post(self, request: Request, name: str) -> Response:
+        from apps.media.tasks import run_task
+
+        try:
+            verify_task_request(request)
+        except SchedulerAuthError as exc:
+            error = JobAuthFailed(str(exc))
+            error.status_code = exc.status
+            raise error from exc
+        payload = request.data if isinstance(request.data, dict) else {}
+        try:
+            run_task(name, payload)
+        except LookupError as exc:
+            raise exceptions.NotFound("No such task.") from exc
+        except Exception as exc:
+            logger.warning("Task will be retried", extra={"task": name, "error": str(exc)})
+            raise TaskFailed() from exc
+        return Response(status=status.HTTP_204_NO_CONTENT)

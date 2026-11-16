@@ -67,7 +67,7 @@ Surfaces: the vendor console (web), the talent app (mobile) and the admin consol
 | `gigs` | `Gig` (role template, compensation model, dates, hours, stay, meals, stipend, deliverables, eligibility, screening questions), the business rules, the status machine and review, plan limits, auto-close |
 | `discovery` | Gig search for talent (`GET /api/v1/gigs/`): hard filters, the fit score, cursor pages; saved searches and their alert job |
 | `applications` | `Application` and its attachments, the apply rules (with every blocking reason), the status table, applicant views for vendors |
-| `notifications` | Queued `Notification` rows, created from domain events; delivery arrives later in Phase 3 |
+| `notifications` | The in-app inbox, delivery on push (FCM), email, SMS and WhatsApp behind provider interfaces, English and Hindi templates, preferences and quiet hours, reminders, the delivery log and dead letters |
 | `bookings` | The transition table, bookings, the append-only booking event log, confirmation and cancellation (with the step-in offer), and scheduled jobs |
 | `hiring` | Rejection reasons, bulk actions, auto-reject rules, private notes and tags, saved filters, interviews |
 | `chat` | One conversation per application, messages with cursors and read receipts, the contact-sharing guard, blocks, reports, the profanity filter hook |
@@ -266,7 +266,7 @@ A confirmed booking gives its slot back. The place is then offered on: offers he
 
 **Event log.** Each booking move appends a `BookingEvent`: from and to state, actor, the person, reason, metadata and time. A database trigger (migration `bookings.0002`) refuses every UPDATE and DELETE on that table, whichever database user tries, the app's own included. Moves also write an AuditLog row.
 
-**Domain events.** Every application and booking move publishes `application.<status>` or `booking.<status>` (`apps.common.events`). Handlers run inside the same transaction, so a rolled-back move leaves no event, notification or audit row behind. `apps.notifications.handlers` turns events into queued notifications. A booking move goes to the other party, and a move by the system or an admin goes to both.
+**Domain events.** Every application and booking move publishes `application.<status>` or `booking.<status>` (`apps.common.events`). Handlers run inside the same transaction, so a rolled-back move leaves no event, notification or audit row behind. `apps.notifications.handlers` turns events into notifications (see Notifications). A booking move goes to the other party, and a move by the system or an admin goes to both.
 
 **API.**
 - `POST /api/v1/applications/{id}/accept/`
@@ -288,6 +288,8 @@ A confirmed booking gives its slot back. The place is then offered on: offers he
 | `run_search_alerts` | Every 6 hours | Saved-search alerts go out for new gigs |
 | `send_interview_reminders` | Every 5 minutes | Interview reminders go out a day and an hour before |
 | `render_agreements` | Every 10 minutes | Agreement PDFs a failed render left behind are drawn up |
+| `send_reminders` | Hourly at :05 | Offers about to expire, agreements still to sign, stays starting tomorrow |
+| `dispatch_notifications` | Every 5 minutes | Notifications held for quiet hours, or whose task went missing, are queued |
 
 Every job is idempotent: it re-checks each row under a lock before changing it. A Postgres advisory lock skips overlapping runs of the same job, and each run is recorded as a `JobRun` (shown in the admin). Run one by hand with `manage.py run_job <name>`.
 
@@ -342,7 +344,7 @@ One conversation per application, between its talent and the gig's vendor.
 - **Messages:** each has a `seq` (1, 2, 3... in its conversation), given under a lock on the conversation row, so there are no gaps and the API exposes it as an opaque `cursor`. `client_id` makes a resend return the same message. Up to 2,000 characters and 3 attachments (confirmed uploads: JPEG, PNG, WebP or PDF, 10 MB each).
 - **Transport:** REST only. `POST /conversations/{id}/messages/` sends; `GET .../messages/?after=<cursor>` returns what's new (or `before=` for history, or the newest page), plus `other_read_up_to` for read receipts. `POST .../read/` marks the other side's messages read up to a cursor. Clients poll every 4 seconds, only while a chat screen is open and visible, with backoff after errors. Both clients hide this behind a `ChatTransport` interface (`web/src/lib/chat/transport.ts`, `mobile/lib/src/chat/chat_transport.dart`), so a WebSocket transport can replace polling without changing screens.
 - **Unread counts:** a message is unread while `read_at` is empty. `GET /conversations/` gives each conversation's count and last message; `GET /conversations/unread/` gives the total; application lists carry `conversation` and `unread_messages`.
-- **Push:** `chat.message` events queue a notification for the recipient. While one for the same conversation is still waiting to go out, it is updated (count, latest preview) instead of adding another. Delivery arrives with the rest of notifications in Phase 3.
+- **Push:** `chat.message` events notify the recipient. While the last one for the same conversation is unread and its push hasn't gone out, it is updated (count, latest preview) instead of adding another.
 - **Contact-sharing guard** (`apps/chat/leakage.py`): until the application has a booking that isn't cancelled, messages are scanned for phone numbers (digits with any spacing, or spelt out in English or Hindi number words), emails (including "at ... dot com"), links, @handles, UPI IDs and phrases such as WhatsApp, Telegram, "insta id", "call me on" or GPay. Matches become `[hidden]`, and the sender is told why (`notice`). The original text is kept only in a `LeakageEvent` for trust review; the audit log records the kinds, never the text. After confirmation, contact details go through untouched.
 - **Safety:** blocking (`POST`/`DELETE /conversations/{id}/block/`) stops both sides sending. `POST /messages/{id}/report/` reports the other side's message with a reason. Reports and leakage events are reviewed in Django admin ("Mark as reviewed" is audited). Sending is rate-limited (`THROTTLE_CHAT_SEND`, 30/minute). `CHAT_PROFANITY_FILTER` names a filter class that can allow, mask or refuse a message. The default allows everything; `WordListProfanityFilter` masks `CHAT_PROFANITY_WORDS`.
 - **Audit:** opening, masking, blocking, unblocking and reporting are all logged.
@@ -366,6 +368,59 @@ One conversation per application, between its talent and the gig's vendor.
 - **Changes after signing:** `POST /bookings/{id}/agreement/changes/` (`{changes, reason}`) draws up a new version that both must sign again; the version in force stays in force until then. A newer change replaces one still unsigned, the other side can decline it (`/agreement-versions/{id}/decline/`), and dates can't change once the stay has started. When a version with new dates comes into force, the booking's dates follow (audited as `booking.dates_changed`).
 - **Record:** database triggers (migration `agreements.0002`) keep a version's terms, template and people fixed, let its PDF fields be set once only, and make signatures append-only. Drawing up, signing, coming into force, proposing and declining are audited and notify the other side.
 - **Clients:** the web console's Agreements section lists agreements and shows each version with its PDF, signing (with OTP re-confirmation) and changes; the applicant page has the offer form and answers counters. The mobile app's My trips opens the offer (accept, decline, ask for a change) and the agreement (PDF, signing).
+
+### Notifications (`apps/notifications`)
+
+**From events to notifications.** Domain events become notifications in `handlers.py`, inside the transaction of the change: each person concerned gets one `Notification`, rendered in their language. That notification is their in-app inbox item. Who hears about what is the recipients table in `handlers.py`; reminders name their recipients in the event (`notify`).
+
+| Event type (preference key) | Events | On by default |
+|---|---|---|
+| New applicant | `application.applied` | in-app, push, email |
+| Shortlisted | `application.shortlisted` | in-app, push, email |
+| Interview scheduled | `interview.scheduled` | in-app, push, email |
+| Offer sent | `application.offered`, `offer.reopened`, `offer.counter_declined` | in-app, push, email, SMS |
+| Offer about to expire (urgent) | `offer.expiring` | all five |
+| Agreement to sign | `agreement.ready`, `agreement.sign_reminder` | in-app, push, email |
+| Booking confirmed | `booking.confirmed` | all five |
+| New message | `chat.message` | in-app, push |
+| New gigs for a saved search | `gigs.search_alert` | in-app, push |
+| Reminders | `interview.reminder_day`, `interview.reminder_hour` (urgent), `booking.starts_soon` | in-app, push, email |
+| Other updates | every other event that reaches someone | in-app |
+
+**Templates** (`templates.py`): a title and body with `{variables}` per event, in English and Hindi. A test renders every template in both languages and checks it only uses its listed variables. Other updates share one template with a translated label. The Hindi is a first draft for a native speaker to review. Push and in-app show the title and body; email uses the title as subject and adds the link and a note on settings; SMS is "title: body link"; WhatsApp sends the approved template `barterly_<event>_<locale>` with the variables in order.
+
+**Preferences** (`GET`/`PUT /api/v1/notifications/preferences/`): language (English or Hindi), quiet hours (India time, 22:00 to 08:00 by default), and each event type on or off per channel. Only changes from the defaults are stored. In-app can't be switched off. Quiet hours hold back push, SMS and WhatsApp until they end; urgent reminders ignore them, and email and in-app aren't held.
+
+**Channels** (`channels/`): one provider per channel, set in `NOTIFICATION_PROVIDERS`; a channel with none is off for everyone.
+
+| Channel | Provider | Notes |
+|---|---|---|
+| Push | `FcmPushProvider` (firebase-admin, the API's own credentials) | Tokens FCM rejects are switched off |
+| Email | `DjangoEmailProvider` (Django mail, SMTP) | Off in deployed settings until `EMAIL_HOST` is set |
+| SMS | none yet | MSG91, Gupshup or Twilio go behind `ChannelProvider` |
+| WhatsApp | none yet | Needs approved templates named as above |
+
+Fakes for all four (`channels/fake.py`) are used in tests. A provider raises `TemporaryFailure` to be retried, or `PermanentFailure` to stop.
+
+**Delivery.** Each channel gets a `Delivery` row: the delivery log. It starts queued, then becomes sent, failed (permanent), dead (retries used up), skipped (no provider, device, email or phone) or read. Once the transaction commits, each queued delivery becomes a Cloud Task (`notifications.deliver`, delayed to the end of quiet hours if held). Cloud Tasks POSTs it to `/api/v1/tasks/notifications.deliver/` with an OIDC token for the tasks service account. The task sends while holding the delivery's row lock, so a duplicate task can't send twice. A temporary failure answers 503 and Cloud Tasks retries with exponential backoff (10 s to 10 min; `infra/terraform/modules/environment/tasks.tf`). After `NOTIFICATION_MAX_ATTEMPTS` (6) the delivery is dead. The `dispatch_notifications` job (every 5 minutes) queues anything due whose task went missing.
+
+**Deduplication.** A notification's `dedup_key` is unique per person. Events get one from the event and the moment it happened, so handling an event twice makes one notification; reminders bring their own (`offer.expiring:<offer>`), so each goes out once however often the job runs.
+
+**Reminders** (`reminders.py`, the hourly `send_reminders` job):
+- an open offer with 12 hours or less left, to whoever must answer;
+- a version still unsigned by someone a day after it was drawn up;
+- a confirmed stay starting tomorrow, to both sides.
+
+Interview reminders stay in hiring's own job.
+
+**Deep links.** Every notification carries `app_path` (the mobile app's route, for example `/trips/offer/<application>`) and `web_url` (the console page, for example `/console/applicants/<application>`). Push puts them in `data.path` and `data.url`, and in `webpush.fcm_options.link`, along with `data.notification_id`. The mobile app opens `path` when a push is tapped and marks the notification read (`from_push`).
+
+**API.**
+- `GET /api/v1/notifications/` (`?unread=true`), `GET /notifications/unread-count/`, `POST /notifications/{id}/read/`, `POST /notifications/read-all/`
+- `GET`/`PUT /notifications/preferences/`
+- `POST /notifications/devices/` (register an FCM token), `POST /notifications/devices/remove/`
+
+**Admin.** Notifications (with their deliveries), the delivery log, push devices, settings, and **Dead letters**: deliveries whose retries ran out, with a "Send again" action once the cause is fixed.
 
 ### Audit log
 

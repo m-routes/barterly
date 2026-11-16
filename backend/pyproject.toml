@@ -19,6 +19,7 @@ dependencies = [
   "firebase-admin>=6.6",
   "pillow>=11.0",
   "weasyprint>=66",
+  "google-cloud-tasks>=2.18",
 ]
 
 [dependency-groups]

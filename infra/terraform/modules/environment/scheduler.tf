@@ -19,6 +19,8 @@ locals {
     run_search_alerts        = { schedule = "0 */6 * * *", description = "Send saved-search alerts for new gigs." }
     send_interview_reminders = { schedule = "*/5 * * * *", description = "Interview reminders a day and an hour before." }
     render_agreements        = { schedule = "*/10 * * * *", description = "Draw up agreement PDFs a failed render left behind." }
+    send_reminders           = { schedule = "5 * * * *", description = "Offers about to expire, agreements to sign, stays starting tomorrow." }
+    dispatch_notifications   = { schedule = "*/5 * * * *", description = "Queue notifications held for quiet hours, or whose task went missing." }
   }
 }
 

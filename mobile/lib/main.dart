@@ -4,6 +4,7 @@ import 'package:barterly/src/app.dart';
 import 'package:barterly/src/auth/phone_auth.dart';
 import 'package:barterly/src/config/env.dart';
 import 'package:barterly/src/crash/crash_reporter.dart';
+import 'package:barterly/src/notifications/push.dart';
 import 'package:barterly/src/providers.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -24,6 +25,7 @@ Future<void> main() async {
         : const NoopCrashReporter();
 
     var phoneAuth = const UnavailablePhoneAuth() as PhoneAuth;
+    var push = const NoPushMessaging() as PushMessaging;
     final firebase = config.firebase;
     if (firebase != null) {
       try {
@@ -37,6 +39,7 @@ Future<void> main() async {
           );
         }
         phoneAuth = FirebasePhoneAuth();
+        push = FirebasePushMessaging();
       } on Object catch (error, stack) {
         // Sign-in shows "not available" rather than the app failing to start.
         await crash.report(error, stack, context: 'firebase_init');
@@ -48,6 +51,7 @@ Future<void> main() async {
         overrides: [
           appConfigProvider.overrideWithValue(config),
           phoneAuthProvider.overrideWithValue(phoneAuth),
+          pushMessagingProvider.overrideWithValue(push),
           crashReporterProvider.overrideWithValue(crash),
         ],
         child: const BarterlyApp(),

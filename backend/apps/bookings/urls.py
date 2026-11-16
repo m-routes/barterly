@@ -20,4 +20,5 @@ urlpatterns = [
     path("bookings/<uuid:booking_id>/cancel/", views.CancelView.as_view(), name="cancel"),
     path("bookings/<uuid:booking_id>/details/", views.UnlockedView.as_view(), name="details"),
     path("jobs/<slug:job>/", views.JobView.as_view(), name="job"),
+    path("tasks/<str:name>/", views.TaskView.as_view(), name="task"),
 ]

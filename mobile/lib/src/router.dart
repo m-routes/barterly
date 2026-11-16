@@ -9,6 +9,7 @@ import 'package:barterly/src/auth/user.dart';
 import 'package:barterly/src/chat/chat_screen.dart';
 import 'package:barterly/src/discover/discover_screen.dart';
 import 'package:barterly/src/discover/gig_detail_screen.dart';
+import 'package:barterly/src/notifications/notifications_screen.dart';
 import 'package:barterly/src/profile/profile_setup_screen.dart';
 import 'package:barterly/src/shell/app_shell.dart';
 import 'package:barterly/src/shell/tabs.dart';
@@ -29,6 +30,8 @@ abstract final class Routes {
   static const profile = '/profile';
   static const editProfile = '/profile/edit';
   static const verification = '/profile/verification';
+  static const notifications = '/profile/notifications';
+  static const notificationSettings = '/profile/notifications/settings';
   static String gig(String id) => '/discover/gig/$id';
   static String apply(String id) => '/discover/gig/$id/apply';
   static String chat(String conversationId) => '/trips/chat/$conversationId';
@@ -152,6 +155,16 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'verification',
                     builder: (_, _) => const VerificationScreen(),
+                  ),
+                  GoRoute(
+                    path: 'notifications',
+                    builder: (_, _) => const NotificationsScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'settings',
+                        builder: (_, _) => const NotificationSettingsScreen(),
+                      ),
+                    ],
                   ),
                 ],
               ),

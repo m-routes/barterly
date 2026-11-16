@@ -47,6 +47,7 @@ final Map<String, Handler> talentDefaults = {
   'GET /api/v1/gigs/': (_) => ok(emptyPage),
   'GET /api/v1/applications/mine/': (_) => ok(<Object?>[]),
   'GET /api/v1/gigs/saved-searches/': (_) => ok(<Object?>[]),
+  'GET /api/v1/notifications/unread-count/': (_) => ok({'unread': 0}),
 };
 
 const Map<String, List<Object?>?> emptyPage = {

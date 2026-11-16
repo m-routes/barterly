@@ -1078,7 +1078,7 @@ export interface paths {
     put?: never;
     /**
      * Run a scheduled job (Cloud Scheduler only)
-     * @description Jobs: close_expired_gigs, expire_offers, expire_verifications, flag_stale_interviews, render_agreements, run_search_alerts, send_interview_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
+     * @description Jobs: close_expired_gigs, dispatch_notifications, expire_offers, expire_verifications, flag_stale_interviews, render_agreements, run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
      */
     post: operations["jobs_run"];
     delete?: never;
@@ -1195,6 +1195,132 @@ export interface paths {
     put?: never;
     /** Report a message for review */
     post: operations["chat_report"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My notifications, newest first */
+    get: operations["notifications_list"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/{notification_id}/read/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Mark one notification read */
+    post: operations["notifications_read"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/devices/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Register this device for push (an FCM token)
+     * @description A token already registered moves to whoever registers it last.
+     */
+    post: operations["notifications_devices_register"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/devices/remove/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Stop push to this device (on sign-out) */
+    post: operations["notifications_devices_remove"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/preferences/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** What I'm notified about, on which channels, and quiet hours */
+    get: operations["notifications_preferences"];
+    /**
+     * Change language, quiet hours or channels per event type
+     * @description Send only what changes. `changes` switches one event type on one channel. In-app can't be switched off. Urgent reminders (an offer about to expire, an interview within the hour) ignore quiet hours.
+     */
+    put: operations["notifications_preferences_update"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/read-all/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Mark every notification read */
+    post: operations["notifications_read_all"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/unread-count/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** How many notifications I haven't read */
+    get: operations["notifications_unread_count"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -1463,6 +1589,26 @@ export interface paths {
     get: operations["reliability_me"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/tasks/{name}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Run a queued task (Cloud Tasks only)
+     * @description Needs a Google-signed OIDC token for the tasks service account. The body is the task's payload. 503 asks Cloud Tasks to retry.
+     */
+    post: operations["tasks_run"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2355,6 +2501,11 @@ export interface components {
       usage_rights?: components["schemas"]["UsageRights"] | null;
       cancellation_policy?: components["schemas"]["CancellationPolicyEnum"];
     };
+    ChannelSetting: {
+      enabled: boolean;
+      /** @description In-app can't be switched off: it's the inbox. */
+      locked: boolean;
+    };
     ChatAttachment: {
       /** Format: uuid */
       id: string;
@@ -2576,6 +2727,20 @@ export interface components {
       | "photo_set"
       | "mural"
       | "other";
+    Device: {
+      token: string;
+      platform: components["schemas"]["DevicePlatformEnum"];
+    };
+    /**
+     * @description * `android` - Android
+     *     * `ios` - iOS
+     *     * `web` - Web
+     * @enum {string}
+     */
+    DevicePlatformEnum: "android" | "ios" | "web";
+    DeviceToken: {
+      token: string;
+    };
     Document: {
       /** Format: uuid */
       readonly id: string;
@@ -2598,6 +2763,41 @@ export interface components {
       /** @description Extra context. Field errors for 'validation_error'; otherwise often empty. */
       details: {
         [key: string]: unknown;
+      };
+    };
+    /**
+     * @description * `application.applied` - application.applied
+     *     * `application.shortlisted` - application.shortlisted
+     *     * `interview.scheduled` - interview.scheduled
+     *     * `application.offered` - application.offered
+     *     * `offer.expiring` - offer.expiring
+     *     * `agreement.ready` - agreement.ready
+     *     * `booking.confirmed` - booking.confirmed
+     *     * `chat.message` - chat.message
+     *     * `gigs.search_alert` - gigs.search_alert
+     *     * `reminder` - reminder
+     *     * `other` - other
+     * @enum {string}
+     */
+    EventTypeEnum:
+      | "application.applied"
+      | "application.shortlisted"
+      | "interview.scheduled"
+      | "application.offered"
+      | "offer.expiring"
+      | "agreement.ready"
+      | "booking.confirmed"
+      | "chat.message"
+      | "gigs.search_alert"
+      | "reminder"
+      | "other";
+    EventTypeSetting: {
+      key: string;
+      label: string;
+      /** @description Not held back by quiet hours. */
+      urgent: boolean;
+      channels: {
+        [key: string]: components["schemas"]["ChannelSetting"];
       };
     };
     ExactLocation: {
@@ -3012,6 +3212,16 @@ export interface components {
       terms: components["schemas"]["Terms"];
       message?: string;
     };
+    MarkRead: {
+      /**
+       * @description Opened by tapping the push: the push counts as read too.
+       * @default false
+       */
+      from_push: boolean;
+    };
+    Marked: {
+      marked: number;
+    };
     /**
      * @description * `none` - No meals
      *     * `breakfast` - Breakfast
@@ -3087,6 +3297,43 @@ export interface components {
     NoteIn: {
       note?: string;
     };
+    Notification: {
+      /** Format: uuid */
+      readonly id: string;
+      /** @description The event type, e.g. 'offer.expiring'. */
+      readonly kind: string;
+      readonly title: string;
+      readonly body: string;
+      /** @description Not held back by quiet hours. */
+      readonly urgent: boolean;
+      /** @description Mobile app route. */
+      readonly app_path: string;
+      /**
+       * Format: uri
+       * @description Web console page.
+       */
+      readonly web_url: string;
+      readonly read: boolean;
+      /** Format: date-time */
+      readonly read_at: string | null;
+      /** Format: date-time */
+      readonly created_at: string;
+    };
+    /**
+     * @description * `in_app` - In the app
+     *     * `push` - Push
+     *     * `email` - Email
+     *     * `sms` - SMS
+     *     * `whatsapp` - WhatsApp
+     * @enum {string}
+     */
+    NotificationChannelEnum: "in_app" | "push" | "email" | "sms" | "whatsapp";
+    /**
+     * @description * `en` - English
+     *     * `hi` - हिन्दी (Hindi)
+     * @enum {string}
+     */
+    NotificationLocaleEnum: "en" | "hi";
     Offer: {
       /** Format: uuid */
       readonly id: string;
@@ -3228,6 +3475,21 @@ export interface components {
        */
       previous?: string | null;
       results: components["schemas"]["Gig"][];
+    };
+    PaginatedNotificationList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["Notification"][];
     };
     PaginatedPropertyList: {
       /** @example 123 */
@@ -3500,6 +3762,28 @@ export interface components {
       directions: string;
       /** @description Directions in Google Maps; empty without a pin. */
       maps_url: string;
+    };
+    PreferenceChange: {
+      event_type: components["schemas"]["EventTypeEnum"];
+      channel: components["schemas"]["NotificationChannelEnum"];
+      enabled: boolean;
+    };
+    Preferences: {
+      locale: components["schemas"]["NotificationLocaleEnum"];
+      quiet_hours_enabled: boolean;
+      /**
+       * Format: time
+       * @description India time.
+       */
+      quiet_start: string;
+      /**
+       * Format: time
+       * @description India time.
+       */
+      quiet_end: string;
+      /** @description Channels Barterly can send on right now. */
+      channels_available: components["schemas"]["NotificationChannelEnum"][];
+      event_types: components["schemas"]["EventTypeSetting"][];
     };
     /** @description The owner's view: everything, including the exact address and pin. */
     Property: {
@@ -4006,6 +4290,18 @@ export interface components {
       unread: number;
       /** @description Conversations with unread messages. */
       conversations: number;
+    };
+    UnreadCount: {
+      unread: number;
+    };
+    UpdatePreferences: {
+      locale?: components["schemas"]["NotificationLocaleEnum"];
+      quiet_hours_enabled?: boolean;
+      /** Format: time */
+      quiet_start?: string;
+      /** Format: time */
+      quiet_end?: string;
+      changes?: components["schemas"]["PreferenceChange"][];
     };
     UploadUrlRequest: {
       kind: components["schemas"]["KindEnum"];
@@ -7998,6 +8294,333 @@ export interface operations {
       };
     };
   };
+  notifications_list: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+        /** @description Only unread ones. */
+        unread?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedNotificationList"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  notifications_read: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        notification_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["MarkRead"];
+        "application/x-www-form-urlencoded": components["schemas"]["MarkRead"];
+        "multipart/form-data": components["schemas"]["MarkRead"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Notification"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  notifications_devices_register: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Device"];
+        "application/x-www-form-urlencoded": components["schemas"]["Device"];
+        "multipart/form-data": components["schemas"]["Device"];
+      };
+    };
+    responses: {
+      /** @description No response body */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  notifications_devices_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DeviceToken"];
+        "application/x-www-form-urlencoded": components["schemas"]["DeviceToken"];
+        "multipart/form-data": components["schemas"]["DeviceToken"];
+      };
+    };
+    responses: {
+      /** @description No response body */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  notifications_preferences: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Preferences"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  notifications_preferences_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["UpdatePreferences"];
+        "application/x-www-form-urlencoded": components["schemas"]["UpdatePreferences"];
+        "multipart/form-data": components["schemas"]["UpdatePreferences"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Preferences"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  notifications_read_all: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Marked"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  notifications_unread_count: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["UnreadCount"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
   offers_accept: {
     parameters: {
       query?: never;
@@ -8866,6 +9489,64 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ReliabilityDetail"][];
+        };
+      };
+    };
+  };
+  tasks_run: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          [key: string]: unknown;
+        };
+      };
+    };
+    responses: {
+      /** @description No response body */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
         };
       };
     };

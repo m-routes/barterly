@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { useSession } from "@/lib/session/session";
 
 import { CONSOLE_SECTIONS, activeSection } from "./nav";
+import { NotificationsLink } from "./notifications/NotificationsLink";
 
 function SectionIcon({ href }: { href: string }) {
   // Simple line icons, decorative only (the label names the section).
@@ -63,6 +64,7 @@ function Sidebar({ account, onNavigate }: { account: string; onNavigate?: () => 
         </ul>
       </nav>
       <div className="sidebar__footer">
+        <NotificationsLink onNavigate={onNavigate} />
         <p className="sidebar__account">
           Signed in as <span className="sidebar__phone">{account}</span>
         </p>
