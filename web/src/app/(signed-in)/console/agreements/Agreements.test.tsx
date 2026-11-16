@@ -227,3 +227,21 @@ describe("BookingPanel", () => {
     expect(await screen.findByText("Cancelled")).toBeVisible();
   });
 });
+
+describe("Agreement viewer", () => {
+  it("shows the PDF in the page, or opens it in a new tab", async () => {
+    const user = userEvent.setup();
+    const open = vi.spyOn(window, "open").mockImplementation(() => null);
+    render(<AgreementDetail />);
+    await user.click(await screen.findByRole("button", { name: "Read it here" }));
+    const frame = await screen.findByTitle("Version 1 of the agreement (PDF)");
+    expect(frame).toHaveAttribute("src", "https://storage.test/v1.pdf");
+    await user.click(screen.getByRole("button", { name: "Hide the document" }));
+    expect(screen.queryByTitle("Version 1 of the agreement (PDF)")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Open PDF in a new tab" }));
+    await vi.waitFor(() =>
+      expect(open).toHaveBeenCalledWith("https://storage.test/v1.pdf", "_blank", "noopener"),
+    );
+    open.mockRestore();
+  });
+});

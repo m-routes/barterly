@@ -10,6 +10,7 @@ import { errorBody, jsonResponse } from "../../../../../test/http";
 import { consolePath } from "./links";
 import { NotificationInbox } from "./NotificationInbox";
 import { NotificationSettings } from "./NotificationSettings";
+import { NotificationBell } from "./NotificationBell";
 import { NotificationsLink } from "./NotificationsLink";
 
 const push = vi.fn();
@@ -105,7 +106,7 @@ describe("consolePath", () => {
 
 describe("NotificationsLink", () => {
   it("shows the unread count", async () => {
-    render(<NotificationsLink />);
+    render(<NotificationsLink unread={3} />);
     expect(await screen.findByLabelText("3 unread")).toHaveTextContent("3");
     expect(screen.getByRole("link", { name: /Notifications/ })).toHaveAttribute(
       "href",
@@ -159,5 +160,35 @@ describe("NotificationSettings", () => {
       quiet_end: "08:00",
       changes: [{ event_type: "application.applied", channel: "email", enabled: false }],
     });
+  });
+});
+
+describe("NotificationBell", () => {
+  it("shows the count, lists the latest and opens one where it points", async () => {
+    const user = userEvent.setup();
+    const onRead = vi.fn();
+    render(<NotificationBell unread={3} onRead={onRead} />);
+    const bell = screen.getByRole("button", { name: "Notifications, 3 unread" });
+    expect(bell).toHaveAttribute("aria-expanded", "false");
+    await user.click(bell);
+    const popover = await screen.findByRole("region", { name: "Latest notifications" });
+    expect(bell).toHaveAttribute("aria-expanded", "true");
+    await user.click(
+      await within(popover).findByRole("button", { name: /New applicant for Front desk/ }),
+    );
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/console/applicants/a1"));
+    expect(onRead).toHaveBeenCalled();
+    expect(requests("POST", "/n1/read/")).toHaveLength(1);
+  });
+
+  it("closes on Escape and gives focus back to the bell", async () => {
+    const user = userEvent.setup();
+    render(<NotificationBell unread={0} onRead={vi.fn()} />);
+    const bell = screen.getByRole("button", { name: "Notifications" });
+    await user.click(bell);
+    await screen.findByRole("region", { name: "Latest notifications" });
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("region", { name: "Latest notifications" })).toBeNull();
+    expect(bell).toHaveFocus();
   });
 });

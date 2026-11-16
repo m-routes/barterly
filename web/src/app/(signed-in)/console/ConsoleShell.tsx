@@ -10,7 +10,9 @@ import { Button } from "@/components/ui/Button";
 import { useSession } from "@/lib/session/session";
 
 import { CONSOLE_SECTIONS, activeSection } from "./nav";
+import { NotificationBell } from "./notifications/NotificationBell";
 import { NotificationsLink } from "./notifications/NotificationsLink";
+import { useUnreadCount } from "./notifications/useUnreadCount";
 
 function SectionIcon({ href }: { href: string }) {
   // Simple line icons, decorative only (the label names the section).
@@ -40,7 +42,15 @@ function SectionIcon({ href }: { href: string }) {
   );
 }
 
-function Sidebar({ account, onNavigate }: { account: string; onNavigate?: () => void }) {
+function Sidebar({
+  account,
+  unread,
+  onNavigate,
+}: {
+  account: string;
+  unread: number;
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
   const active = activeSection(pathname);
   const { signOut } = useSession();
@@ -64,7 +74,7 @@ function Sidebar({ account, onNavigate }: { account: string; onNavigate?: () => 
         </ul>
       </nav>
       <div className="sidebar__footer">
-        <NotificationsLink onNavigate={onNavigate} />
+        <NotificationsLink unread={unread} onNavigate={onNavigate} />
         <p className="sidebar__account">
           Signed in as <span className="sidebar__phone">{account}</span>
         </p>
@@ -79,6 +89,7 @@ function Sidebar({ account, onNavigate }: { account: string; onNavigate?: () => 
 function Shell({ account, children }: { account: string; children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
+  const { unread, refresh } = useUnreadCount();
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -125,9 +136,12 @@ function Shell({ account, children }: { account: string; children: React.ReactNo
         <div className="console__brand">
           <Logo href="/console" />
         </div>
-        <Sidebar account={account} onNavigate={() => setMenuOpen(false)} />
+        <Sidebar account={account} unread={unread} onNavigate={() => setMenuOpen(false)} />
       </aside>
       <main id="main" className="console__main" tabIndex={-1}>
+        <div className="console__utility">
+          <NotificationBell unread={unread} onRead={() => void refresh()} />
+        </div>
         {children}
       </main>
     </div>

@@ -276,166 +276,175 @@ function OfferFields({
   }
 
   return (
-    <form className="stack-sm offer-form" onSubmit={(e) => void submit(e)} noValidate>
-      <div className="form-grid form-grid--two">
-        <TextField
-          label="Arrive"
-          type="date"
-          value={terms.start_date}
-          error={errors.start_date}
-          onChange={(e) => set("start_date", e.target.value)}
-        />
-        <TextField
-          label="Leave"
-          type="date"
-          value={terms.end_date}
-          error={errors.end_date}
-          onChange={(e) => set("end_date", e.target.value)}
-        />
-        <TextField
-          label="Hours a day"
-          type="number"
-          min={1}
-          max={6}
-          hint="At most 6."
-          value={terms.hours_per_day}
-          error={errors.hours_per_day}
-          onChange={(e) => set("hours_per_day", Number(e.target.value))}
-        />
-        <TextField
-          label="Days a week"
-          type="number"
-          min={1}
-          max={6}
-          hint="At least one day off."
-          value={terms.days_per_week}
-          error={errors.days_per_week}
-          onChange={(e) => set("days_per_week", Number(e.target.value))}
-        />
-        <SelectField
-          label="Stay"
-          options={options(STAY_TYPE_LABELS)}
-          value={terms.stay_type}
-          error={errors.stay_type}
-          onChange={(e) => set("stay_type", e.target.value as Draft["stay_type"])}
-        />
-        <SelectField
-          label="Meals"
-          options={options(MEALS_LABELS)}
-          value={terms.meals}
-          error={errors.meals}
-          onChange={(e) => set("meals", e.target.value as Draft["meals"])}
-        />
-        {terms.stipend_amount != null ? (
+    <div className="offer-builder">
+      <form className="stack-sm offer-form" onSubmit={(e) => void submit(e)} noValidate>
+        <div className="form-grid form-grid--two">
           <TextField
-            label="Stipend (₹)"
+            label="Arrive"
+            type="date"
+            value={terms.start_date}
+            error={errors.start_date}
+            onChange={(e) => set("start_date", e.target.value)}
+          />
+          <TextField
+            label="Leave"
+            type="date"
+            value={terms.end_date}
+            error={errors.end_date}
+            onChange={(e) => set("end_date", e.target.value)}
+          />
+          <TextField
+            label="Hours a day"
             type="number"
             min={1}
-            hint="As in the gig; change it for this person if you need to."
-            value={terms.stipend_amount}
-            error={errors.stipend_amount}
-            onChange={(e) => set("stipend_amount", e.target.value)}
+            max={6}
+            hint="At most 6."
+            value={terms.hours_per_day}
+            error={errors.hours_per_day}
+            onChange={(e) => set("hours_per_day", Number(e.target.value))}
           />
+          <TextField
+            label="Days a week"
+            type="number"
+            min={1}
+            max={6}
+            hint="At least one day off."
+            value={terms.days_per_week}
+            error={errors.days_per_week}
+            onChange={(e) => set("days_per_week", Number(e.target.value))}
+          />
+          <SelectField
+            label="Stay"
+            options={options(STAY_TYPE_LABELS)}
+            value={terms.stay_type}
+            error={errors.stay_type}
+            onChange={(e) => set("stay_type", e.target.value as Draft["stay_type"])}
+          />
+          <SelectField
+            label="Meals"
+            options={options(MEALS_LABELS)}
+            value={terms.meals}
+            error={errors.meals}
+            onChange={(e) => set("meals", e.target.value as Draft["meals"])}
+          />
+          {terms.stipend_amount != null ? (
+            <TextField
+              label="Stipend (₹)"
+              type="number"
+              min={1}
+              hint="As in the gig; change it for this person if you need to."
+              value={terms.stipend_amount}
+              error={errors.stipend_amount}
+              onChange={(e) => set("stipend_amount", e.target.value)}
+            />
+          ) : null}
+          <SelectField
+            label="Cancellation"
+            options={options(CANCELLATION_LABELS)}
+            value={terms.cancellation_policy}
+            error={errors.cancellation_policy}
+            onChange={(e) =>
+              set("cancellation_policy", e.target.value as Draft["cancellation_policy"])
+            }
+          />
+        </div>
+
+        {terms.deliverables?.length ? (
+          <fieldset className="stack-sm">
+            <legend className="field__label">Deliverables</legend>
+            {terms.deliverables.map((d, index) => (
+              <TextField
+                key={`${d.type}-${index}`}
+                label={DELIVERABLE_LABELS[d.type]}
+                type="number"
+                min={1}
+                max={50}
+                value={d.quantity}
+                onChange={(e) =>
+                  set(
+                    "deliverables",
+                    terms.deliverables!.map((item, i) =>
+                      i === index ? { ...item, quantity: Number(e.target.value) } : item,
+                    ),
+                  )
+                }
+              />
+            ))}
+            {errors.deliverables ? <p className="field__error">{errors.deliverables}</p> : null}
+          </fieldset>
         ) : null}
-        <SelectField
-          label="Cancellation"
-          options={options(CANCELLATION_LABELS)}
-          value={terms.cancellation_policy}
-          error={errors.cancellation_policy}
-          onChange={(e) =>
-            set("cancellation_policy", e.target.value as Draft["cancellation_policy"])
-          }
+
+        {terms.usage_rights ? (
+          <fieldset className="stack-sm">
+            <legend className="field__label">How you may use their content</legend>
+            <div className="form-grid form-grid--two">
+              <SelectField
+                label="Where"
+                options={options(USAGE_SCOPE_LABELS)}
+                value={terms.usage_rights.scope}
+                onChange={(e) =>
+                  set("usage_rights", {
+                    ...terms.usage_rights!,
+                    scope: e.target.value as NonNullable<Draft["usage_rights"]>["scope"],
+                  })
+                }
+              />
+              <TextField
+                label="For how many months"
+                type="number"
+                min={1}
+                max={36}
+                value={terms.usage_rights.duration_months}
+                onChange={(e) =>
+                  set("usage_rights", {
+                    ...terms.usage_rights!,
+                    duration_months: Number(e.target.value),
+                  })
+                }
+              />
+            </div>
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={terms.usage_rights.credit_required}
+                onChange={(e) =>
+                  set("usage_rights", { ...terms.usage_rights!, credit_required: e.target.checked })
+                }
+              />{" "}
+              Credit them when you use it
+            </label>
+            {errors.usage_rights ? <p className="field__error">{errors.usage_rights}</p> : null}
+          </fieldset>
+        ) : null}
+
+        <TextArea
+          label="Message"
+          optional
+          maxLength={1000}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
         />
-      </div>
-
-      {terms.deliverables?.length ? (
-        <fieldset className="stack-sm">
-          <legend className="field__label">Deliverables</legend>
-          {terms.deliverables.map((d, index) => (
-            <TextField
-              key={`${d.type}-${index}`}
-              label={DELIVERABLE_LABELS[d.type]}
-              type="number"
-              min={1}
-              max={50}
-              value={d.quantity}
-              onChange={(e) =>
-                set(
-                  "deliverables",
-                  terms.deliverables!.map((item, i) =>
-                    i === index ? { ...item, quantity: Number(e.target.value) } : item,
-                  ),
-                )
-              }
-            />
-          ))}
-          {errors.deliverables ? <p className="field__error">{errors.deliverables}</p> : null}
-        </fieldset>
-      ) : null}
-
-      {terms.usage_rights ? (
-        <fieldset className="stack-sm">
-          <legend className="field__label">How you may use their content</legend>
-          <div className="form-grid form-grid--two">
-            <SelectField
-              label="Where"
-              options={options(USAGE_SCOPE_LABELS)}
-              value={terms.usage_rights.scope}
-              onChange={(e) =>
-                set("usage_rights", {
-                  ...terms.usage_rights!,
-                  scope: e.target.value as NonNullable<Draft["usage_rights"]>["scope"],
-                })
-              }
-            />
-            <TextField
-              label="For how many months"
-              type="number"
-              min={1}
-              max={36}
-              value={terms.usage_rights.duration_months}
-              onChange={(e) =>
-                set("usage_rights", {
-                  ...terms.usage_rights!,
-                  duration_months: Number(e.target.value),
-                })
-              }
-            />
-          </div>
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={terms.usage_rights.credit_required}
-              onChange={(e) =>
-                set("usage_rights", { ...terms.usage_rights!, credit_required: e.target.checked })
-              }
-            />{" "}
-            Credit them when you use it
-          </label>
-          {errors.usage_rights ? <p className="field__error">{errors.usage_rights}</p> : null}
-        </fieldset>
-      ) : null}
-
-      <TextArea
-        label="Message"
-        optional
-        maxLength={1000}
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-      />
-      <p className="note">
-        These terms become the agreement you both sign if they accept. Its legal text is still a
-        placeholder that a lawyer must review before launch.
-      </p>
-      <FormError message={error} />
-      <div className="actions-row">
-        <Button type="submit" busy={busy}>
-          Send offer
-        </Button>
-        <Button variant="ghost" onClick={onCancel} disabled={busy}>
-          Cancel
-        </Button>
-      </div>
-    </form>
+        <p className="note">
+          These terms become the agreement you both sign if they accept. Its legal text is still a
+          placeholder that a lawyer must review before launch.
+        </p>
+        <FormError message={error} />
+        <div className="actions-row">
+          <Button type="submit" busy={busy}>
+            Send offer
+          </Button>
+          <Button variant="ghost" onClick={onCancel} disabled={busy}>
+            Cancel
+          </Button>
+        </div>
+      </form>
+      <aside className="offer-preview" aria-labelledby="offer-preview-title">
+        <h3 id="offer-preview-title" className="panel__title">
+          What they&apos;ll see
+        </h3>
+        <p className="field__hint">Updates as you edit. These become the agreement if accepted.</p>
+        <TermsSummary terms={terms} />
+      </aside>
+    </div>
   );
 }

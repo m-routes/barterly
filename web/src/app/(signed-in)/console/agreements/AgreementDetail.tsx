@@ -151,12 +151,34 @@ function VersionCard({
   const mine = version.proposed_by === agreement.my_side;
   const path = { params: { path: { version_id: version.id } } };
 
+  const [viewing, setViewing] = useState<string | null>(null);
+
+  async function pdfUrl(): Promise<string> {
+    const link = await unwrap(api.GET("/api/v1/agreement-versions/{version_id}/pdf/", path));
+    return link.url;
+  }
+
+  async function view() {
+    if (viewing) {
+      setViewing(null);
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      setViewing(await pdfUrl());
+    } catch (err) {
+      setError(describeError(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function openPdf() {
     setBusy(true);
     setError("");
     try {
-      const link = await unwrap(api.GET("/api/v1/agreement-versions/{version_id}/pdf/", path));
-      window.open(link.url, "_blank", "noopener");
+      window.open(await pdfUrl(), "_blank", "noopener");
     } catch (err) {
       setError(describeError(err));
     } finally {
@@ -214,15 +236,32 @@ function VersionCard({
         Fingerprint (SHA-256): <code>{version.pdf_sha256 || "being prepared"}</code>
       </p>
       <FormError message={error} />
+      {viewing ? (
+        <iframe
+          className="pdf-viewer"
+          src={viewing}
+          title={`Version ${version.number} of the agreement (PDF)`}
+        />
+      ) : null}
       <div className="actions-row actions-row--start">
         <Button
           variant="secondary"
           busy={busy}
           disabled={!version.pdf_ready}
-          onClick={() => void openPdf()}
+          aria-expanded={viewing ? true : false}
+          onClick={() => void view()}
         >
-          {version.pdf_ready ? "Open PDF" : "PDF being prepared"}
+          {version.pdf_ready
+            ? viewing
+              ? "Hide the document"
+              : "Read it here"
+            : "PDF being prepared"}
         </Button>
+        {version.pdf_ready ? (
+          <Button variant="ghost" disabled={busy} onClick={() => void openPdf()}>
+            Open PDF in a new tab
+          </Button>
+        ) : null}
         {isChange ? (
           <Button variant="ghost" disabled={busy} onClick={() => void decline()}>
             {mine ? "Withdraw this change" : "Decline this change"}

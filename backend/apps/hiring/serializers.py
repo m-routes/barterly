@@ -6,6 +6,7 @@ from rest_framework import serializers
 from apps.applications.serializers import ApplicationListItemSerializer, ApplicationSerializer
 from apps.hiring.models import MAX_SLOTS, MAX_TAGS, ApplicationNote, SavedApplicantFilter
 from apps.hiring.templates import MAX_MESSAGE, TEMPLATES, VENDOR_REASONS
+from apps.verification.constants import BadgeKind
 
 
 class NoteSerializer(serializers.ModelSerializer):
@@ -79,6 +80,8 @@ class FilterParamsSerializer(serializers.Serializer):
     min_score = serializers.IntegerField(required=False, min_value=0, max_value=100)
     sort = serializers.ChoiceField(choices=["fit", "newest", "oldest"], required=False)
     tag = serializers.CharField(required=False, max_length=30)
+    q = serializers.CharField(required=False, allow_blank=True, max_length=80)
+    badge = serializers.ChoiceField(choices=BadgeKind.choices, required=False)
 
 
 class SavedFilterSerializer(serializers.ModelSerializer):

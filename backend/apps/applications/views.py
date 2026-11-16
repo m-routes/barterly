@@ -31,6 +31,7 @@ from apps.hiring.serializers import (
     VendorApplicationListItemSerializer,
     VendorApplicationSerializer,
 )
+from apps.verification.constants import BadgeKind
 from apps.verification.models import Badge
 
 TAG = ["applications"]
@@ -90,6 +91,16 @@ class GigApplicationsView(generics.ListAPIView):
             .annotate(note_count=Count("private_notes", distinct=True))
         )
         params = self.request.query_params
+        if q := params.get("q", "").strip():
+            qs = qs.filter(talent__talent_profile__display_name__icontains=q[:80])
+        if badge := params.get("badge", "").strip():
+            if badge not in BadgeKind.values:
+                raise exceptions.ValidationError(
+                    {"badge": [f"One of: {', '.join(BadgeKind.values)}."]}
+                )
+            qs = qs.filter(
+                talent__badges__kind=badge, talent__badges__revoked_at__isnull=True
+            ).distinct()
         if params.get("tag"):
             qs = qs.filter(private_tags__label=params["tag"].strip().lower())
         if params.get("status"):
@@ -112,6 +123,10 @@ class GigApplicationsView(generics.ListAPIView):
             OpenApiParameter("status", str, description="Comma list of statuses."),
             OpenApiParameter("min_score", int),
             OpenApiParameter("tag", str, description="Only applicants with this private tag."),
+            OpenApiParameter("q", str, description="Part of the applicant's name."),
+            OpenApiParameter(
+                "badge", enum=list(BadgeKind.values), description="Only applicants with it."
+            ),
             OpenApiParameter("sort", enum=list(SORTS)),
         ],
         responses={
