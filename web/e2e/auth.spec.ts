@@ -31,6 +31,9 @@ test("sign-in explains when Firebase isn't configured", async ({ page }) => {
 
 test("a vendor gets the console, and every section has an empty state", async ({ page }) => {
   await signInAs(page, vendor);
+  await page.route("**/api/v1/agreements/?**", (route) =>
+    route.fulfill({ json: { count: 0, next: null, previous: null, results: [] } }),
+  );
   await page.goto("/console");
   const nav = page.getByRole("navigation", { name: "Console" });
   await expect(nav.getByRole("link", { name: "Dashboard" })).toHaveAttribute(
