@@ -533,6 +533,154 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/billing/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My subscription and what my plan allows */
+    get: operations["billing_overview"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/billing/cancel/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Cancel the subscription (at the end of the period by default) */
+    post: operations["billing_cancel"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/billing/change-plan/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Upgrade now, or downgrade at the end of the period
+     * @description Downgrading keeps live gigs running; new ones over the new limit are refused.
+     */
+    post: operations["billing_change_plan"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/billing/invoices/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My GST invoices, newest first */
+    get: operations["billing_invoices"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/billing/invoices/{invoice_id}/pdf/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A short-lived link to the invoice PDF */
+    get: operations["billing_invoice_pdf"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/billing/plans/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The plans on offer
+     * @description Prices are per month in paise, before GST.
+     */
+    get: operations["billing_plans"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/billing/subscribe/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Start a subscription (returns the hosted checkout link)
+     * @description Send the vendor to `checkout_url` to pay. A coupon (or the launch trial) sets the card up now and starts charging when the trial ends.
+     */
+    post: operations["billing_subscribe"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/billing/webhooks/razorpay/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Razorpay subscription events (webhook)
+     * @description Signed with X-Razorpay-Signature (HMAC-SHA256 of the body). Each event is applied once; repeats answer 200 and change nothing.
+     */
+    post: operations["billing_razorpay_webhook"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/bookings/": {
     parameters: {
       query?: never;
@@ -1078,7 +1226,7 @@ export interface paths {
     put?: never;
     /**
      * Run a scheduled job (Cloud Scheduler only)
-     * @description Jobs: close_expired_gigs, dispatch_notifications, expire_offers, expire_verifications, flag_stale_interviews, render_agreements, run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
+     * @description Jobs: billing_dunning, billing_invoices, close_expired_gigs, dispatch_notifications, expire_offers, expire_verifications, flag_stale_interviews, render_agreements, run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
      */
     post: operations["jobs_run"];
     delete?: never;
@@ -2186,6 +2334,10 @@ export interface components {
       | "social_verified"
       | "reference_checked"
       | "trusted_member";
+    BillingOverview: {
+      subscription: components["schemas"]["Subscription"] | null;
+      entitlements: components["schemas"]["Entitlements"];
+    };
     /** @enum {unknown} */
     BlankEnum: "";
     Blocked: {
@@ -2377,6 +2529,10 @@ export interface components {
       notice_days: number | null;
       days_before_start: number;
     };
+    CancelSubscription: {
+      /** @default true */
+      at_period_end: boolean;
+    };
     Cancellation: {
       readonly by: components["schemas"]["CancelledByEnum"];
       readonly reason: components["schemas"]["CancellationReasonEnum"];
@@ -2483,6 +2639,9 @@ export interface components {
       phone_hint: string;
       max_age_seconds: number;
       document_sha256: string;
+    };
+    ChangePlan: {
+      plan: string;
     };
     /** @description Send only the terms that should change. */
     Changes: {
@@ -2755,6 +2914,17 @@ export interface components {
       /** Format: date-time */
       readonly created_at: string;
     };
+    Entitlements: {
+      plan: string;
+      plan_name: string;
+      max_live_gigs: number | null;
+      live_gigs: number;
+      can_post_gig: boolean;
+      reason: string;
+      features: {
+        [key: string]: boolean;
+      };
+    };
     /** @description Shape of every error response. Use it in extend_schema(responses=...). */
     Error: {
       /** @description Stable machine-readable code, e.g. 'not_found'. */
@@ -2776,6 +2946,7 @@ export interface components {
      *     * `chat.message` - chat.message
      *     * `gigs.search_alert` - gigs.search_alert
      *     * `reminder` - reminder
+     *     * `billing` - billing
      *     * `other` - other
      * @enum {string}
      */
@@ -2790,6 +2961,7 @@ export interface components {
       | "chat.message"
       | "gigs.search_alert"
       | "reminder"
+      | "billing"
       | "other";
     EventTypeSetting: {
       key: string;
@@ -3109,6 +3281,36 @@ export interface components {
      * @enum {string}
      */
     InterviewStatusEnum: "proposed" | "scheduled" | "new_times_requested" | "cancelled";
+    Invoice: {
+      /** Format: uuid */
+      readonly id: string;
+      readonly number: string;
+      readonly plan_name: string;
+      /** Format: date-time */
+      readonly period_start: string | null;
+      /** Format: date-time */
+      readonly period_end: string | null;
+      readonly taxable_paise: number;
+      readonly cgst_paise: number;
+      readonly sgst_paise: number;
+      readonly igst_paise: number;
+      readonly tax_paise: number;
+      readonly total_paise: number;
+      /** Format: decimal */
+      readonly gst_rate_percent: string;
+      readonly place_of_supply: string;
+      readonly buyer_gstin: string;
+      /** Format: date-time */
+      readonly issued_at: string;
+      /** Format: date-time */
+      readonly emailed_at: string | null;
+      readonly pdf_ready: boolean;
+    };
+    InvoicePdfLink: {
+      /** Format: uri */
+      url: string;
+      expires_in: number;
+    };
     JobResult: {
       job: string;
       run_id: number | null;
@@ -3478,6 +3680,21 @@ export interface components {
       previous?: string | null;
       results: components["schemas"]["Gig"][];
     };
+    PaginatedInvoiceList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["Invoice"][];
+    };
     PaginatedNotificationList: {
       /** @example 123 */
       count: number;
@@ -3764,6 +3981,21 @@ export interface components {
       directions: string;
       /** @description Directions in Google Maps; empty without a pin. */
       maps_url: string;
+    };
+    Plan: {
+      readonly code: string;
+      readonly name: string;
+      readonly description: string;
+      /** @description Per month, before GST, in paise. */
+      readonly price_paise: number;
+      readonly currency: string;
+      /** Format: double */
+      readonly gst_percent: number;
+      /** @description Empty: no limit. */
+      readonly max_live_gigs: number | null;
+      readonly features: {
+        [key: string]: boolean;
+      };
     };
     PreferenceChange: {
       event_type: components["schemas"]["EventTypeEnum"];
@@ -4174,6 +4406,50 @@ export interface components {
      * @enum {string}
      */
     SubjectTypeEnum: "user" | "property" | "social_account";
+    Subscribe: {
+      plan: string;
+      coupon?: string;
+    };
+    Subscription: {
+      /** Format: uuid */
+      readonly id: string;
+      readonly plan: components["schemas"]["Plan"];
+      readonly pending_plan: components["schemas"]["Plan"] | null;
+      readonly status: components["schemas"]["SubscriptionStatusEnum"];
+      /** Format: uri */
+      readonly checkout_url: string;
+      /** Format: date-time */
+      readonly trial_ends_at: string | null;
+      /** Format: date-time */
+      readonly current_period_start: string | null;
+      /** Format: date-time */
+      readonly current_period_end: string | null;
+      /**
+       * Format: date-time
+       * @description First failure of the current dunning run.
+       */
+      readonly payment_failed_at: string | null;
+      /**
+       * Format: date-time
+       * @description Paid features stay on until here while retrying.
+       */
+      readonly grace_until: string | null;
+      readonly cancel_at_period_end: boolean;
+      /** Format: date-time */
+      readonly created_at: string;
+    };
+    /**
+     * @description * `created` - Waiting for checkout
+     *     * `authenticated` - Card set up (trial or first charge pending)
+     *     * `active` - Active
+     *     * `past_due` - Payment failed: retrying
+     *     * `halted` - Retries exhausted
+     *     * `cancelled` - Cancelled
+     *     * `completed` - Completed
+     * @enum {string}
+     */
+    SubscriptionStatusEnum:
+      "created" | "authenticated" | "active" | "past_due" | "halted" | "cancelled" | "completed";
     Tags: {
       tags: string[];
     };
@@ -6124,6 +6400,391 @@ export interface operations {
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  billing_overview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BillingOverview"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  billing_cancel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["CancelSubscription"];
+        "application/x-www-form-urlencoded": components["schemas"]["CancelSubscription"];
+        "multipart/form-data": components["schemas"]["CancelSubscription"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Subscription"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  billing_change_plan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangePlan"];
+        "application/x-www-form-urlencoded": components["schemas"]["ChangePlan"];
+        "multipart/form-data": components["schemas"]["ChangePlan"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Subscription"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  billing_invoices: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedInvoiceList"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  billing_invoice_pdf: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        invoice_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvoicePdfLink"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  billing_plans: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Plan"][];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  billing_subscribe: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Subscribe"];
+        "application/x-www-form-urlencoded": components["schemas"]["Subscribe"];
+        "multipart/form-data": components["schemas"]["Subscribe"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Subscription"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  billing_razorpay_webhook: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          [key: string]: unknown;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            outcome?: string;
+          };
+        };
+      };
+      400: {
         headers: {
           [name: string]: unknown;
         };

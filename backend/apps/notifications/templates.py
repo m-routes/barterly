@@ -91,6 +91,35 @@ TEMPLATES: dict[str, Template] = {
         "en": ("New gigs for “{saved_search_name}”", "{count} new matches. Have a look."),
         "hi": ("“{saved_search_name}” के लिए नए गिग", "{count} नए मिलान। एक नज़र डालें।"),
     },
+    "billing.payment_failed": {
+        "en": (
+            "Payment failed",
+            "We couldn't charge you for {plan_name}. We'll retry; update your card to "
+            "keep your plan.",
+        ),
+        "hi": (
+            "भुगतान नहीं हुआ",
+            "{plan_name} के लिए भुगतान नहीं हो सका। हम फिर कोशिश करेंगे; "
+            "अपना प्लान बनाए रखने के लिए कार्ड अपडेट करें।",
+        ),
+    },
+    "billing.grace_ending": {
+        "en": (
+            "Your plan is about to lock",
+            "Paid features on {plan_name} lock soon unless the payment goes through.",
+        ),
+        "hi": ("आपका प्लान जल्द लॉक होगा", "भुगतान न होने पर {plan_name} की सुविधाएँ जल्द लॉक हो जाएँगी।"),
+    },
+    "billing.features_locked": {
+        "en": (
+            "Paid features locked",
+            "Live gigs keep running, but new ones and {plan_name} features wait until you pay.",
+        ),
+        "hi": (
+            "पेड सुविधाएँ लॉक हुईं",
+            "चालू गिग चलते रहेंगे, पर भुगतान तक नए गिग और {plan_name} की सुविधाएँ बंद रहेंगी।",
+        ),
+    },
     catalog.OTHER: {
         "en": ("{label}", "{gig_title}"),
         "hi": ("{label}", "{gig_title}"),
@@ -114,6 +143,9 @@ VARIABLES: dict[str, tuple[str, ...]] = {
     "interview.reminder_hour": ("gig_title", "starts_at_ist"),
     "booking.starts_soon": ("gig_title",),
     "gigs.search_alert": ("saved_search_name", "count"),
+    "billing.payment_failed": ("plan_name",),
+    "billing.grace_ending": ("plan_name",),
+    "billing.features_locked": ("plan_name",),
     catalog.OTHER: ("label", "gig_title"),
 }
 

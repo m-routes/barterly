@@ -1,9 +1,11 @@
 """Vendor-only serializers. Only views that check the requester is the gig's vendor
 (or an admin) use these: notes and tags must never reach an applicant."""
 
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.applications.serializers import ApplicationListItemSerializer, ApplicationSerializer
+from apps.discovery.serializers import FitSerializer
 from apps.hiring.models import MAX_SLOTS, MAX_TAGS, ApplicationNote, SavedApplicantFilter
 from apps.hiring.templates import MAX_MESSAGE, TEMPLATES, VENDOR_REASONS
 from apps.verification.constants import BadgeKind
@@ -18,6 +20,24 @@ class NoteSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "author", "created_at"]
 
 
+def vendor_fit(serializer, application) -> dict:
+    """The fit score, with its AI breakdown only on plans that include AI fit scores
+    (asked once per response, not per row)."""
+    from apps.billing.entitlements import can_use_feature
+
+    context = serializer.context
+    if "ai_fit_scores" not in context:
+        request = context.get("request")
+        user = getattr(request, "user", None)
+        context["ai_fit_scores"] = bool(
+            user is None
+            or getattr(user, "is_admin_role", False)
+            or can_use_feature(user, "ai_fit_scores")
+        )
+    breakdown = application.fit_breakdown if context["ai_fit_scores"] else {}
+    return {"score": application.fit_score, "breakdown": breakdown}
+
+
 class VendorApplicationSerializer(ApplicationSerializer):
     """The applicant view plus the vendor's private notes, tags and rejection code."""
 
@@ -29,6 +49,10 @@ class VendorApplicationSerializer(ApplicationSerializer):
     class Meta(ApplicationSerializer.Meta):
         fields = [*ApplicationSerializer.Meta.fields, "rejection_code", "notes", "tags"]
         read_only_fields = fields
+
+    @extend_schema_field(FitSerializer)
+    def get_fit(self, application):
+        return vendor_fit(self, application)
 
 
 class VendorApplicationListItemSerializer(ApplicationListItemSerializer):
@@ -46,6 +70,10 @@ class VendorApplicationListItemSerializer(ApplicationListItemSerializer):
             "note_count",
         ]
         read_only_fields = fields
+
+    @extend_schema_field(FitSerializer)
+    def get_fit(self, application):
+        return vendor_fit(self, application)
 
 
 class BulkSerializer(serializers.Serializer):

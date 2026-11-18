@@ -71,6 +71,12 @@ FEATURED: tuple[EventType, ...] = (
         "रिमाइंडर",
         aliases=("interview.reminder_day", "interview.reminder_hour", "booking.starts_soon"),
     ),
+    EventType(
+        "billing",
+        "Billing and payments",
+        "बिलिंग और भुगतान",
+        aliases=("billing.payment_failed", "billing.grace_ending", "billing.features_locked"),
+    ),
     EventType(OTHER, "Other updates", "अन्य अपडेट", defaults=frozenset({C.IN_APP})),
 )
 BY_KEY = {t.key: t for t in FEATURED}
@@ -147,6 +153,8 @@ def links(kind: str, side: str, payload: dict) -> tuple[str, str]:
         if agreement:
             return f"/trips/agreement/{agreement}", _web(f"/console/agreements/{agreement}")
         return "/trips", _web("/console/agreements")
+    if kind.startswith("billing."):
+        return "/trips", _web("/console/billing")
     if kind == "gigs.search_alert":
         return "/discover", _web("/talent")
     if application:

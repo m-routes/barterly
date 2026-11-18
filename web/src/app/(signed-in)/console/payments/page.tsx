@@ -1,9 +1,6 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { SectionPage } from "../SectionPage";
-
-export const metadata: Metadata = { title: "Payments · Barterly" };
-
+/** Payments became Billing. */
 export default function PaymentsPage() {
-  return <SectionPage href="/console/payments" />;
+  redirect("/console/billing");
 }

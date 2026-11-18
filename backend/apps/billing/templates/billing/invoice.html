@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tax invoice {{ invoice.number }}</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; @bottom-center { content: "Page " counter(page) " of " counter(pages); font-family: "DejaVu Sans", sans-serif; font-size: 8pt; color: #56615a; } }
+  body { font-family: "DejaVu Sans", sans-serif; font-size: 9.5pt; color: #1f2a24; line-height: 1.45; }
+  h1 { font-size: 18pt; margin: 0 0 2mm; }
+  .muted { color: #56615a; }
+  .row { display: flex; justify-content: space-between; gap: 10mm; }
+  .box { border: 1px solid #d5cec0; border-radius: 2mm; padding: 4mm; flex: 1; }
+  .box h2 { font-size: 9pt; margin: 0 0 1.5mm; text-transform: uppercase; letter-spacing: 0.04em; color: #56615a; }
+  table { width: 100%; border-collapse: collapse; margin-top: 6mm; }
+  th, td { padding: 2.2mm 2mm; border-bottom: 1px solid #e3dccf; text-align: left; vertical-align: top; }
+  th { font-size: 8.5pt; color: #56615a; }
+  .num { text-align: right; white-space: nowrap; }
+  .total td { font-weight: bold; border-top: 2px solid #1f2a24; border-bottom: 0; }
+  .meta td { border: 0; padding: 0.6mm 0; }
+  .note { margin-top: 8mm; font-size: 8.5pt; color: #56615a; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div>
+      <h1>Tax invoice</h1>
+      <div><strong>{{ supplier.legal_name }}</strong> (Barterly)</div>
+      <div class="muted">{{ supplier.address|linebreaksbr }}</div>
+      <div>GSTIN: <strong>{{ supplier.gstin }}</strong> · State: {{ supplier.state }}</div>
+    </div>
+    <table class="meta" style="width: auto; margin: 0">
+      <tr><td class="muted">Invoice number</td><td class="num"><strong>{{ invoice.number }}</strong></td></tr>
+      <tr><td class="muted">Date</td><td class="num">{{ invoice.issued_at|date:"j M Y" }}</td></tr>
+      <tr><td class="muted">Place of supply</td><td class="num">{{ invoice.place_of_supply }}</td></tr>
+      <tr><td class="muted">Payment</td><td class="num">{{ invoice.gateway_payment_id }}</td></tr>
+    </table>
+  </div>
+
+  <div class="row" style="margin-top: 6mm">
+    <div class="box">
+      <h2>Billed to</h2>
+      <div><strong>{{ invoice.buyer_name }}</strong></div>
+      {% if invoice.buyer_address %}<div>{{ invoice.buyer_address|linebreaksbr }}</div>{% endif %}
+      {% if invoice.buyer_state %}<div>State: {{ invoice.buyer_state }}</div>{% endif %}
+      <div>GSTIN: {% if invoice.buyer_gstin %}<strong>{{ invoice.buyer_gstin }}</strong>{% else %}Unregistered{% endif %}</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Description</th><th>SAC</th><th class="num">Taxable value</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Barterly {{ invoice.plan_name }} plan subscription{% if invoice.period_start %}<br><span class="muted">{{ invoice.period_start|date:"j M Y" }} to {{ invoice.period_end|date:"j M Y" }}</span>{% endif %}</td>
+        <td>{{ invoice.sac_code }}</td>
+        <td class="num">{{ taxable }}</td>
+      </tr>
+      {% if intra_state %}
+      <tr><td colspan="2">CGST @ {{ half_rate|floatformat:"-2" }}%</td><td class="num">{{ cgst }}</td></tr>
+      <tr><td colspan="2">SGST @ {{ half_rate|floatformat:"-2" }}%</td><td class="num">{{ sgst }}</td></tr>
+      {% else %}
+      <tr><td colspan="2">IGST @ {{ invoice.gst_rate_percent|floatformat:"-2" }}%</td><td class="num">{{ igst }}</td></tr>
+      {% endif %}
+      <tr class="total"><td colspan="2">Total (tax inclusive)</td><td class="num">{{ total }}</td></tr>
+    </tbody>
+  </table>
+
+  <p class="note">
+    Paid in full. Tax is not payable on reverse charge. This is a computer-generated invoice and needs
+    no signature. Questions: {{ supplier.email }}
+  </p>
+</body>
+</html>

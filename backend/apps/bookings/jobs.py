@@ -18,6 +18,8 @@ from apps.agreements.services import render_pending
 from apps.applications import services as applications
 from apps.applications.constants import ApplicationStatus
 from apps.applications.models import Application
+from apps.billing.invoices import finish_pending as finish_invoices
+from apps.billing.services import dunning as billing_dunning
 from apps.bookings.cancellation import cancel_unsigned
 from apps.bookings.lifecycle import OFFER_TTL, STALE_INTERVIEW_AFTER, Actor
 from apps.bookings.models import JobRun
@@ -132,6 +134,8 @@ JOBS: dict[str, Callable[..., dict]] = {
     "render_agreements": render_pending,
     "send_reminders": lambda now: send_booking_reminders(now),
     "dispatch_notifications": lambda now: dispatch_due(now),
+    "billing_dunning": lambda now: billing_dunning(now),
+    "billing_invoices": lambda now: finish_invoices(now),
 }
 
 

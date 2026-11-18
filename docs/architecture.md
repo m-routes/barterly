@@ -73,6 +73,7 @@ Surfaces: the vendor console (web), the talent app (mobile) and the admin consol
 | `chat` | One conversation per application, messages with cursors and read receipts, the contact-sharing guard, blocks, reports, the profanity filter hook |
 | `offers` | `Offer`: the frozen terms snapshot a vendor sends, the talent's one counter, and the terms schema (`apps/offers/terms.py`) |
 | `agreements` | `Agreement`, its versions and signatures, the PDF template and WeasyPrint renderer, the `ESignProvider` interface (in-app OTP provider and a fake) |
+| `billing` | Plans as data, subscriptions through Razorpay (behind `PaymentGateway`), entitlements, GST invoices and dunning |
 | `reliability` | The reliability score v1 (a pure function, [reliability.md](reliability.md)) and each person's stored score per side |
 | `verification` | Verification cases per check, evidence (provider references and masked numbers only), badges, the KYC provider interface and webhook, re-verification on profile edits, the review API |
 
@@ -289,6 +290,8 @@ A confirmed booking gives its slot back. The place is then offered on: offers he
 | `send_interview_reminders` | Every 5 minutes | Interview reminders go out a day and an hour before |
 | `render_agreements` | Every 10 minutes | Agreement PDFs a failed render left behind are drawn up |
 | `send_reminders` | Hourly at :05 | Offers about to expire, agreements still to sign, stays starting tomorrow |
+| `billing_dunning` | Daily at 10:00 | Payment-failed reminders before the grace period ends; paid features lock after it |
+| `billing_invoices` | Every 30 minutes | GST invoices left unrendered or unsent are finished |
 | `dispatch_notifications` | Every 5 minutes | Notifications held for quiet hours, or whose task went missing, are queued |
 
 Every job is idempotent: it re-checks each row under a lock before changing it. A Postgres advisory lock skips overlapping runs of the same job, and each run is recorded as a `JobRun` (shown in the admin). Run one by hand with `manage.py run_job <name>`.
@@ -421,6 +424,36 @@ Interview reminders stay in hiring's own job.
 - `POST /notifications/devices/` (register an FCM token), `POST /notifications/devices/remove/`
 
 **Admin.** Notifications (with their deliveries), the delivery log, push devices, settings, and **Dead letters**: deliveries whose retries ran out, with a "Send again" action once the cause is fixed.
+
+### Billing (`apps/billing`)
+
+**Plans** are rows (`Plan`, seeded by migration `billing.0002`; edit in admin): price per month before GST, the live gig limit, feature flags, and the Razorpay plan id. The prices are placeholders to set before launch.
+
+| Plan | Live gigs | Talent search | Agreements | AI fit scores | Team roles |
+|---|---|---|---|---|---|
+| Free (no subscription) | 1 | no | yes | no | no |
+| Starter | 1 | no | yes | no | no |
+| Growth | 5 | yes | yes | yes | no |
+| Pro | unlimited | yes | yes | yes | yes |
+
+Agreements are on for every plan: a booking can't be confirmed without one.
+
+**Entitlements** (`entitlements.py`) are the only place that answers what a vendor may do:
+- `current_plan(vendor)`: the subscription's plan while it's authenticated (trial), active, or past due or halted inside its grace period; otherwise Free.
+- `can_post_gig(vendor)`: whether one more gig may go live. Gigs ask through `GIG_PLAN_POLICY = BillingPlanPolicy`, which replaces the unlimited stub.
+- `can_use_feature(vendor, flag)`. Enforced today: AI fit scores (the vendor applicant APIs drop the fit breakdown without it) and talent search (the console page). Team roles has no feature yet.
+
+A downgrade never takes gigs down: live ones keep running, and new ones are refused until the vendor is under the new limit. Upgrades apply at once; downgrades at the end of the period (`pending_plan`, applied on the next `subscription.charged`).
+
+**Razorpay** (`gateway/razorpay.py`, behind `PaymentGateway`; `FakeGateway` in tests):
+- `POST /api/v1/billing/subscribe/ {plan, coupon?}` creates the subscription and returns the hosted checkout link (`checkout_url`).
+- Trials: a coupon's `trial_days`, or `BILLING_LAUNCH_TRIAL_DAYS` for a vendor's first subscription (the launch cohort: set it to 90 to give everyone three months). The card is set up at checkout and the first charge waits (`start_at`).
+- `POST /api/v1/billing/webhooks/razorpay/` takes `subscription.authenticated`, `activated`, `charged`, `pending`, `halted`, `cancelled` and `completed`. The signature (`X-Razorpay-Signature`, HMAC-SHA256 of the body with the webhook secret) is checked first; each event id is recorded once (`WebhookEvent`), so repeats change nothing. Every status change is audited (`billing.subscription_<status>`).
+- Keys live in Secret Manager (`razorpay-key-id-<env>`, `razorpay-key-secret-<env>`, `razorpay-webhook-secret-<env>`; set them with `infra/scripts/set-razorpay-secrets.sh`). Create the three plans in the Razorpay dashboard with the price including GST, and put their ids on the Plan rows.
+
+**GST invoices** (`invoices.py`): one per `subscription.charged` payment (the payment id is unique). The taxable value is worked back from the GST-inclusive charge at 18% (SAC 998314); CGST + SGST when the vendor's state (from their GSTIN, else their profile) matches the supplier's, IGST otherwise. Numbers are sequential per financial year (`BRT/2026-27/000042`) from a locked counter. The supplier's details are settings (`BILLING_SUPPLIER_*`, placeholders until set); the buyer's are copied from the vendor profile at issue. After commit the PDF is drawn with WeasyPrint, stored in Cloud Storage (`invoices/<vendor>/<number>.pdf`) and emailed with the PDF attached; the `billing_invoices` job retries anything left. Vendors list them at `GET /api/v1/billing/invoices/` and download through a 10-minute signed link.
+
+**Dunning:** Razorpay retries a failed charge itself. The first failure (`subscription.pending`) starts a grace period (`BILLING_GRACE_DAYS`, 7) and notifies the vendor (`billing.payment_failed`); paid features stay on, even if Razorpay halts before the grace ends. The daily `billing_dunning` job reminds them two days before it ends (`billing.grace_ending`) and tells them when features lock (`billing.features_locked`). Locked means Free: live gigs keep running, new ones over the limit and paid features wait. A successful charge clears it all.
 
 ### Audit log
 

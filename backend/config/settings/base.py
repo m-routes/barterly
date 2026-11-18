@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "apps.offers",
     "apps.agreements",
     "apps.reliability",
+    "apps.billing",
     "apps.backoffice.apps.BackofficeConfig",
 ]
 
@@ -168,6 +169,7 @@ SPECTACULAR_SETTINGS = {
         "AttachmentKindEnum": "apps.applications.models.AttachmentKind",
         "BookingStatusEnum": "apps.bookings.lifecycle.BookingStatus",
         "BookingActorEnum": "apps.bookings.lifecycle.Actor",
+        "SubscriptionStatusEnum": "apps.billing.models.SubscriptionStatus",
         "CancellationReasonEnum": "apps.bookings.models.CancellationReason",
         "CancellationEffectEnum": "apps.bookings.models.CancellationEffect",
         "CancelledByEnum": "apps.bookings.models.CancelledBy",
@@ -229,7 +231,29 @@ NOMINATIM_EMAIL = env_str("NOMINATIM_EMAIL", "")
 GEOCODER_TIMEOUT_SECONDS = env_int("GEOCODER_TIMEOUT_SECONDS", 5)
 
 # Gigs (apps.gigs): how many live gigs a vendor's plan allows. Unlimited for now.
-GIG_PLAN_POLICY = "apps.gigs.plans.UnlimitedPlanPolicy"
+# How many live gigs a vendor may have: their billing plan (apps.billing.entitlements).
+GIG_PLAN_POLICY = "apps.billing.entitlements.BillingPlanPolicy"
+
+# Billing (apps.billing). Razorpay Subscriptions; keys from Secret Manager.
+BILLING_GATEWAY = env_str("BILLING_GATEWAY", "apps.billing.gateway.razorpay.RazorpayGateway")
+RAZORPAY_KEY_ID = env_str("RAZORPAY_KEY_ID", "")
+RAZORPAY_KEY_SECRET = env_str("RAZORPAY_KEY_SECRET", "")
+RAZORPAY_WEBHOOK_SECRET = env_str("RAZORPAY_WEBHOOK_SECRET", "")
+# Days of free trial for a vendor's first subscription (the launch cohort); 0 is off.
+# Coupons give their own trial either way.
+BILLING_LAUNCH_TRIAL_DAYS = env_int("BILLING_LAUNCH_TRIAL_DAYS", 0)
+# After a failed charge, paid features stay on this long while the gateway retries.
+BILLING_GRACE_DAYS = env_int("BILLING_GRACE_DAYS", 7)
+BILLING_GST_RATE = env_float("BILLING_GST_RATE", 18.0)
+BILLING_INVOICE_PREFIX = env_str("BILLING_INVOICE_PREFIX", "BRT")
+# The supplier on every invoice. Fill in the registered details before launch.
+BILLING_SUPPLIER = {
+    "legal_name": env_str("BILLING_SUPPLIER_NAME", "[Legal name] Pvt Ltd"),
+    "gstin": env_str("BILLING_SUPPLIER_GSTIN", "[GSTIN]"),
+    "address": env_str("BILLING_SUPPLIER_ADDRESS", "[Registered address]"),
+    "state": env_str("BILLING_SUPPLIER_STATE", "Karnataka"),
+    "email": env_str("BILLING_SUPPLIER_EMAIL", "billing@barterly.in"),
+}
 
 # Discovery (apps.discovery). Fit-score weights: they needn't add to 100 (they are
 # scaled), but keeping them at 100 makes each one read as "points".
