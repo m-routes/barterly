@@ -102,6 +102,8 @@ class TestMaking:
         assert by_channel(notification)["push"].send_after == LATE
 
     def test_queued_once_the_transaction_commits(self, person, django_capture_on_commit_callbacks):
+        # Real time here (the inline queue sends "now"): no quiet hours to wait for.
+        NotificationSettings.objects.create(user=person, quiet_hours_enabled=False)
         with django_capture_on_commit_callbacks(execute=True):
             notification = offer_for(person, now=timezone.now())
         sent = FakeProvider.outbox["push"]

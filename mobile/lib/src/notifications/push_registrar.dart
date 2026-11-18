@@ -1,13 +1,19 @@
 import 'dart:async';
 
+import 'package:barterly/src/apply/outbox.dart' show myApplicationsProvider;
 import 'package:barterly/src/notifications/push.dart';
 import 'package:barterly/src/providers.dart';
 import 'package:barterly/src/router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Ties push to the session: once signed in, ask permission, register the
-/// device's token (and its refreshes), and open the screen a tapped push
-/// points at, marking it read. On sign-out the device is removed first.
+/// device's token (and its refreshes), and handle pushes in every state:
+/// - open (foreground): the system shows nothing, so a banner does, with Open;
+/// - in the background: the system shows it; tapping opens the app here;
+/// - not running (terminated): tapping launches the app, then [start] opens it.
+/// Opening goes to the screen the push points at and marks it read. On
+/// sign-out the device is removed first.
 class PushRegistrar {
   new(this._ref);
 
@@ -23,6 +29,7 @@ class PushRegistrar {
     _started = true;
     _subscriptions
       ..add(_push.opened.listen((p) => unawaited(open(p))))
+      ..add(_push.received.listen(_show))
       ..add(_push.tokenRefreshes.listen((t) => unawaited(_register(t))));
     try {
       if (await _push.requestPermission()) {
@@ -47,6 +54,33 @@ class PushRegistrar {
     } on Object {
       // Registering again on the next start or token refresh is enough.
     }
+  }
+
+  void _show(ReceivedPush push) {
+    // Whatever it was about may have changed: fetch again where it shows.
+    _ref
+      ..invalidate(unreadCountProvider)
+      ..invalidate(myApplicationsProvider)
+      ..invalidate(applicationDetailProvider);
+    final messenger = _ref.read(scaffoldMessengerKeyProvider).currentState;
+    if (messenger == null) return;
+    final target = push.open;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            [push.title, push.body].where((t) => t.isNotEmpty).join('\n'),
+          ),
+          duration: const Duration(seconds: 6),
+          action: target == null
+              ? null
+              : SnackBarAction(
+                  label: 'Open',
+                  onPressed: () => unawaited(open(target)),
+                ),
+        ),
+      );
   }
 
   /// Go where the push points, and count it as read.

@@ -15,7 +15,13 @@ from apps.bookings.tests.helpers import accepted, offered
 from apps.common.events import DomainEvent, publish
 from apps.notifications import reminders, services
 from apps.notifications.channels.base import Message
-from apps.notifications.models import Delivery, Notification, NotificationPreference, PushDevice
+from apps.notifications.models import (
+    Delivery,
+    Notification,
+    NotificationPreference,
+    NotificationSettings,
+    PushDevice,
+)
 from apps.verification.tests.factories import client_for
 
 pytestmark = pytest.mark.django_db
@@ -247,6 +253,8 @@ class TestTaskEndpoint:
 
         user = UserFactory()
         PushDevice.objects.create(user=user, token="t", platform="android")
+        # The task runs at the real time: no quiet hours to wait for.
+        NotificationSettings.objects.create(user=user, quiet_hours_enabled=False)
         n = services.notify(
             user, "chat.message", {"sender_name": "A", "preview": "hi"}, side="talent"
         )

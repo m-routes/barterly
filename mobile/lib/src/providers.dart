@@ -13,15 +13,20 @@ import 'package:barterly/src/discover/gigs_repository.dart';
 import 'package:barterly/src/notifications/notifications_repository.dart';
 import 'package:barterly/src/notifications/push.dart';
 import 'package:barterly/src/notifications/push_registrar.dart';
+import 'package:barterly/src/platform/calendar.dart';
 import 'package:barterly/src/platform/key_value_store.dart';
 import 'package:barterly/src/platform/media_picker.dart';
 import 'package:barterly/src/platform/network_status.dart';
 import 'package:barterly/src/platform/url_opener.dart';
 import 'package:barterly/src/profile/profile_repository.dart';
+import 'package:barterly/src/trips/trip_models.dart';
 import 'package:barterly/src/verification/verification_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_map/flutter_map.dart' show TileProvider;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show FutureProviderFamily;
+import 'package:material_ui/material_ui.dart'
+    show GlobalKey, ScaffoldMessengerState;
 
 /// App-wide dependencies. main.dart overrides the config and platform services;
 /// tests override the repositories or the HTTP adapter.
@@ -157,3 +162,21 @@ final pushRegistrarProvider = Provider<PushRegistrar>(PushRegistrar.new);
 final FutureProvider<int> unreadCountProvider = FutureProvider.autoDispose<int>(
   (ref) => ref.watch(notificationsRepositoryProvider).unreadCount(),
 );
+
+/// The phone's calendar (tests swap in a fake).
+final calendarProvider = Provider<CalendarService>(
+  (ref) => const DeviceCalendar(),
+);
+
+final FutureProviderFamily<ApplicationDetail, String>
+applicationDetailProvider = FutureProvider.autoDispose
+    .family<ApplicationDetail, String>(
+      (ref, id) => ref.watch(applicationsRepositoryProvider).detail(id),
+    );
+
+/// The app's ScaffoldMessenger, for banners shown from outside a screen (a push
+/// that arrives while the app is open).
+final scaffoldMessengerKeyProvider =
+    Provider<GlobalKey<ScaffoldMessengerState>>(
+      (ref) => GlobalKey<ScaffoldMessengerState>(),
+    );
