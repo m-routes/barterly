@@ -21,6 +21,8 @@ locals {
     render_agreements        = { schedule = "*/10 * * * *", description = "Draw up agreement PDFs a failed render left behind." }
     send_reminders           = { schedule = "5 * * * *", description = "Offers about to expire, agreements to sign, stays starting tomorrow." }
     dispatch_notifications   = { schedule = "*/5 * * * *", description = "Queue notifications held for quiet hours, or whose task went missing." }
+    billing_dunning          = { schedule = "0 10 * * *", description = "Remind vendors whose payment failed; lock paid features after the grace period." }
+    billing_invoices         = { schedule = "*/30 * * * *", description = "Render, store and email GST invoices left unfinished." }
   }
 }
 

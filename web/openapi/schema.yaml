@@ -1564,6 +1564,356 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/billing/:
+    get:
+      operationId: billing_overview
+      summary: My subscription and what my plan allows
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillingOverview'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/billing/cancel/:
+    post:
+      operationId: billing_cancel
+      summary: Cancel the subscription (at the end of the period by default)
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelSubscription'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CancelSubscription'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CancelSubscription'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/billing/change-plan/:
+    post:
+      operationId: billing_change_plan
+      description: Downgrading keeps live gigs running; new ones over the new limit
+        are refused.
+      summary: Upgrade now, or downgrade at the end of the period
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePlan'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangePlan'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangePlan'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/billing/invoices/:
+    get:
+      operationId: billing_invoices
+      summary: My GST invoices, newest first
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInvoiceList'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/billing/invoices/{invoice_id}/pdf/:
+    get:
+      operationId: billing_invoice_pdf
+      summary: A short-lived link to the invoice PDF
+      parameters:
+      - in: path
+        name: invoice_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoicePdfLink'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/billing/plans/:
+    get:
+      operationId: billing_plans
+      description: Prices are per month in paise, before GST.
+      summary: The plans on offer
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Plan'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/billing/subscribe/:
+    post:
+      operationId: billing_subscribe
+      description: Send the vendor to `checkout_url` to pay. A coupon (or the launch
+        trial) sets the card up now and starts charging when the trial ends.
+      summary: Start a subscription (returns the hosted checkout link)
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Subscribe'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Subscribe'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Subscribe'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/billing/webhooks/razorpay/:
+    post:
+      operationId: billing_razorpay_webhook
+      description: Signed with X-Razorpay-Signature (HMAC-SHA256 of the body). Each
+        event is applied once; repeats answer 200 and change nothing.
+      summary: Razorpay subscription events (webhook)
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  outcome:
+                    type: string
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/bookings/:
     get:
       operationId: bookings_list
@@ -3503,11 +3853,11 @@ paths:
   /api/v1/jobs/{job}/:
     post:
       operationId: jobs_run
-      description: 'Jobs: close_expired_gigs, dispatch_notifications, expire_offers,
-        expire_verifications, flag_stale_interviews, render_agreements, run_search_alerts,
-        send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed
-        OIDC token for the scheduler service account. Idempotent; overlapping runs
-        of one job are skipped.'
+      description: 'Jobs: billing_dunning, billing_invoices, close_expired_gigs, dispatch_notifications,
+        expire_offers, expire_verifications, flag_stale_interviews, render_agreements,
+        run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results.
+        Needs a Google-signed OIDC token for the scheduler service account. Idempotent;
+        overlapping runs of one job are skipped.'
       summary: Run a scheduled job (Cloud Scheduler only)
       parameters:
       - in: path
@@ -6381,6 +6731,18 @@ components:
         * `social_verified` - Social verified
         * `reference_checked` - Reference checked
         * `trusted_member` - Trusted member
+    BillingOverview:
+      type: object
+      properties:
+        subscription:
+          allOf:
+          - $ref: '#/components/schemas/Subscription'
+          nullable: true
+        entitlements:
+          $ref: '#/components/schemas/Entitlements'
+      required:
+      - entitlements
+      - subscription
     BlankEnum:
       enum:
       - ''
@@ -6787,6 +7149,12 @@ components:
       - notice_days
       - policy
       - reasons
+    CancelSubscription:
+      type: object
+      properties:
+        at_period_end:
+          type: boolean
+          default: true
     Cancellation:
       type: object
       properties:
@@ -7012,6 +7380,14 @@ components:
       - max_age_seconds
       - method
       - phone_hint
+    ChangePlan:
+      type: object
+      properties:
+        plan:
+          type: string
+          pattern: ^[-a-zA-Z0-9_]+$
+      required:
+      - plan
     Changes:
       type: object
       description: Send only the terms that should change.
@@ -7562,6 +7938,34 @@ components:
       - document_type
       - id
       - media_id
+    Entitlements:
+      type: object
+      properties:
+        plan:
+          type: string
+        plan_name:
+          type: string
+        max_live_gigs:
+          type: integer
+          nullable: true
+        live_gigs:
+          type: integer
+        can_post_gig:
+          type: boolean
+        reason:
+          type: string
+        features:
+          type: object
+          additionalProperties:
+            type: boolean
+      required:
+      - can_post_gig
+      - features
+      - live_gigs
+      - max_live_gigs
+      - plan
+      - plan_name
+      - reason
     Error:
       type: object
       description: Shape of every error response. Use it in extend_schema(responses=...).
@@ -7592,6 +7996,7 @@ components:
       - chat.message
       - gigs.search_alert
       - reminder
+      - billing
       - other
       type: string
       description: |-
@@ -7605,6 +8010,7 @@ components:
         * `chat.message` - chat.message
         * `gigs.search_alert` - gigs.search_alert
         * `reminder` - reminder
+        * `billing` - billing
         * `other` - other
     EventTypeSetting:
       type: object
@@ -8406,6 +8812,99 @@ components:
         * `scheduled` - Scheduled
         * `new_times_requested` - Talent asked for other times
         * `cancelled` - Cancelled
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        plan_name:
+          type: string
+          readOnly: true
+        period_start:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        period_end:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        taxable_paise:
+          type: integer
+          readOnly: true
+        cgst_paise:
+          type: integer
+          readOnly: true
+        sgst_paise:
+          type: integer
+          readOnly: true
+        igst_paise:
+          type: integer
+          readOnly: true
+        tax_paise:
+          type: integer
+          readOnly: true
+        total_paise:
+          type: integer
+          readOnly: true
+        gst_rate_percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+          readOnly: true
+        place_of_supply:
+          type: string
+          readOnly: true
+        buyer_gstin:
+          type: string
+          readOnly: true
+        issued_at:
+          type: string
+          format: date-time
+          readOnly: true
+        emailed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        pdf_ready:
+          type: boolean
+          readOnly: true
+      required:
+      - buyer_gstin
+      - cgst_paise
+      - emailed_at
+      - gst_rate_percent
+      - id
+      - igst_paise
+      - issued_at
+      - number
+      - pdf_ready
+      - period_end
+      - period_start
+      - place_of_supply
+      - plan_name
+      - sgst_paise
+      - tax_paise
+      - taxable_paise
+      - total_paise
+    InvoicePdfLink:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+        expires_in:
+          type: integer
+      required:
+      - expires_in
+      - url
     JobResult:
       type: object
       properties:
@@ -9082,6 +9581,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Gig'
+    PaginatedInvoiceList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Invoice'
     PaginatedNotificationList:
       type: object
       required:
@@ -9707,6 +10229,49 @@ components:
       - name
       - pincode
       - state
+    Plan:
+      type: object
+      properties:
+        code:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        price_paise:
+          type: integer
+          readOnly: true
+          description: Per month, before GST, in paise.
+        currency:
+          type: string
+          readOnly: true
+        gst_percent:
+          type: number
+          format: double
+          readOnly: true
+        max_live_gigs:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: 'Empty: no limit.'
+        features:
+          type: object
+          additionalProperties:
+            type: boolean
+          readOnly: true
+      required:
+      - code
+      - currency
+      - description
+      - features
+      - gst_percent
+      - max_live_gigs
+      - name
+      - price_paise
     PreferenceChange:
       type: object
       properties:
@@ -10507,6 +11072,106 @@ components:
         * `user` - User
         * `property` - Property
         * `social_account` - Social account
+    Subscribe:
+      type: object
+      properties:
+        plan:
+          type: string
+          pattern: ^[-a-zA-Z0-9_]+$
+        coupon:
+          type: string
+          maxLength: 30
+      required:
+      - plan
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        plan:
+          allOf:
+          - $ref: '#/components/schemas/Plan'
+          readOnly: true
+        pending_plan:
+          allOf:
+          - $ref: '#/components/schemas/Plan'
+          readOnly: true
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/SubscriptionStatusEnum'
+          readOnly: true
+        checkout_url:
+          type: string
+          format: uri
+          readOnly: true
+        trial_ends_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        current_period_start:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        current_period_end:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        payment_failed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: First failure of the current dunning run.
+        grace_until:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Paid features stay on until here while retrying.
+        cancel_at_period_end:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - cancel_at_period_end
+      - checkout_url
+      - created_at
+      - current_period_end
+      - current_period_start
+      - grace_until
+      - id
+      - payment_failed_at
+      - pending_plan
+      - plan
+      - status
+      - trial_ends_at
+    SubscriptionStatusEnum:
+      enum:
+      - created
+      - authenticated
+      - active
+      - past_due
+      - halted
+      - cancelled
+      - completed
+      type: string
+      description: |-
+        * `created` - Waiting for checkout
+        * `authenticated` - Card set up (trial or first charge pending)
+        * `active` - Active
+        * `past_due` - Payment failed: retrying
+        * `halted` - Retries exhausted
+        * `cancelled` - Cancelled
+        * `completed` - Completed
     Tags:
       type: object
       properties:

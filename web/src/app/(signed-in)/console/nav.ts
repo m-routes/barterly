@@ -75,11 +75,11 @@ export const CONSOLE_SECTIONS: readonly ConsoleSection[] = [
     },
   },
   {
-    href: "/console/payments",
-    label: "Payments",
+    href: "/console/billing",
+    label: "Billing",
     empty: {
-      title: "No payments yet",
-      description: "Stipends and paid gigs will be tracked here, with receipts for each payment.",
+      title: "No plan yet",
+      description: "Choose a plan, and find your GST invoices here.",
     },
   },
   {

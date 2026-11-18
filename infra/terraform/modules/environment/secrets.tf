@@ -6,6 +6,10 @@ locals {
   secrets = {
     django_secret_key = "django-secret-key-${local.env}"
     database_url      = "database-url-${local.env}" # Cloud SQL via the connector socket
+    # Razorpay (apps.billing); values added out of band like the Django key.
+    razorpay_key_id         = "razorpay-key-id-${local.env}"
+    razorpay_key_secret     = "razorpay-key-secret-${local.env}"
+    razorpay_webhook_secret = "razorpay-webhook-secret-${local.env}"
   }
 
   secret_access = {
@@ -13,6 +17,9 @@ locals {
     api_database_url     = { secret = "database_url", member = google_service_account.api.member }
     migrate_secret_key   = { secret = "django_secret_key", member = google_service_account.migrate.member }
     migrate_database_url = { secret = "database_url", member = google_service_account.migrate.member }
+    api_razorpay_key_id  = { secret = "razorpay_key_id", member = google_service_account.api.member }
+    api_razorpay_secret  = { secret = "razorpay_key_secret", member = google_service_account.api.member }
+    api_razorpay_webhook = { secret = "razorpay_webhook_secret", member = google_service_account.api.member }
   }
 }
 

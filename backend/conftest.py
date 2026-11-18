@@ -15,6 +15,8 @@ def _fake_sign_in_and_fresh_cache(settings):
     from apps.accounts.auth.verifiers import _build
     from apps.agreements import pdf
     from apps.agreements.esign import base as esign
+    from apps.billing.gateway import base as gateway
+    from apps.billing.gateway.fake import FakeGateway
     from apps.geo import geocoders
     from apps.media import storage
     from apps.notifications.channels import base as channels
@@ -36,6 +38,8 @@ def _fake_sign_in_and_fresh_cache(settings):
         "whatsapp": "apps.notifications.channels.fake.FakeWhatsApp",
     }
     settings.WEB_APP_URL = "https://web.test"
+    settings.BILLING_GATEWAY = "apps.billing.gateway.fake.FakeGateway"
+    settings.RAZORPAY_WEBHOOK_SECRET = "test-webhook-secret"  # noqa: S105
     settings.CACHES = {
         "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"},
     }
@@ -48,6 +52,8 @@ def _fake_sign_in_and_fresh_cache(settings):
     esign._build.cache_clear()  # a fresh fake e-sign provider per test
     channels._build.cache_clear()
     FakeProvider.reset()  # empty fake outboxes per test
+    gateway._build.cache_clear()
+    FakeGateway.reset()
     yield
     cache.clear()
     _build.cache_clear()

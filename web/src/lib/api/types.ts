@@ -74,3 +74,8 @@ export type RequestBody<T, K extends keyof T> = Pick<T, K>;
 export function requestBody<T>(body: Partial<T>): T {
   return body as T;
 }
+
+export type BillingPlan = Schemas["Plan"];
+export type BillingOverview = Schemas["BillingOverview"];
+export type BillingSubscription = Schemas["Subscription"];
+export type Invoice = Schemas["Invoice"];

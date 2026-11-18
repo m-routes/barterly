@@ -169,8 +169,8 @@ def _check_plan(gig: Gig) -> None:
     live = Gig.objects.filter(vendor_id=gig.vendor_id, status=GigStatus.LIVE).exclude(pk=gig.pk)
     if live.count() >= plan.max_live_gigs:
         raise PlanLimitReached(
-            f"Your {plan.name} plan allows {plan.max_live_gigs} live gigs. "
-            "Pause or close one first."
+            f"Your {plan.name} plan allows {plan.max_live_gigs} live "
+            f"gig{'' if plan.max_live_gigs == 1 else 's'}. Pause or close one, or upgrade."
         )
 
 
