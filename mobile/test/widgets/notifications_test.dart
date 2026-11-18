@@ -16,6 +16,7 @@ class FakePush implements PushMessaging {
   final bool allowed;
   final OpenedPush? launched;
   final taps = StreamController<OpenedPush>.broadcast();
+  final arrivals = StreamController<ReceivedPush>.broadcast();
   final refreshes = StreamController<String>.broadcast();
   bool deleted = false;
 
@@ -30,6 +31,9 @@ class FakePush implements PushMessaging {
 
   @override
   Stream<OpenedPush> get opened => taps.stream;
+
+  @override
+  Stream<ReceivedPush> get received => arrivals.stream;
 
   @override
   Future<OpenedPush?> launchedFrom() async => launched;
@@ -232,5 +236,44 @@ void main() {
     );
     expect(removed.data, {'token': 'fcm-token-1'});
     expect(push.deleted, isTrue);
+  });
+
+  testWidgets('a push while the app is open shows a banner that opens it', (
+    tester,
+  ) async {
+    final api = notifyApi();
+    final push = FakePush();
+    await start(tester, api, push);
+
+    push.arrivals.add(
+      const ReceivedPush(
+        title: 'You have an offer',
+        body: 'Front desk: answer within 48 hours.',
+        open: OpenedPush(notificationId: 'n1', path: '/trips/offer/a1'),
+      ),
+    );
+    await tester.pumpAndSettle(); // the banner slides in
+    expect(
+      find.text('You have an offer\nFront desk: answer within 48 hours.'),
+      findsOneWidget,
+    );
+    await tester.tap(find.widgetWithText(SnackBarAction, 'Open'));
+    await tester.pumpAndSettle();
+    expect(find.byType(OfferScreen), findsOneWidget);
+    final read = api.requests.singleWhere(
+      (r) => r.path == '/api/v1/notifications/n1/read/',
+    );
+    expect(read.data, {'from_push': true});
+  });
+
+  testWidgets('a push without a screen to open still shows', (tester) async {
+    final api = notifyApi();
+    final push = FakePush();
+    await start(tester, api, push);
+    push.arrivals.add(const ReceivedPush(title: 'Hello', body: 'Welcome'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Hello\nWelcome'), findsOneWidget);
+    expect(find.text('Open'), findsNothing);
   });
 }

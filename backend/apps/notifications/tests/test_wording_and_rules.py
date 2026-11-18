@@ -90,7 +90,7 @@ class TestCatalog:
     @pytest.mark.parametrize(
         ("kind", "side", "payload", "app", "web"),
         [
-            ("application.applied", "vendor", {"application_id": "a1"}, "/trips",
+            ("application.applied", "vendor", {"application_id": "a1"}, "/trips/application/a1",
              "https://web.test/console/applicants/a1"),
             ("application.offered", "talent", {"application_id": "a1"}, "/trips/offer/a1",
              "https://web.test/console/applicants/a1"),
@@ -102,7 +102,7 @@ class TestCatalog:
              "/trips/agreement/ag1", "https://web.test/console/agreements/ag1"),
             ("chat.message", "talent", {"conversation_id": "c1", "application_id": "a1"},
              "/trips/chat/c1", "https://web.test/console/messages/c1"),
-            ("interview.scheduled", "vendor", {"application_id": "a1"}, "/trips",
+            ("interview.scheduled", "vendor", {"application_id": "a1"}, "/trips/application/a1",
              "https://web.test/console/applicants/a1"),
             ("gigs.search_alert", "talent", {}, "/discover", "https://web.test/talent"),
         ],

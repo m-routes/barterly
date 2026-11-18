@@ -33,6 +33,7 @@ class BarterlyApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: barterlyTheme(brandFonts: brandFonts),
       routerConfig: ref.watch(routerProvider),
+      scaffoldMessengerKey: ref.watch(scaffoldMessengerKeyProvider),
     );
   }
 }

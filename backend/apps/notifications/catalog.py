@@ -150,7 +150,11 @@ def links(kind: str, side: str, payload: dict) -> tuple[str, str]:
     if kind == "gigs.search_alert":
         return "/discover", _web("/talent")
     if application:
-        app = f"/trips/offer/{application}" if _about_an_offer(kind) else "/trips"
+        app = (
+            f"/trips/offer/{application}"
+            if _about_an_offer(kind)
+            else f"/trips/application/{application}"
+        )
         return app, _web(f"/console/applicants/{application}")
     return "/trips", _web("/console")
 

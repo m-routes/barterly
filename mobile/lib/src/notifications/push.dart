@@ -22,6 +22,24 @@ class OpenedPush {
   final String path;
 }
 
+/// A push that arrived while the app was open. The system doesn't show it,
+/// so the app shows a banner; [open] is where tapping it goes.
+@immutable
+class ReceivedPush {
+  const new({required this.title, required this.body, this.open});
+
+  new fromMessage(String? title, String? body, Map<String, Object?> data)
+    : this(
+        title: title ?? '',
+        body: body ?? '',
+        open: OpenedPush.fromData(data),
+      );
+
+  final String title;
+  final String body;
+  final OpenedPush? open;
+}
+
 /// Push messaging, behind an interface so tests and builds without Firebase
 /// use [NoPushMessaging].
 abstract interface class PushMessaging {
@@ -32,8 +50,12 @@ abstract interface class PushMessaging {
 
   Stream<String> get tokenRefreshes;
 
-  /// Pushes tapped while the app was running or in the background.
+  /// Pushes tapped while the app was in the background (the system showed
+  /// them).
   Stream<OpenedPush> get opened;
+
+  /// Pushes that arrived while the app was open (the app shows them).
+  Stream<ReceivedPush> get received;
 
   /// The push that launched the app, if one did.
   Future<OpenedPush?> launchedFrom();
@@ -57,6 +79,9 @@ class NoPushMessaging implements PushMessaging {
 
   @override
   Stream<OpenedPush> get opened => const Stream.empty();
+
+  @override
+  Stream<ReceivedPush> get received => const Stream.empty();
 
   @override
   Future<OpenedPush?> launchedFrom() async => null;
@@ -94,6 +119,15 @@ class FirebasePushMessaging implements PushMessaging {
       .map((m) => OpenedPush.fromData(m.data))
       .where((p) => p != null)
       .cast<OpenedPush>();
+
+  @override
+  Stream<ReceivedPush> get received => FirebaseMessaging.onMessage.map(
+    (m) => ReceivedPush.fromMessage(
+      m.notification?.title,
+      m.notification?.body,
+      m.data,
+    ),
+  );
 
   @override
   Future<OpenedPush?> launchedFrom() async {

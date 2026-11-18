@@ -13,6 +13,7 @@ import 'package:barterly/src/notifications/notifications_screen.dart';
 import 'package:barterly/src/profile/profile_setup_screen.dart';
 import 'package:barterly/src/shell/app_shell.dart';
 import 'package:barterly/src/shell/tabs.dart';
+import 'package:barterly/src/trips/trip_screen.dart';
 import 'package:barterly/src/verification/verification_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -36,6 +37,8 @@ abstract final class Routes {
   static String apply(String id) => '/discover/gig/$id/apply';
   static String chat(String conversationId) => '/trips/chat/$conversationId';
   static String offer(String applicationId) => '/trips/offer/$applicationId';
+  static String trip(String applicationId) =>
+      '/trips/application/$applicationId';
   static String agreement(String agreementId) =>
       '/trips/agreement/$agreementId';
 
@@ -118,6 +121,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: 'chat/:id',
                     builder: (_, state) =>
                         ChatScreen(conversationId: state.pathParameters['id']!),
+                  ),
+                  GoRoute(
+                    path: 'application/:id',
+                    builder: (_, state) =>
+                        TripScreen(applicationId: state.pathParameters['id']!),
                   ),
                   GoRoute(
                     path: 'offer/:id',
