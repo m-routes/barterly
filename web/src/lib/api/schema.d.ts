@@ -4,6 +4,67 @@
  */
 
 export interface paths {
+  "/api/v1/admin/money/escrows/{booking_id}/decide/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Decide a held escrow (admin)
+     * @description Release it all to the talent, refund it all to the host, or split it (talent_paise to the talent, the rest refunded). Works on a disputed (frozen) escrow. Audited, with the note.
+     */
+    post: operations["money_admin_decide"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/money/kill-switch/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The escrow kill switch (admin)
+     * @description Paused here or by the ESCROW_PAUSED setting: no funding or payouts.
+     */
+    get: operations["money_admin_kill_switch"];
+    /** Pause or resume escrow funding and payouts (admin) */
+    put: operations["money_admin_kill_switch_set"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/money/reconciliation/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Recent daily reconciliations (admin)
+     * @description The last 30 days: ledger totals against the gateway's, in paise.
+     */
+    get: operations["money_admin_reconciliation"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/agreement-versions/{version_id}/decline/": {
     parameters: {
       query?: never;
@@ -782,6 +843,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/bookings/{booking_id}/deliverables/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Work handed in for a booking
+     * @description Newest first. Both sides of the booking can see them.
+     */
+    get: operations["money_deliverables"];
+    put?: never;
+    /**
+     * Hand in work
+     * @description A note and/or links. The host approves (releasing the stipend) or asks for changes; with no answer for 72 hours after the latest submission the stipend is released automatically.
+     */
+    post: operations["money_deliverables_submit"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/bookings/{booking_id}/details/": {
     parameters: {
       query?: never;
@@ -796,6 +881,46 @@ export interface paths {
     get: operations["bookings_details"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/escrow/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A booking's escrow
+     * @description For paid and hybrid gigs: the stipend held for the booking, and what funding it costs now (stipend + the gateway's fee + GST on the fee). The host funds it before check-in. Amounts are whole paise.
+     */
+    get: operations["money_escrow"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/escrow/fund/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Start funding a booking's stipend
+     * @description Creates the gateway order for the host to pay at checkout (asking again before paying returns the same order). The money is held once the gateway confirms the payment. 503 while the kill switch is on.
+     */
+    post: operations["money_escrow_fund"];
     delete?: never;
     options?: never;
     head?: never;
@@ -929,6 +1054,26 @@ export interface paths {
     get: operations["chat_unread"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/deliverables/{submission_id}/review/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Approve work, or ask for changes
+     * @description Approving releases the stipend: commission and GST to Barterly, TDS withheld, the rest paid out to the talent. Asking for changes needs a note.
+     */
+    post: operations["money_deliverables_review"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1226,7 +1371,7 @@ export interface paths {
     put?: never;
     /**
      * Run a scheduled job (Cloud Scheduler only)
-     * @description Jobs: billing_dunning, billing_invoices, close_expired_gigs, dispatch_notifications, expire_offers, expire_verifications, flag_stale_interviews, render_agreements, run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
+     * @description Jobs: billing_dunning, billing_invoices, close_expired_gigs, dispatch_notifications, escrow_auto_release, escrow_reconcile, escrow_retry_payouts, expire_offers, expire_verifications, flag_stale_interviews, render_agreements, run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
      */
     post: operations["jobs_run"];
     delete?: never;
@@ -1343,6 +1488,26 @@ export interface paths {
     put?: never;
     /** Report a message for review */
     post: operations["chat_report"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/money/webhooks/razorpay/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Razorpay escrow events (webhook)
+     * @description payment.captured/failed, refund.processed/failed, transfer.processed/settled/failed. Signed with X-Razorpay-Signature (HMAC-SHA256 of the body) and identified by X-Razorpay-Event-Id: each event is applied once; repeats answer 200 and change nothing.
+     */
+    post: operations["money_razorpay_webhook"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2866,6 +3031,19 @@ export interface components {
       quantity: number;
       notes?: string;
     };
+    DeliverableSubmission: {
+      /** Format: uuid */
+      readonly id: string;
+      note?: string;
+      links?: unknown;
+      /** Format: date-time */
+      readonly submitted_at: string;
+      readonly review:
+        components["schemas"]["SubmissionReviewEnum"] | components["schemas"]["BlankEnum"];
+      readonly review_note: string;
+      /** Format: date-time */
+      readonly reviewed_at: string | null;
+    };
     /**
      * @description * `instagram_post` - Instagram post
      *     * `instagram_reel` - Instagram reel
@@ -2935,6 +3113,85 @@ export interface components {
         [key: string]: unknown;
       };
     };
+    /** @description All amounts are whole paise. */
+    Escrow: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly booking_id: string;
+      readonly status: components["schemas"]["EscrowStatusEnum"];
+      readonly stipend_paise: number;
+      /** @description Gateway fee charged to the host. */
+      readonly fee_paise: number;
+      readonly fee_gst_paise: number;
+      /** @description What the host pays. */
+      readonly total_paise: number;
+      /** Format: date-time */
+      readonly funded_at: string | null;
+      /** @description A dispute: no release. */
+      readonly frozen: boolean;
+      /** @description Stipend released to talent. */
+      readonly released_paise: number;
+      readonly commission_paise: number;
+      readonly commission_gst_paise: number;
+      readonly tds_paise: number;
+      readonly payout_paise: number;
+      readonly refund_paise: number;
+      readonly unreleased_paise: number;
+      /** Format: date-time */
+      readonly released_at: string | null;
+      readonly released_by: string;
+      readonly payout_status:
+        components["schemas"]["PayoutStatusEnum"] | components["schemas"]["BlankEnum"];
+    };
+    /** @description Open the gateway's checkout with these. */
+    EscrowCheckout: {
+      escrow: components["schemas"]["Escrow"];
+      order_id: string;
+      amount_paise: number;
+      currency: string;
+      /** @description The gateway's public key for checkout. */
+      key_id: string;
+    };
+    EscrowDecision: {
+      decision: components["schemas"]["EscrowDecisionEnum"];
+      /** @description For a split: the talent's share, in paise. */
+      talent_paise?: number;
+      note: string;
+    };
+    /**
+     * @description * `release` - Release to the talent
+     *     * `split` - Split
+     *     * `refund` - Refund the host
+     * @enum {string}
+     */
+    EscrowDecisionEnum: "release" | "split" | "refund";
+    EscrowOverview: {
+      needs_escrow: boolean;
+      /** @description The kill switch: no funding or payouts now. */
+      paused: boolean;
+      escrow: components["schemas"]["Escrow"] | null;
+      /** @description What funding would cost now. */
+      quote: components["schemas"]["EscrowQuote"] | null;
+    };
+    EscrowQuote: {
+      stipend_paise: number;
+      fee_paise: number;
+      fee_gst_paise: number;
+      total_paise: number;
+    };
+    /**
+     * @description * `awaiting_funding` - Waiting for the host to fund
+     *     * `funding` - Payment started
+     *     * `held` - Funded and held
+     *     * `released` - Released (payout to follow)
+     *     * `paid_out` - Paid out
+     *     * `refunded` - Refunded
+     *     * `split` - Split by an admin
+     * @enum {string}
+     */
+    EscrowStatusEnum:
+      "awaiting_funding" | "funding" | "held" | "released" | "paid_out" | "refunded" | "split";
     /**
      * @description * `application.applied` - application.applied
      *     * `application.shortlisted` - application.shortlisted
@@ -3318,6 +3575,13 @@ export interface components {
       result: {
         [key: string]: unknown;
       };
+    };
+    KillSwitch: {
+      paused?: boolean;
+      reason?: string;
+      /** Format: date-time */
+      readonly changed_at: string | null;
+      readonly paused_by_setting: boolean;
     };
     /**
      * @description * `avatar` - Profile photo
@@ -3932,6 +4196,17 @@ export interface components {
       /** Format: date-time */
       readonly updated_at?: string;
     };
+    /**
+     * @description * `` - No payout
+     *     * `waiting_for_account` - Waiting for the talent's payout account
+     *     * `paused` - Paused by the kill switch
+     *     * `sending` - Transfer being created
+     *     * `sent` - Transfer created
+     *     * `settled` - Settled to the talent
+     *     * `failed` - Transfer failed
+     * @enum {string}
+     */
+    PayoutStatusEnum: "waiting_for_account" | "paused" | "sending" | "sent" | "settled" | "failed";
     PdfLink: {
       /** Format: uri */
       url: string;
@@ -4126,6 +4401,22 @@ export interface components {
       /** @description What the applicant reads. */
       text: string;
     };
+    ReconciliationRun: {
+      /** Format: date */
+      readonly day: string;
+      readonly ok: boolean;
+      ledger: {
+        [key: string]: number;
+      };
+      gateway: {
+        [key: string]: number;
+      };
+      mismatches: {
+        [key: string]: unknown;
+      }[];
+      /** Format: date-time */
+      readonly created_at: string;
+    };
     ReferenceCheck: {
       name: string;
       /** @description Indian mobile number. */
@@ -4186,6 +4477,17 @@ export interface components {
      * @enum {string}
      */
     RequiredVerificationEnum: "none" | "id_verified" | "trusted_member";
+    ReviewDeliverable: {
+      approve: boolean;
+      /** @default  */
+      note: string;
+    };
+    ReviewResult: {
+      submission: components["schemas"]["DeliverableSubmission"];
+      escrow: components["schemas"]["Escrow"] | null;
+      /** @description Why the money wasn't released just now (it will be retried), or empty. */
+      release_held_back: string;
+    };
     /**
      * @description * `volunteer` - Volunteer
      *     * `content_creator` - Content creator
@@ -4406,6 +4708,18 @@ export interface components {
      * @enum {string}
      */
     SubjectTypeEnum: "user" | "property" | "social_account";
+    /**
+     * @description * `` - Waiting for the host
+     *     * `approved` - Approved
+     *     * `changes` - Changes asked for
+     * @enum {string}
+     */
+    SubmissionReviewEnum: "approved" | "changes";
+    SubmitDeliverable: {
+      /** @default  */
+      note: string;
+      links?: string[];
+    };
     Subscribe: {
       plan: string;
       coupon?: string;
@@ -4820,6 +5134,224 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  money_admin_decide: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EscrowDecision"];
+        "application/x-www-form-urlencoded": components["schemas"]["EscrowDecision"];
+        "multipart/form-data": components["schemas"]["EscrowDecision"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Escrow"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_admin_kill_switch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["KillSwitch"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_admin_kill_switch_set: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["KillSwitch"];
+        "application/x-www-form-urlencoded": components["schemas"]["KillSwitch"];
+        "multipart/form-data": components["schemas"]["KillSwitch"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["KillSwitch"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_admin_reconciliation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReconciliationRun"][];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
   agreements_decline_change: {
     parameters: {
       query?: never;
@@ -7122,6 +7654,118 @@ export interface operations {
       };
     };
   };
+  money_deliverables: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeliverableSubmission"][];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_deliverables_submit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["SubmitDeliverable"];
+        "application/x-www-form-urlencoded": components["schemas"]["SubmitDeliverable"];
+        "multipart/form-data": components["schemas"]["SubmitDeliverable"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeliverableSubmission"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
   bookings_details: {
     parameters: {
       query?: never;
@@ -7166,6 +7810,112 @@ export interface operations {
         };
       };
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_escrow: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EscrowOverview"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_escrow_fund: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EscrowCheckout"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      503: {
         headers: {
           [name: string]: unknown;
         };
@@ -7597,6 +8347,73 @@ export interface operations {
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_deliverables_review: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        submission_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReviewDeliverable"];
+        "application/x-www-form-urlencoded": components["schemas"]["ReviewDeliverable"];
+        "multipart/form-data": components["schemas"]["ReviewDeliverable"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReviewResult"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -8958,6 +9775,41 @@ export interface operations {
         };
       };
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_razorpay_webhook: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          [key: string]: unknown;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            outcome?: string;
+          };
+        };
+      };
+      400: {
         headers: {
           [name: string]: unknown;
         };

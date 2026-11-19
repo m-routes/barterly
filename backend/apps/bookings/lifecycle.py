@@ -169,7 +169,14 @@ def _signed_with_open_slot(ctx: Context) -> str | None:
 
 
 def _can_check_in(ctx: Context) -> str | None:
-    return _check_in_window(ctx) or _agreement_in_force(ctx)
+    return _check_in_window(ctx) or _agreement_in_force(ctx) or _stipend_funded(ctx)
+
+
+def _stipend_funded(ctx: Context) -> str | None:
+    """Paid and hybrid stays: the host's stipend must be held in escrow first."""
+    from apps.money.escrow import require_funded
+
+    return require_funded(ctx.subject)
 
 
 def _check_in_window(ctx: Context) -> str | None:
@@ -240,7 +247,9 @@ TRANSITIONS: dict[tuple[str, str], Rule] = {
     ),
     (B.SIGNING, B.CANCELLED): Rule(frozenset({T, V, SYS, ADM}), needs_reason=True),
     (B.CONFIRMED, B.CHECKED_IN): Rule(
-        frozenset({V}), _can_check_in, note="Needs the agreement signed by both."
+        frozenset({V}),
+        _can_check_in,
+        note="Needs the agreement signed by both; paid and hybrid gigs, the stipend funded.",
     ),
     (B.CONFIRMED, B.CANCELLED): Rule(frozenset({T, V, ADM}), needs_reason=True),
     (B.CONFIRMED, B.NO_SHOW): Rule(frozenset({V}), _stay_started, needs_reason=True),

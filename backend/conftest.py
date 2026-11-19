@@ -19,6 +19,8 @@ def _fake_sign_in_and_fresh_cache(settings):
     from apps.billing.gateway.fake import FakeGateway
     from apps.geo import geocoders
     from apps.media import storage
+    from apps.money.gateway import base as escrow_gateway
+    from apps.money.gateway.fake import FakeEscrowGateway
     from apps.notifications.channels import base as channels
     from apps.notifications.channels.fake import FakeProvider
     from apps.verification.providers import base as kyc
@@ -40,6 +42,9 @@ def _fake_sign_in_and_fresh_cache(settings):
     settings.WEB_APP_URL = "https://web.test"
     settings.BILLING_GATEWAY = "apps.billing.gateway.fake.FakeGateway"
     settings.RAZORPAY_WEBHOOK_SECRET = "test-webhook-secret"  # noqa: S105
+    settings.ESCROW_GATEWAY = "apps.money.gateway.fake.FakeEscrowGateway"
+    settings.RAZORPAY_ESCROW_WEBHOOK_SECRET = "test-escrow-secret"  # noqa: S105
+    settings.ESCROW_PAUSED = False
     settings.CACHES = {
         "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"},
     }
@@ -54,6 +59,8 @@ def _fake_sign_in_and_fresh_cache(settings):
     FakeProvider.reset()  # empty fake outboxes per test
     gateway._build.cache_clear()
     FakeGateway.reset()
+    escrow_gateway._build.cache_clear()
+    FakeEscrowGateway.reset()
     yield
     cache.clear()
     _build.cache_clear()

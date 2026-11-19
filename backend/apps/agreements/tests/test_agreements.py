@@ -16,6 +16,7 @@ from apps.bookings.services import BookingRefused, transition
 from apps.common.models import AuditLog
 from apps.gigs.tests.factories import in_days
 from apps.media.storage import get_storage
+from apps.money.tests.helpers import funded
 from apps.notifications.models import Notification
 from apps.offers import services as offers
 from apps.offers.tests.helpers import make_offer_for
@@ -101,6 +102,7 @@ class TestSigning:
         assert {s.party for s in version.signatures.all()} == {"talent", "vendor"}
         assert AuditLog.objects.filter(action="agreement.signed").count() == 2
         assert AuditLog.objects.filter(action="agreement.in_force").exists()
+        funded(b)  # a paid gig: the stipend is held before check-in
         transition(b.pk, B.CHECKED_IN, actor=Actor.VENDOR, user=b.vendor, now=on_day_one(b))
 
     def test_refusals(self):
@@ -227,6 +229,7 @@ class TestChanges:
             )
         with pytest.raises(services.AgreementError, match="at least one"):
             services.propose_change(b.pk, user=b.talent, changes={}, reason="x")
+        funded(b)
         transition(b.pk, B.CHECKED_IN, actor=Actor.VENDOR, user=b.vendor, now=on_day_one(b))
         with pytest.raises(services.AgreementError, match="dates can't change"):
             services.propose_change(

@@ -4,6 +4,202 @@ info:
   version: 0.1.0
   description: Work-exchange marketplace for travel and hospitality in India.
 paths:
+  /api/v1/admin/money/escrows/{booking_id}/decide/:
+    post:
+      operationId: money_admin_decide
+      description: Release it all to the talent, refund it all to the host, or split
+        it (talent_paise to the talent, the rest refunded). Works on a disputed (frozen)
+        escrow. Audited, with the note.
+      summary: Decide a held escrow (admin)
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - money
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EscrowDecision'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EscrowDecision'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EscrowDecision'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Escrow'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/admin/money/kill-switch/:
+    get:
+      operationId: money_admin_kill_switch
+      description: 'Paused here or by the ESCROW_PAUSED setting: no funding or payouts.'
+      summary: The escrow kill switch (admin)
+      tags:
+      - money
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KillSwitch'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    put:
+      operationId: money_admin_kill_switch_set
+      summary: Pause or resume escrow funding and payouts (admin)
+      tags:
+      - money
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KillSwitch'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/KillSwitch'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/KillSwitch'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KillSwitch'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/admin/money/reconciliation/:
+    get:
+      operationId: money_admin_reconciliation
+      description: 'The last 30 days: ledger totals against the gateway''s, in paise.'
+      summary: Recent daily reconciliations (admin)
+      tags:
+      - money
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReconciliationRun'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/agreement-versions/{version_id}/decline/:
     post:
       operationId: agreements_decline_change
@@ -2239,6 +2435,116 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/bookings/{booking_id}/deliverables/:
+    get:
+      operationId: money_deliverables
+      description: Newest first. Both sides of the booking can see them.
+      summary: Work handed in for a booking
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - money
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeliverableSubmission'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    post:
+      operationId: money_deliverables_submit
+      description: A note and/or links. The host approves (releasing the stipend)
+        or asks for changes; with no answer for 72 hours after the latest submission
+        the stipend is released automatically.
+      summary: Hand in work
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - money
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitDeliverable'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubmitDeliverable'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubmitDeliverable'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliverableSubmission'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/bookings/{booking_id}/details/:
     get:
       operationId: bookings_details
@@ -2266,6 +2572,106 @@ paths:
                 $ref: '#/components/schemas/Unlocked'
           description: ''
         '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/bookings/{booking_id}/escrow/:
+    get:
+      operationId: money_escrow
+      description: 'For paid and hybrid gigs: the stipend held for the booking, and
+        what funding it costs now (stipend + the gateway''s fee + GST on the fee).
+        The host funds it before check-in. Amounts are whole paise.'
+      summary: A booking's escrow
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - money
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EscrowOverview'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/bookings/{booking_id}/escrow/fund/:
+    post:
+      operationId: money_escrow_fund
+      description: Creates the gateway order for the host to pay at checkout (asking
+        again before paying returns the same order). The money is held once the gateway
+        confirms the payment. 503 while the kill switch is on.
+      summary: Start funding a booking's stipend
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - money
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EscrowCheckout'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '503':
           content:
             application/json:
               schema:
@@ -2714,6 +3120,74 @@ paths:
                 $ref: '#/components/schemas/Unread'
           description: ''
         '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/deliverables/{submission_id}/review/:
+    post:
+      operationId: money_deliverables_review
+      description: 'Approving releases the stipend: commission and GST to Barterly,
+        TDS withheld, the rest paid out to the talent. Asking for changes needs a
+        note.'
+      summary: Approve work, or ask for changes
+      parameters:
+      - in: path
+        name: submission_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - money
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewDeliverable'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReviewDeliverable'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReviewDeliverable'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewResult'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
           content:
             application/json:
               schema:
@@ -3854,10 +4328,11 @@ paths:
     post:
       operationId: jobs_run
       description: 'Jobs: billing_dunning, billing_invoices, close_expired_gigs, dispatch_notifications,
-        expire_offers, expire_verifications, flag_stale_interviews, render_agreements,
-        run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results.
-        Needs a Google-signed OIDC token for the scheduler service account. Idempotent;
-        overlapping runs of one job are skipped.'
+        escrow_auto_release, escrow_reconcile, escrow_retry_payouts, expire_offers,
+        expire_verifications, flag_stale_interviews, render_agreements, run_search_alerts,
+        send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed
+        OIDC token for the scheduler service account. Idempotent; overlapping runs
+        of one job are skipped.'
       summary: Run a scheduled job (Cloud Scheduler only)
       parameters:
       - in: path
@@ -4195,6 +4670,40 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: ''
         '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/money/webhooks/razorpay/:
+    post:
+      operationId: money_razorpay_webhook
+      description: 'payment.captured/failed, refund.processed/failed, transfer.processed/settled/failed.
+        Signed with X-Razorpay-Signature (HMAC-SHA256 of the body) and identified
+        by X-Razorpay-Event-Id: each event is applied once; repeats answer 200 and
+        change nothing.'
+      summary: Razorpay escrow events (webhook)
+      tags:
+      - money
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  outcome:
+                    type: string
+          description: ''
+        '400':
           content:
             application/json:
               schema:
@@ -7858,6 +8367,40 @@ components:
       required:
       - quantity
       - type
+    DeliverableSubmission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        note:
+          type: string
+          maxLength: 2000
+        links: {}
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        review:
+          readOnly: true
+          oneOf:
+          - $ref: '#/components/schemas/SubmissionReviewEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        review_note:
+          type: string
+          readOnly: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - id
+      - review
+      - review_note
+      - reviewed_at
+      - submitted_at
     DeliverableTypeEnum:
       enum:
       - instagram_post
@@ -7984,6 +8527,202 @@ components:
       - code
       - details
       - message
+    Escrow:
+      type: object
+      description: All amounts are whole paise.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        booking_id:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/EscrowStatusEnum'
+          readOnly: true
+        stipend_paise:
+          type: integer
+          readOnly: true
+        fee_paise:
+          type: integer
+          readOnly: true
+          description: Gateway fee charged to the host.
+        fee_gst_paise:
+          type: integer
+          readOnly: true
+        total_paise:
+          type: integer
+          readOnly: true
+          description: What the host pays.
+        funded_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        frozen:
+          type: boolean
+          readOnly: true
+          description: 'A dispute: no release.'
+        released_paise:
+          type: integer
+          readOnly: true
+          description: Stipend released to talent.
+        commission_paise:
+          type: integer
+          readOnly: true
+        commission_gst_paise:
+          type: integer
+          readOnly: true
+        tds_paise:
+          type: integer
+          readOnly: true
+        payout_paise:
+          type: integer
+          readOnly: true
+        refund_paise:
+          type: integer
+          readOnly: true
+        unreleased_paise:
+          type: integer
+          readOnly: true
+        released_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        released_by:
+          type: string
+          readOnly: true
+        payout_status:
+          readOnly: true
+          oneOf:
+          - $ref: '#/components/schemas/PayoutStatusEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+      required:
+      - booking_id
+      - commission_gst_paise
+      - commission_paise
+      - fee_gst_paise
+      - fee_paise
+      - frozen
+      - funded_at
+      - id
+      - payout_paise
+      - payout_status
+      - refund_paise
+      - released_at
+      - released_by
+      - released_paise
+      - status
+      - stipend_paise
+      - tds_paise
+      - total_paise
+      - unreleased_paise
+    EscrowCheckout:
+      type: object
+      description: Open the gateway's checkout with these.
+      properties:
+        escrow:
+          $ref: '#/components/schemas/Escrow'
+        order_id:
+          type: string
+        amount_paise:
+          type: integer
+        currency:
+          type: string
+        key_id:
+          type: string
+          description: The gateway's public key for checkout.
+      required:
+      - amount_paise
+      - currency
+      - escrow
+      - key_id
+      - order_id
+    EscrowDecision:
+      type: object
+      properties:
+        decision:
+          $ref: '#/components/schemas/EscrowDecisionEnum'
+        talent_paise:
+          type: integer
+          minimum: 1
+          description: 'For a split: the talent''s share, in paise.'
+        note:
+          type: string
+          maxLength: 1000
+      required:
+      - decision
+      - note
+    EscrowDecisionEnum:
+      enum:
+      - release
+      - split
+      - refund
+      type: string
+      description: |-
+        * `release` - Release to the talent
+        * `split` - Split
+        * `refund` - Refund the host
+    EscrowOverview:
+      type: object
+      properties:
+        needs_escrow:
+          type: boolean
+        paused:
+          type: boolean
+          description: 'The kill switch: no funding or payouts now.'
+        escrow:
+          allOf:
+          - $ref: '#/components/schemas/Escrow'
+          nullable: true
+        quote:
+          allOf:
+          - $ref: '#/components/schemas/EscrowQuote'
+          nullable: true
+          description: What funding would cost now.
+      required:
+      - escrow
+      - needs_escrow
+      - paused
+      - quote
+    EscrowQuote:
+      type: object
+      properties:
+        stipend_paise:
+          type: integer
+        fee_paise:
+          type: integer
+        fee_gst_paise:
+          type: integer
+        total_paise:
+          type: integer
+      required:
+      - fee_gst_paise
+      - fee_paise
+      - stipend_paise
+      - total_paise
+    EscrowStatusEnum:
+      enum:
+      - awaiting_funding
+      - funding
+      - held
+      - released
+      - paid_out
+      - refunded
+      - split
+      type: string
+      description: |-
+        * `awaiting_funding` - Waiting for the host to fund
+        * `funding` - Payment started
+        * `held` - Funded and held
+        * `released` - Released (payout to follow)
+        * `paid_out` - Paid out
+        * `refunded` - Refunded
+        * `split` - Split by an admin
     EventTypeEnum:
       enum:
       - application.applied
@@ -8923,6 +9662,25 @@ components:
       - result
       - run_id
       - skipped
+    KillSwitch:
+      type: object
+      properties:
+        paused:
+          type: boolean
+        reason:
+          type: string
+          maxLength: 300
+        changed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        paused_by_setting:
+          type: boolean
+          readOnly: true
+      required:
+      - changed_at
+      - paused_by_setting
     KindEnum:
       enum:
       - avatar
@@ -10108,6 +10866,23 @@ components:
           type: string
           format: date-time
           readOnly: true
+    PayoutStatusEnum:
+      enum:
+      - waiting_for_account
+      - paused
+      - sending
+      - sent
+      - settled
+      - failed
+      type: string
+      description: |-
+        * `` - No payout
+        * `waiting_for_account` - Waiting for the talent's payout account
+        * `paused` - Paused by the kill switch
+        * `sending` - Transfer being created
+        * `sent` - Transfer created
+        * `settled` - Settled to the talent
+        * `failed` - Transfer failed
     PdfLink:
       type: object
       properties:
@@ -10585,6 +11360,40 @@ components:
       - code
       - label
       - text
+    ReconciliationRun:
+      type: object
+      properties:
+        day:
+          type: string
+          format: date
+          readOnly: true
+        ok:
+          type: boolean
+          readOnly: true
+        ledger:
+          type: object
+          additionalProperties:
+            type: integer
+        gateway:
+          type: object
+          additionalProperties:
+            type: integer
+        mismatches:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - day
+      - gateway
+      - ledger
+      - mismatches
+      - ok
     ReferenceCheck:
       type: object
       properties:
@@ -10709,6 +11518,34 @@ components:
         * `none` - No verification needed
         * `id_verified` - ID verified
         * `trusted_member` - Trusted member
+    ReviewDeliverable:
+      type: object
+      properties:
+        approve:
+          type: boolean
+        note:
+          type: string
+          default: ''
+          maxLength: 1000
+      required:
+      - approve
+    ReviewResult:
+      type: object
+      properties:
+        submission:
+          $ref: '#/components/schemas/DeliverableSubmission'
+        escrow:
+          allOf:
+          - $ref: '#/components/schemas/Escrow'
+          nullable: true
+        release_held_back:
+          type: string
+          description: Why the money wasn't released just now (it will be retried),
+            or empty.
+      required:
+      - escrow
+      - release_held_back
+      - submission
     RoleTemplateEnum:
       enum:
       - volunteer
@@ -11072,6 +11909,29 @@ components:
         * `user` - User
         * `property` - Property
         * `social_account` - Social account
+    SubmissionReviewEnum:
+      enum:
+      - approved
+      - changes
+      type: string
+      description: |-
+        * `` - Waiting for the host
+        * `approved` - Approved
+        * `changes` - Changes asked for
+    SubmitDeliverable:
+      type: object
+      properties:
+        note:
+          type: string
+          default: ''
+          maxLength: 2000
+        links:
+          type: array
+          items:
+            type: string
+            format: uri
+            maxLength: 500
+          maxItems: 20
     Subscribe:
       type: object
       properties:

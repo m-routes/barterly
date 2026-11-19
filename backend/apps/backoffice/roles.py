@@ -52,12 +52,24 @@ PERMISSIONS: dict[str, list[str]] = {
         "backoffice.review_verification",
         "backoffice.view_audit_log",
     ],
-    # Money: reads gigs (stipends) and the audit trail of money changes.
+    # Money: reads gigs (stipends), the ledger and escrows, and the audit trail of money
+    # changes; decides held escrows and runs the kill switch.
     AdminRole.FINANCE: [
         "accounts.view_user",
         "gigs.view_gig",
         "applications.view_application",
         "backoffice.view_audit_log",
+        "money.view_account",
+        "money.view_ledgertransaction",
+        "money.view_ledgerentry",
+        "money.view_escrow",
+        "money.view_payoutaccount",
+        "money.view_deliverablesubmission",
+        "money.view_gatewayevent",
+        "money.view_reconciliationrun",
+        "money.view_escrowcontrol",
+        "money.decide_escrow",
+        "money.toggle_kill_switch",
     ],
     # Helps people: looks things up, changes nothing.
     AdminRole.SUPPORT: [*LOOKUP, *VERIFICATION_READ],

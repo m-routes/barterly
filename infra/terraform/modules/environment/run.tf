@@ -128,6 +128,16 @@ resource "google_cloud_run_v2_service" "api" {
         }
       }
 
+      env {
+        name = "RAZORPAY_ESCROW_WEBHOOK_SECRET"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.this["razorpay_escrow_webhook_secret"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
       # TCP only: an HTTP probe would hit the database and fail during a Cloud SQL restart.
       volume_mounts {
         name       = "cloudsql"

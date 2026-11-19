@@ -23,6 +23,9 @@ locals {
     dispatch_notifications   = { schedule = "*/5 * * * *", description = "Queue notifications held for quiet hours, or whose task went missing." }
     billing_dunning          = { schedule = "0 10 * * *", description = "Remind vendors whose payment failed; lock paid features after the grace period." }
     billing_invoices         = { schedule = "*/30 * * * *", description = "Render, store and email GST invoices left unfinished." }
+    escrow_auto_release      = { schedule = "15 * * * *", description = "Release escrow 72 hours after the latest unanswered submission." }
+    escrow_retry_payouts     = { schedule = "*/20 * * * *", description = "Retry payouts waiting for an account, paused or failed." }
+    escrow_reconcile         = { schedule = "30 2 * * *", description = "Compare yesterday's ledger totals with the gateway's; alert on a mismatch." }
   }
 }
 
