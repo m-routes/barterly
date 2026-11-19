@@ -74,6 +74,7 @@ Surfaces: the vendor console (web), the talent app (mobile) and the admin consol
 | `offers` | `Offer`: the frozen terms snapshot a vendor sends, the talent's one counter, and the terms schema (`apps/offers/terms.py`) |
 | `agreements` | `Agreement`, its versions and signatures, the PDF template and WeasyPrint renderer, the `ESignProvider` interface (in-app OTP provider and a fake) |
 | `billing` | Plans as data, subscriptions through Razorpay (behind `PaymentGateway`), entitlements, GST invoices and dunning |
+| `money` | Double-entry ledger (append-only, integer paise), escrow for paid and hybrid bookings, deliverables, payouts, webhooks, reconciliation and the kill switch ([money.md](money.md)) |
 | `reliability` | The reliability score v1 (a pure function, [reliability.md](reliability.md)) and each person's stored score per side |
 | `verification` | Verification cases per check, evidence (provider references and masked numbers only), badges, the KYC provider interface and webhook, re-verification on profile edits, the review API |
 
@@ -292,6 +293,9 @@ A confirmed booking gives its slot back. The place is then offered on: offers he
 | `send_reminders` | Hourly at :05 | Offers about to expire, agreements still to sign, stays starting tomorrow |
 | `billing_dunning` | Daily at 10:00 | Payment-failed reminders before the grace period ends; paid features lock after it |
 | `billing_invoices` | Every 30 minutes | GST invoices left unrendered or unsent are finished |
+| `escrow_auto_release` | Hourly at :15 | Release escrow 72 hours after the latest unanswered submission, or after an approval that couldn't release then |
+| `escrow_retry_payouts` | Every 20 minutes | Payouts waiting for an account, paused or failed |
+| `escrow_reconcile` | Daily at 02:30 | Yesterday's ledger totals against the gateway's; alert on any difference |
 | `dispatch_notifications` | Every 5 minutes | Notifications held for quiet hours, or whose task went missing, are queued |
 
 Every job is idempotent: it re-checks each row under a lock before changing it. A Postgres advisory lock skips overlapping runs of the same job, and each run is recorded as a `JobRun` (shown in the admin). Run one by hand with `manage.py run_job <name>`.
@@ -455,6 +459,10 @@ A downgrade never takes gigs down: live ones keep running, and new ones are refu
 
 **Dunning:** Razorpay retries a failed charge itself. The first failure (`subscription.pending`) starts a grace period (`BILLING_GRACE_DAYS`, 7) and notifies the vendor (`billing.payment_failed`); paid features stay on, even if Razorpay halts before the grace ends. The daily `billing_dunning` job reminds them two days before it ends (`billing.grace_ending`) and tells them when features lock (`billing.features_locked`). Locked means Free: live gigs keep running, new ones over the limit and paid features wait. A successful charge clears it all.
 
+### Money (`apps/money`)
+
+Escrow for paid and hybrid bookings on a double-entry ledger. The host funds the stipend before check-in; approval of the deliverables (or 72 hours without an answer) releases it as commission + GST + TDS + the talent's payout; disputes freeze it until a finance admin decides. See [money.md](money.md) for the rules, accounts, webhooks, reconciliation and kill switch.
+
 ### Audit log
 
 Money and status changes write an `AuditLog` entry through `apps.common.services.audit.log_action()`, in the same transaction as the change. Each entry records the actor, a dotted action (`user.role_changed`), the target's type and id, JSON before/after, the client IP and the request id. Entries are append-only: updates and deletes raise, and the admin is read-only. Users with audit history can't be hard-deleted (`PROTECT`); deactivate them. Role and `is_active` changes go through `apps.accounts.services.users` (and the admin's save hook), which audit them.
@@ -466,7 +474,7 @@ Staff work in the Django admin at `/admin/`, served by `BarterlyAdminSite`, whic
 - **Roles.** `super_admin`, `ops`, `trust`, `finance` and `support` are auth groups whose permissions are exactly the lists in `apps/backoffice/roles.py`. They are re-synced after every migrate, so hand edits to a group don't stick. Give or take a role with `manage.py grant_admin_role <phone> <role> [--remove]`; it makes the account a staff admin and is audited. Vendor and talent accounts can't be given a role. Changing someone's groups in the user admin is audited as `user.admin_roles_changed`.
   - ops: approves gigs, reads accounts, gigs, properties and applications, and reads the audit log.
   - trust: decides verification cases, reads verification records and KYC events, and reads the audit log.
-  - finance: reads users, gigs, applications and the audit log.
+  - finance: reads users, gigs, applications, the audit log and everything in money; decides held escrows and runs the escrow kill switch.
   - support: read-only lookups, including verification records; no actions and no audit log.
   - super_admin: everything above, plus user and role management.
 - **Verification queue** (`/admin/queues/verification/`, needs `review_verification`). Cases waiting for a decision, oldest first, filterable by status and check. Cases waiting more than 48 hours are flagged overdue. The detail page shows the case facts, masked documents, the user's badges and other checks, and the case's audit history. Approve, request changes, reject and revoke all need a reason; starting a review doesn't.

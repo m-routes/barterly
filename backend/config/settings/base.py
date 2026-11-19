@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "apps.agreements",
     "apps.reliability",
     "apps.billing",
+    "apps.money",
     "apps.backoffice.apps.BackofficeConfig",
 ]
 
@@ -170,6 +171,9 @@ SPECTACULAR_SETTINGS = {
         "BookingStatusEnum": "apps.bookings.lifecycle.BookingStatus",
         "BookingActorEnum": "apps.bookings.lifecycle.Actor",
         "SubscriptionStatusEnum": "apps.billing.models.SubscriptionStatus",
+        "EscrowDecisionEnum": "apps.money.escrow.DECISIONS",
+        "DecisionEnum": "apps.verification.services.cases.Decision.CHOICES",
+        "SubmissionReviewEnum": "apps.money.models.SubmissionReview",
         "CancellationReasonEnum": "apps.bookings.models.CancellationReason",
         "CancellationEffectEnum": "apps.bookings.models.CancellationEffect",
         "CancelledByEnum": "apps.bookings.models.CancelledBy",
@@ -254,6 +258,23 @@ BILLING_SUPPLIER = {
     "state": env_str("BILLING_SUPPLIER_STATE", "Karnataka"),
     "email": env_str("BILLING_SUPPLIER_EMAIL", "billing@barterly.in"),
 }
+
+# Money (apps.money): the ledger and escrow for paid and hybrid bookings.
+# LEGAL REVIEW NEEDED: the fund-flow structure behind ESCROW_GATEWAY.
+# CA REVIEW NEEDED: every rate and threshold below. Rates are basis points (800 = 8%).
+ESCROW_GATEWAY = env_str("ESCROW_GATEWAY", "apps.money.gateway.route.RazorpayRouteGateway")
+RAZORPAY_ESCROW_WEBHOOK_SECRET = env_str("RAZORPAY_ESCROW_WEBHOOK_SECRET", "")
+ESCROW_COMMISSION_BPS = env_int("ESCROW_COMMISSION_BPS", 800)
+ESCROW_GST_BPS = env_int("ESCROW_GST_BPS", 1800)  # on the commission and the fee recovery
+ESCROW_GATEWAY_FEE_BPS = env_int("ESCROW_GATEWAY_FEE_BPS", 200)  # charged to the host
+ESCROW_TDS_ENABLED = env_bool("ESCROW_TDS_ENABLED", True)
+ESCROW_TDS_BPS = env_int("ESCROW_TDS_BPS", 100)  # with PAN
+ESCROW_TDS_NO_PAN_BPS = env_int("ESCROW_TDS_NO_PAN_BPS", 2000)
+ESCROW_TDS_THRESHOLD_PAISE = env_int("ESCROW_TDS_THRESHOLD_PAISE", 0)  # per release
+ESCROW_AUTO_RELEASE_HOURS = env_int("ESCROW_AUTO_RELEASE_HOURS", 72)
+# The kill switch (also in admin, Money > Escrow control): no new funding or payouts.
+ESCROW_PAUSED = env_bool("ESCROW_PAUSED", False)
+ESCROW_ALERT_EMAILS = env_list("ESCROW_ALERT_EMAILS", "")
 
 # Discovery (apps.discovery). Fit-score weights: they needn't add to 100 (they are
 # scaled), but keeping them at 100 makes each one read as "points".

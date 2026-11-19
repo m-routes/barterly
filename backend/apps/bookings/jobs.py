@@ -28,6 +28,8 @@ from apps.common.services.audit import log_action
 from apps.discovery.alerts import run_alerts
 from apps.gigs.services import close_expired_gigs
 from apps.hiring.services import send_reminders
+from apps.money import reconciliation
+from apps.money.escrow import auto_release, retry_payouts
 from apps.notifications.reminders import send_reminders as send_booking_reminders
 from apps.notifications.services import dispatch_due
 from apps.offers.models import Offer, OfferStatus
@@ -136,6 +138,9 @@ JOBS: dict[str, Callable[..., dict]] = {
     "dispatch_notifications": lambda now: dispatch_due(now),
     "billing_dunning": lambda now: billing_dunning(now),
     "billing_invoices": lambda now: finish_invoices(now),
+    "escrow_auto_release": lambda now: auto_release(now),
+    "escrow_retry_payouts": lambda now: retry_payouts(now),
+    "escrow_reconcile": lambda now: reconciliation.run_job(now),
 }
 
 

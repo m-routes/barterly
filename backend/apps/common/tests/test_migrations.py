@@ -7,6 +7,7 @@ from django.db.migrations.executor import MigrationExecutor
 
 OUR_APPS = [
     "billing",
+    "money",
     "reliability",
     "agreements",
     "offers",
