@@ -194,6 +194,24 @@ def _stay_started(ctx: Context) -> str | None:
     return None
 
 
+def _no_show_due(ctx: Context) -> str | None:
+    """A no-show waits ATTENDANCE_NO_SHOW_GRACE_HOURS into the first day (the talent may
+    simply be late)."""
+    from django.conf import settings
+
+    from apps.attendance.services import no_show_from
+
+    if ctx.today < ctx.subject.start_date:
+        return "The stay hasn't started yet."
+    due = no_show_from(ctx.subject)
+    if ctx.now < due:
+        return (
+            f"Give them until {timezone.localtime(due):%I:%M %p} "
+            f"({settings.ATTENDANCE_NO_SHOW_GRACE_HOURS} hours into the first day)."
+        )
+    return None
+
+
 def _within_dispute_window(ctx: Context) -> str | None:
     since = ctx.subject.status_changed_at
     if since and ctx.now - since > DISPUTE_WINDOW:
@@ -252,7 +270,7 @@ TRANSITIONS: dict[tuple[str, str], Rule] = {
         note="Needs the agreement signed by both; paid and hybrid gigs, the stipend funded.",
     ),
     (B.CONFIRMED, B.CANCELLED): Rule(frozenset({T, V, ADM}), needs_reason=True),
-    (B.CONFIRMED, B.NO_SHOW): Rule(frozenset({V}), _stay_started, needs_reason=True),
+    (B.CONFIRMED, B.NO_SHOW): Rule(frozenset({V}), _no_show_due, needs_reason=True),
     (B.CHECKED_IN, B.DELIVERING): Rule(frozenset({T, V})),
     (B.CHECKED_IN, B.CANCELLED): Rule(frozenset({ADM}), needs_reason=True),
     (B.DELIVERING, B.COMPLETED): Rule(frozenset({V, SYS}), _stay_started),

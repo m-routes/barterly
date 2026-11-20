@@ -17,6 +17,14 @@ export const CONSOLE_SECTIONS: readonly ConsoleSection[] = [
     },
   },
   {
+    href: "/console/arrivals",
+    label: "Arrivals",
+    empty: {
+      title: "No one arriving today",
+      description: "Check talent in by scanning their pass, even without signal.",
+    },
+  },
+  {
     href: "/console/gigs",
     label: "Gigs",
     empty: {

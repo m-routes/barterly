@@ -85,6 +85,8 @@
 	<string>The calendar's location field can suggest places from your contacts.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Barterly uses the camera to add photos and videos of your work to applications.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>When you open your check-in pass, Barterly shares how far you are from the property with your host. It never stops you checking in.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Barterly records sound with intro videos you add to applications.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

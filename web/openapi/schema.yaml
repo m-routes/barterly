@@ -4,6 +4,101 @@ info:
   version: 0.1.0
   description: Work-exchange marketplace for travel and hospitality in India.
 paths:
+  /api/v1/admin/attendance/{check_in_id}/review/:
+    post:
+      operationId: attendance_admin_flag_review
+      summary: Mark a flagged check-in reviewed (admin)
+      parameters:
+      - in: path
+        name: check_in_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - attendance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlagReview'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FlagReview'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FlagReview'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckIn'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/admin/attendance/flagged/:
+    get:
+      operationId: attendance_admin_flagged
+      description: Far from the property, not yet reviewed. Oldest first.
+      summary: Check-ins flagged for review (admin)
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - attendance
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCheckInList'
+          description: ''
   /api/v1/admin/money/escrows/{booking_id}/decide/:
     post:
       operationId: money_admin_decide
@@ -1857,6 +1952,220 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/attendance/arrivals/:
+    get:
+      operationId: attendance_arrivals
+      description: Confirmed bookings in their check-in window on `date` (default
+        today), each with what's needed to check its QR or code offline, and everyone
+        in house (for check-out and hours). Cache it with the public keys.
+      summary: The day's expected arrivals, for offline check-in
+      parameters:
+      - in: query
+        name: date
+        schema:
+          type: string
+          format: date
+      tags:
+      - attendance
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Arrivals'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/attendance/check-ins/:
+    post:
+      operationId: attendance_check_in
+      description: By the QR pass (`token`), the six-digit `code`, or by hand (`reason`).
+        `scanned_at` is when it happened, for a check-in queued offline (up to 72
+        hours). Repeating a `client_id` returns the first result. The talent's distance
+        from the property is recorded and flagged if large, never blocking.
+      summary: Check a talent in
+      tags:
+      - attendance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CheckInRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CheckInRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckIn'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckIn'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/attendance/hours/pending/:
+    get:
+      operationId: attendance_hours_pending
+      description: Oldest day first.
+      summary: Hours waiting for you to confirm
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - attendance
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPendingHourLogList'
+          description: ''
+  /api/v1/attendance/keys/:
+    get:
+      operationId: attendance_keys
+      description: Cache these to verify QR passes offline (Ed25519).
+      summary: Public keys that sign check-in passes
+      tags:
+      - attendance
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PublicKey'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/attendance/sync/:
+    post:
+      operationId: attendance_sync
+      description: 'Each is applied on its own, in order: `applied`, `duplicate` (already
+        done) or `refused` with the reason. Safe to send again.'
+      summary: Sync check-ins queued offline
+      tags:
+      - attendance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SyncRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SyncRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/auth/exchange/:
     post:
       operationId: auth_exchange
@@ -2553,6 +2862,227 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/bookings/{booking_id}/attendance/:
+    get:
+      operationId: attendance_check_in_record
+      description: 404 until the talent is checked in.
+      summary: A booking's check-in record
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - attendance
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckIn'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/bookings/{booking_id}/attendance/check-out/:
+    post:
+      operationId: attendance_check_out
+      summary: Check a talent out (ends the stay)
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - attendance
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckIn'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/bookings/{booking_id}/attendance/no-show/:
+    post:
+      operationId: attendance_no_show
+      description: From the grace period into the first day (`no_show_from` in arrivals).
+        It counts against the talent's reliability score; they can dispute it.
+      summary: Mark a no-show
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - attendance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoShow'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NoShow'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NoShow'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/bookings/{booking_id}/attendance/pass/:
+    post:
+      operationId: attendance_pass
+      description: A signed token to show as a QR code, and the secret for the six-digit
+        fallback code. Valid offline until `valid_until`; ask again for a fresh one.
+        Send your location to record your distance from the property at check-in (it
+        never blocks check-in).
+      summary: Your check-in pass
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - attendance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PassRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PassRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PassRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pass'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/bookings/{booking_id}/cancel/:
     get:
       operationId: bookings_cancel_preview
@@ -2901,6 +3431,188 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: ''
         '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/bookings/{booking_id}/hours/:
+    get:
+      operationId: attendance_hours_week
+      description: 'Monday to Sunday containing `week` (default: this week), with
+        the limits.'
+      summary: Hours logged in one week of a stay
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: query
+        name: week
+        schema:
+          type: string
+          format: date
+      tags:
+      - attendance
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HoursWeek'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    post:
+      operationId: attendance_hours_log
+      description: One log per day (logging again replaces it until the host confirms).
+        Refused if it breaks the weekly cap or leaves no day off; `check.warnings`
+        says when you're close.
+      summary: Log a day's hours
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - attendance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogHours'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LogHours'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LogHours'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoggedHours'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/bookings/{booking_id}/hours/check/:
+    post:
+      operationId: attendance_hours_check
+      description: Whether a log would be allowed, why not, and any warnings. Saves
+        nothing.
+      summary: Check hours before logging them
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - attendance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogHours'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LogHours'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LogHours'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HoursCheck'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
           content:
             application/json:
               schema:
@@ -4534,6 +5246,72 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Reason'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/hours/{log_id}/review/:
+    post:
+      operationId: attendance_hours_review
+      description: Disputing needs a note; the talent is told.
+      summary: Confirm or dispute a day's hours
+      parameters:
+      - in: path
+        name: log_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - attendance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HourReview'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/HourReview'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/HourReview'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HourLog'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
           description: ''
         '401':
           content:
@@ -7866,6 +8644,95 @@ components:
       - latitude
       - longitude
       - radius_m
+    Arrival:
+      type: object
+      properties:
+        booking_id:
+          type: string
+          format: uuid
+        talent_id:
+          type: string
+          format: uuid
+        talent_name:
+          type: string
+        gig_title:
+          type: string
+        property_name:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        status:
+          type: string
+        problem:
+          type: string
+          description: Why check-in would be refused now, or empty.
+        pass_id:
+          type: string
+          format: uuid
+        code_secret:
+          type: string
+          description: To check the talent's code offline.
+        pass_valid_from:
+          type: string
+          format: date-time
+        pass_valid_until:
+          type: string
+          format: date-time
+        no_show_from:
+          type: string
+          format: date-time
+      required:
+      - booking_id
+      - code_secret
+      - end_date
+      - gig_title
+      - no_show_from
+      - pass_id
+      - pass_valid_from
+      - pass_valid_until
+      - problem
+      - property_name
+      - start_date
+      - status
+      - talent_id
+      - talent_name
+    Arrivals:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        generated_at:
+          type: string
+          format: date-time
+        public_keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicKey'
+        code_period_seconds:
+          type: integer
+        clock_skew_seconds:
+          type: integer
+        arrivals:
+          type: array
+          items:
+            $ref: '#/components/schemas/Arrival'
+        in_house:
+          type: array
+          items:
+            $ref: '#/components/schemas/InHouse'
+      required:
+      - arrivals
+      - clock_skew_seconds
+      - code_period_seconds
+      - date
+      - generated_at
+      - in_house
+      - public_keys
     Attachment:
       type: object
       properties:
@@ -8771,6 +9638,128 @@ components:
         * `contact_sharing` - Asking to move off Barterly
         * `inappropriate` - Inappropriate content
         * `other` - Something else
+    CheckIn:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        booking_id:
+          type: string
+          format: uuid
+          readOnly: true
+        method:
+          allOf:
+          - $ref: '#/components/schemas/CheckInMethodEnum'
+          readOnly: true
+        checked_in_at:
+          type: string
+          format: date-time
+          readOnly: true
+        recorded_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+          description: For a manual check-in.
+        distance_m:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: The talent's distance from the property, if known.
+        location_age_minutes:
+          type: integer
+          readOnly: true
+          nullable: true
+        flag:
+          readOnly: true
+          oneOf:
+          - $ref: '#/components/schemas/FlagEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        review_note:
+          type: string
+          readOnly: true
+        checked_out_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - booking_id
+      - checked_in_at
+      - checked_out_at
+      - distance_m
+      - flag
+      - id
+      - location_age_minutes
+      - method
+      - reason
+      - recorded_at
+      - review_note
+      - reviewed_at
+    CheckInMethodEnum:
+      enum:
+      - qr
+      - code
+      - manual
+      - other
+      type: string
+      description: |-
+        * `qr` - QR scanned
+        * `code` - Six-digit code
+        * `manual` - Confirmed by hand
+        * `other` - Booking status changed directly
+    CheckInRequest:
+      type: object
+      properties:
+        client_id:
+          type: string
+          format: uuid
+          description: Made on the device; a re-sync applies once.
+        booking_id:
+          type: string
+          format: uuid
+          nullable: true
+        method:
+          $ref: '#/components/schemas/CheckInRequestMethodEnum'
+        token:
+          type: string
+          default: ''
+          maxLength: 600
+        code:
+          type: string
+          default: ''
+          maxLength: 12
+        reason:
+          type: string
+          default: ''
+          maxLength: 300
+        scanned_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When it was scanned (offline).
+      required:
+      - client_id
+      - method
+    CheckInRequestMethodEnum:
+      enum:
+      - qr
+      - code
+      - manual
+      type: string
+      description: |-
+        * `qr` - qr
+        * `code` - code
+        * `manual` - manual
     CheckSummary:
       type: object
       properties:
@@ -9616,6 +10605,21 @@ components:
       required:
       - breakdown
       - score
+    FlagEnum:
+      enum:
+      - far
+      type: string
+      description: |-
+        * `` - Not flagged
+        * `far` - Far from the property
+    FlagReview:
+      type: object
+      properties:
+        note:
+          type: string
+          maxLength: 300
+      required:
+      - note
     GeocodeRequest:
       type: object
       properties:
@@ -10212,6 +11216,139 @@ components:
       description: |-
         * `ok` - ok
         * `degraded` - degraded
+    HourLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        day:
+          type: string
+          format: date
+          readOnly: true
+        minutes:
+          type: integer
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/HourStatusEnum'
+          readOnly: true
+        vendor_note:
+          type: string
+          readOnly: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - day
+      - id
+      - minutes
+      - note
+      - reviewed_at
+      - status
+      - updated_at
+      - vendor_note
+    HourReview:
+      type: object
+      properties:
+        confirm:
+          type: boolean
+        note:
+          type: string
+          default: ''
+          maxLength: 300
+      required:
+      - confirm
+    HourStatusEnum:
+      enum:
+      - pending
+      - confirmed
+      - disputed
+      type: string
+      description: |-
+        * `pending` - Waiting for the host
+        * `confirmed` - Confirmed
+        * `disputed` - Disputed
+    HoursCheck:
+      type: object
+      properties:
+        allowed:
+          type: boolean
+        problems:
+          type: array
+          items:
+            type: string
+        warnings:
+          type: array
+          items:
+            type: string
+        week_start:
+          type: string
+          format: date
+        week_minutes:
+          type: integer
+        week_days:
+          type: integer
+        weekly_cap_minutes:
+          type: integer
+        days_per_week:
+          type: integer
+      required:
+      - allowed
+      - days_per_week
+      - problems
+      - warnings
+      - week_days
+      - week_minutes
+      - week_start
+      - weekly_cap_minutes
+    HoursWeek:
+      type: object
+      properties:
+        week_start:
+          type: string
+          format: date
+        week_end:
+          type: string
+          format: date
+        logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/HourLog'
+        minutes:
+          type: integer
+        days_worked:
+          type: integer
+        weekly_cap_minutes:
+          type: integer
+        hours_per_day:
+          type: integer
+        days_per_week:
+          type: integer
+      required:
+      - days_per_week
+      - days_worked
+      - hours_per_day
+      - logs
+      - minutes
+      - week_end
+      - week_start
+      - weekly_cap_minutes
     IdDocumentTypeEnum:
       enum:
       - aadhaar
@@ -10224,6 +11361,34 @@ components:
         * `passport` - Passport
         * `driving_licence` - Driving licence
         * `voter_id` - Voter ID
+    InHouse:
+      type: object
+      properties:
+        booking_id:
+          type: string
+          format: uuid
+        talent_name:
+          type: string
+        gig_title:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        status:
+          type: string
+        hours_to_review:
+          type: integer
+      required:
+      - booking_id
+      - end_date
+      - gig_title
+      - hours_to_review
+      - start_date
+      - status
+      - talent_name
     Interview:
       type: object
       properties:
@@ -10580,6 +11745,52 @@ components:
           maxLength: 100
       required:
       - method
+    Location:
+      type: object
+      properties:
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+        accuracy_m:
+          type: integer
+          maximum: 100000
+          minimum: 0
+          nullable: true
+      required:
+      - latitude
+      - longitude
+    LogHours:
+      type: object
+      properties:
+        day:
+          type: string
+          format: date
+        minutes:
+          type: integer
+          maximum: 1440
+          minimum: 1
+        note:
+          type: string
+          default: ''
+          maxLength: 300
+      required:
+      - day
+      - minutes
+    LoggedHours:
+      type: object
+      properties:
+        log:
+          $ref: '#/components/schemas/HourLog'
+        check:
+          $ref: '#/components/schemas/HoursCheck'
+      required:
+      - check
+      - log
     MakeOffer:
       type: object
       properties:
@@ -10747,6 +11958,14 @@ components:
       - badges
       - checks
       - trusted_member
+    NoShow:
+      type: object
+      properties:
+        reason:
+          type: string
+          maxLength: 300
+      required:
+      - reason
     Note:
       type: object
       properties:
@@ -11075,6 +12294,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BookingListItem'
+    PaginatedCheckInList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckIn'
     PaginatedConversationList:
       type: object
       required:
@@ -11167,6 +12409,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Notification'
+    PaginatedPendingHourLogList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PendingHourLog'
     PaginatedPropertyList:
       type: object
       required:
@@ -11235,6 +12500,45 @@ components:
       description: |-
         * `vendor` - The host
         * `talent` - The talent
+    Pass:
+      type: object
+      description: |-
+        Show `token` as a QR code. If scanning fails, show the six-digit code: TOTP
+        (HMAC-SHA1) of `code_secret` (base32), changing every `code_period_seconds`.
+      properties:
+        booking_id:
+          type: string
+          format: uuid
+        token:
+          type: string
+        code_secret:
+          type: string
+        code_period_seconds:
+          type: integer
+          default: 300
+        code_digits:
+          type: integer
+          default: 6
+        valid_from:
+          type: string
+          format: date-time
+        valid_until:
+          type: string
+          format: date-time
+      required:
+      - booking_id
+      - code_secret
+      - token
+      - valid_from
+      - valid_until
+    PassRequest:
+      type: object
+      properties:
+        location:
+          allOf:
+          - $ref: '#/components/schemas/Location'
+          nullable: true
+          description: Where you are now (for the host's records).
     PatchedGig:
       type: object
       properties:
@@ -11988,6 +13292,66 @@ components:
       - sha256
       - size
       - url
+    PendingHourLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        day:
+          type: string
+          format: date
+          readOnly: true
+        minutes:
+          type: integer
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/HourStatusEnum'
+          readOnly: true
+        vendor_note:
+          type: string
+          readOnly: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        booking_id:
+          type: string
+          format: uuid
+          readOnly: true
+        talent_name:
+          type: string
+          readOnly: true
+        gig_title:
+          type: string
+          readOnly: true
+      required:
+      - booking_id
+      - created_at
+      - day
+      - gig_title
+      - id
+      - minutes
+      - note
+      - reviewed_at
+      - status
+      - talent_name
+      - updated_at
+      - vendor_note
     Photo:
       type: object
       properties:
@@ -12331,6 +13695,20 @@ components:
       required:
       - slots
       - video_link
+    PublicKey:
+      type: object
+      properties:
+        kid:
+          type: string
+        alg:
+          type: string
+        public_key:
+          type: string
+          description: Raw Ed25519 public key, base64url.
+      required:
+      - alg
+      - kid
+      - public_key
     PublicPhoto:
       type: object
       properties:
@@ -13190,6 +14568,53 @@ components:
         * `halted` - Retries exhausted
         * `cancelled` - Cancelled
         * `completed` - Completed
+    SyncRequest:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckInRequest'
+      required:
+      - events
+    SyncResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SyncResult'
+      required:
+      - results
+    SyncResult:
+      type: object
+      properties:
+        client_id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/SyncResultStatusEnum'
+        message:
+          type: string
+        booking_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - booking_id
+      - client_id
+      - message
+      - status
+    SyncResultStatusEnum:
+      enum:
+      - applied
+      - duplicate
+      - refused
+      type: string
+      description: |-
+        * `applied` - applied
+        * `duplicate` - duplicate
+        * `refused` - refused
     Tags:
       type: object
       properties:

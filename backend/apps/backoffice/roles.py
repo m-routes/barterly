@@ -43,6 +43,8 @@ PERMISSIONS: dict[str, list[str]] = {
         *LOOKUP,
         "backoffice.review_gigs",
         "backoffice.view_audit_log",
+        "attendance.view_checkin",
+        "attendance.review_checkin",
     ],
     # Verification and fraud: decides cases, sees badges and provider events.
     AdminRole.TRUST: [

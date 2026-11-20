@@ -35,6 +35,7 @@ describe("ConsoleShell", () => {
     const links = sidebar.getAllByRole("link");
     expect(links.map((l) => l.textContent)).toEqual([
       "Dashboard",
+      "Arrivals",
       "Gigs",
       "Applicants",
       "Messages",

@@ -175,6 +175,19 @@ class _TripBodyState extends ConsumerState<_TripBody> {
                 gigTitle: a.gigTitle,
                 start: stay.$1,
                 confirmed: agreement.bookingStatus == 'confirmed',
+                bookingId: agreement.bookingId,
+              ),
+            ],
+            if (agreement != null &&
+                const {
+                  'checked_in',
+                  'delivering',
+                  'completed',
+                }.contains(agreement.bookingStatus)) ...[
+              const SizedBox(height: BarterlySpace.md),
+              _StayCard(
+                bookingId: agreement.bookingId,
+                completed: agreement.bookingStatus == 'completed',
               ),
             ],
             const SizedBox(height: BarterlySpace.md),
@@ -591,11 +604,13 @@ class _CheckInCard extends ConsumerWidget {
     required this.gigTitle,
     required this.start,
     required this.confirmed,
+    required this.bookingId,
   });
 
   final String gigTitle;
   final DateTime start;
   final bool confirmed;
+  final String bookingId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => SurfaceCard(
@@ -636,6 +651,44 @@ class _CheckInCard extends ConsumerWidget {
           },
           icon: const Icon(Icons.event_outlined, size: 18),
           label: const Text('Add check-in to calendar'),
+        ),
+        if (confirmed)
+          FilledButton.icon(
+            onPressed: () => context.push(Routes.checkInPass(bookingId)),
+            icon: const Icon(Icons.qr_code_2, size: 18),
+            label: const Text('Show check-in pass'),
+          ),
+      ],
+    ),
+  );
+}
+
+/// During the stay: log the day's hours for the host to confirm.
+class _StayCard extends StatelessWidget {
+  const new({required this.bookingId, required this.completed});
+
+  final String bookingId;
+  final bool completed;
+
+  @override
+  Widget build(BuildContext context) => SurfaceCard(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: BarterlySpace.sm,
+      children: [
+        Text(
+          completed ? 'Your stay is over' : "You're checked in",
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        Text(
+          completed
+              ? 'You can still log hours for a week after the stay ends.'
+              : 'Log your hours each day. Your host confirms them.',
+        ),
+        OutlinedButton.icon(
+          onPressed: () => context.push(Routes.hours(bookingId)),
+          icon: const Icon(Icons.schedule, size: 18),
+          label: const Text('Log hours'),
         ),
       ],
     ),

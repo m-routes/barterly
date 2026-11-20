@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "apps.reliability",
     "apps.billing",
     "apps.money",
+    "apps.attendance",
     "apps.backoffice.apps.BackofficeConfig",
 ]
 
@@ -180,6 +181,8 @@ SPECTACULAR_SETTINGS = {
         "PayoutValidationStatusEnum": "apps.money.models.ValidationStatus",
         "PayoutAttemptStatusEnum": "apps.money.models.PayoutAttemptStatus",
         "PayoutTriggerEnum": "apps.money.models.PayoutTrigger",
+        "CheckInMethodEnum": "apps.attendance.models.CheckInMethod",
+        "HourStatusEnum": "apps.attendance.models.HourStatus",
         "CancellationReasonEnum": "apps.bookings.models.CancellationReason",
         "CancellationEffectEnum": "apps.bookings.models.CancellationEffect",
         "CancelledByEnum": "apps.bookings.models.CancelledBy",
@@ -294,6 +297,18 @@ PAYOUT_ACCOUNT_CHANGE_HOLD_HOURS = env_int("PAYOUT_ACCOUNT_CHANGE_HOLD_HOURS", 2
 PAYOUT_MAX_ATTEMPTS = env_int("PAYOUT_MAX_ATTEMPTS", 5)
 PAYOUT_RUN_LIMIT = env_int("PAYOUT_RUN_LIMIT", 500)
 PAYOUT_ON_DEMAND_EVERY_MINUTES = env_int("PAYOUT_ON_DEMAND_EVERY_MINUTES", 10)
+
+# Attendance (apps.attendance): signed check-in passes, codes, hours.
+# The Ed25519 private key: 32 random bytes, base64 (Secret Manager in deployed
+# environments; local runs derive one from SECRET_KEY). Rotate by moving the old public
+# key into ATTENDANCE_PREVIOUS_PUBLIC_KEYS for a day.
+ATTENDANCE_SIGNING_KEY = env_str("ATTENDANCE_SIGNING_KEY", "")
+ATTENDANCE_PREVIOUS_PUBLIC_KEYS = env_list("ATTENDANCE_PREVIOUS_PUBLIC_KEYS", "")
+ATTENDANCE_PASS_HOURS = env_int("ATTENDANCE_PASS_HOURS", 48)
+ATTENDANCE_GEOFENCE_FLAG_METERS = env_int("ATTENDANCE_GEOFENCE_FLAG_METERS", 1000)
+ATTENDANCE_SYNC_MAX_AGE_HOURS = env_int("ATTENDANCE_SYNC_MAX_AGE_HOURS", 72)
+ATTENDANCE_CLOCK_SKEW_SECONDS = env_int("ATTENDANCE_CLOCK_SKEW_SECONDS", 120)
+ATTENDANCE_NO_SHOW_GRACE_HOURS = env_int("ATTENDANCE_NO_SHOW_GRACE_HOURS", 18)
 
 # Discovery (apps.discovery). Fit-score weights: they needn't add to 100 (they are
 # scaled), but keeping them at 100 makes each one read as "points".

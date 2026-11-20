@@ -2,6 +2,8 @@ import 'package:barterly/src/agreements/agreements_repository.dart';
 import 'package:barterly/src/api/api_client.dart';
 import 'package:barterly/src/api/token_store.dart';
 import 'package:barterly/src/apply/applications_repository.dart';
+import 'package:barterly/src/attendance/attendance_repository.dart';
+import 'package:barterly/src/attendance/location.dart';
 import 'package:barterly/src/auth/auth_repository.dart';
 import 'package:barterly/src/auth/phone_auth.dart';
 import 'package:barterly/src/auth/session.dart';
@@ -114,6 +116,22 @@ final mediaUploaderProvider = Provider<MediaUploader>(
     storage: ref.watch(storageDioProvider),
   ),
 );
+
+/// Check-in passes (kept on the device for offline use) and hour logs.
+final attendanceRepositoryProvider = Provider<AttendanceRepository>(
+  (ref) => AttendanceRepository(
+    ref.watch(dioProvider),
+    ref.watch(keyValueStoreProvider),
+  ),
+);
+
+/// Where the talent is when they open their pass (optional; never blocks).
+final locationReaderProvider = Provider<LocationReader>(
+  (ref) => GeolocatorReader(),
+);
+
+/// The time, so screens with clocks can be tested.
+final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
 
 /// On-device JSON storage (offline feed, queued applications).
 final keyValueStoreProvider = Provider<KeyValueStore>(

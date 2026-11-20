@@ -4,6 +4,43 @@
  */
 
 export interface paths {
+  "/api/v1/admin/attendance/{check_in_id}/review/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Mark a flagged check-in reviewed (admin) */
+    post: operations["attendance_admin_flag_review"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/attendance/flagged/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Check-ins flagged for review (admin)
+     * @description Far from the property, not yet reviewed. Oldest first.
+     */
+    get: operations["attendance_admin_flagged"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/admin/money/escrows/{booking_id}/decide/": {
     parameters: {
       query?: never;
@@ -611,6 +648,106 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/attendance/arrivals/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The day's expected arrivals, for offline check-in
+     * @description Confirmed bookings in their check-in window on `date` (default today), each with what's needed to check its QR or code offline, and everyone in house (for check-out and hours). Cache it with the public keys.
+     */
+    get: operations["attendance_arrivals"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/attendance/check-ins/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Check a talent in
+     * @description By the QR pass (`token`), the six-digit `code`, or by hand (`reason`). `scanned_at` is when it happened, for a check-in queued offline (up to 72 hours). Repeating a `client_id` returns the first result. The talent's distance from the property is recorded and flagged if large, never blocking.
+     */
+    post: operations["attendance_check_in"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/attendance/hours/pending/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Hours waiting for you to confirm
+     * @description Oldest day first.
+     */
+    get: operations["attendance_hours_pending"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/attendance/keys/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Public keys that sign check-in passes
+     * @description Cache these to verify QR passes offline (Ed25519).
+     */
+    get: operations["attendance_keys"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/attendance/sync/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Sync check-ins queued offline
+     * @description Each is applied on its own, in order: `applied`, `duplicate` (already done) or `refused` with the reason. Safe to send again.
+     */
+    post: operations["attendance_sync"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/auth/exchange/": {
     parameters: {
       query?: never;
@@ -897,6 +1034,83 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/bookings/{booking_id}/attendance/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A booking's check-in record
+     * @description 404 until the talent is checked in.
+     */
+    get: operations["attendance_check_in_record"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/attendance/check-out/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Check a talent out (ends the stay) */
+    post: operations["attendance_check_out"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/attendance/no-show/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Mark a no-show
+     * @description From the grace period into the first day (`no_show_from` in arrivals). It counts against the talent's reliability score; they can dispute it.
+     */
+    post: operations["attendance_no_show"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/attendance/pass/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Your check-in pass
+     * @description A signed token to show as a QR code, and the secret for the six-digit fallback code. Valid offline until `valid_until`; ask again for a fresh one. Send your location to record your distance from the property at check-in (it never blocks check-in).
+     */
+    post: operations["attendance_pass"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/bookings/{booking_id}/cancel/": {
     parameters: {
       query?: never;
@@ -999,6 +1213,50 @@ export interface paths {
      * @description Creates the gateway order for the host to pay at checkout (asking again before paying returns the same order). The money is held once the gateway confirms the payment. 503 while the kill switch is on.
      */
     post: operations["money_escrow_fund"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/hours/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Hours logged in one week of a stay
+     * @description Monday to Sunday containing `week` (default: this week), with the limits.
+     */
+    get: operations["attendance_hours_week"];
+    put?: never;
+    /**
+     * Log a day's hours
+     * @description One log per day (logging again replaces it until the host confirms). Refused if it breaks the weekly cap or leaves no day off; `check.warnings` says when you're close.
+     */
+    post: operations["attendance_hours_log"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/hours/check/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Check hours before logging them
+     * @description Whether a log would be allowed, why not, and any warnings. Saves nothing.
+     */
+    post: operations["attendance_hours_check"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1432,6 +1690,26 @@ export interface paths {
     get: operations["hiring_rejection_reasons"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/hours/{log_id}/review/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirm or dispute a day's hours
+     * @description Disputing needs a note; the talent is told.
+     */
+    post: operations["attendance_hours_review"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2696,6 +2974,43 @@ export interface components {
       /** @description The property is within this distance. */
       radius_m: number;
     };
+    Arrival: {
+      /** Format: uuid */
+      booking_id: string;
+      /** Format: uuid */
+      talent_id: string;
+      talent_name: string;
+      gig_title: string;
+      property_name: string;
+      /** Format: date */
+      start_date: string;
+      /** Format: date */
+      end_date: string;
+      status: string;
+      /** @description Why check-in would be refused now, or empty. */
+      problem: string;
+      /** Format: uuid */
+      pass_id: string;
+      /** @description To check the talent's code offline. */
+      code_secret: string;
+      /** Format: date-time */
+      pass_valid_from: string;
+      /** Format: date-time */
+      pass_valid_until: string;
+      /** Format: date-time */
+      no_show_from: string;
+    };
+    Arrivals: {
+      /** Format: date */
+      date: string;
+      /** Format: date-time */
+      generated_at: string;
+      public_keys: components["schemas"]["PublicKey"][];
+      code_period_seconds: number;
+      clock_skew_seconds: number;
+      arrivals: components["schemas"]["Arrival"][];
+      in_house: components["schemas"]["InHouse"][];
+    };
     Attachment: {
       /** Format: uuid */
       readonly id: string;
@@ -3130,6 +3445,64 @@ export interface components {
      */
     ChatReportReasonEnum:
       "spam" | "harassment" | "scam" | "contact_sharing" | "inappropriate" | "other";
+    CheckIn: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly booking_id: string;
+      readonly method: components["schemas"]["CheckInMethodEnum"];
+      /** Format: date-time */
+      readonly checked_in_at: string;
+      /** Format: date-time */
+      readonly recorded_at: string;
+      /** @description For a manual check-in. */
+      readonly reason: string;
+      /** @description The talent's distance from the property, if known. */
+      readonly distance_m: number | null;
+      readonly location_age_minutes: number | null;
+      readonly flag: components["schemas"]["FlagEnum"] | components["schemas"]["BlankEnum"];
+      /** Format: date-time */
+      readonly reviewed_at: string | null;
+      readonly review_note: string;
+      /** Format: date-time */
+      readonly checked_out_at: string | null;
+    };
+    /**
+     * @description * `qr` - QR scanned
+     *     * `code` - Six-digit code
+     *     * `manual` - Confirmed by hand
+     *     * `other` - Booking status changed directly
+     * @enum {string}
+     */
+    CheckInMethodEnum: "qr" | "code" | "manual" | "other";
+    CheckInRequest: {
+      /**
+       * Format: uuid
+       * @description Made on the device; a re-sync applies once.
+       */
+      client_id: string;
+      /** Format: uuid */
+      booking_id?: string | null;
+      method: components["schemas"]["CheckInRequestMethodEnum"];
+      /** @default  */
+      token: string;
+      /** @default  */
+      code: string;
+      /** @default  */
+      reason: string;
+      /**
+       * Format: date-time
+       * @description When it was scanned (offline).
+       */
+      scanned_at?: string | null;
+    };
+    /**
+     * @description * `qr` - qr
+     *     * `code` - code
+     *     * `manual` - manual
+     * @enum {string}
+     */
+    CheckInRequestMethodEnum: "qr" | "code" | "manual";
     CheckSummary: {
       check_type: components["schemas"]["CheckTypeEnum"];
       label: string;
@@ -3537,6 +3910,15 @@ export interface components {
         [key: string]: components["schemas"]["Component"];
       };
     };
+    /**
+     * @description * `` - Not flagged
+     *     * `far` - Far from the property
+     * @enum {string}
+     */
+    FlagEnum: "far";
+    FlagReview: {
+      note: string;
+    };
     GeocodeRequest: {
       /** @description A full address. */
       query: string;
@@ -3764,6 +4146,57 @@ export interface components {
      * @enum {string}
      */
     HealthStatusEnum: "ok" | "degraded";
+    HourLog: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: date */
+      readonly day: string;
+      readonly minutes: number;
+      readonly note: string;
+      readonly status: components["schemas"]["HourStatusEnum"];
+      readonly vendor_note: string;
+      /** Format: date-time */
+      readonly reviewed_at: string | null;
+      /** Format: date-time */
+      readonly created_at: string;
+      /** Format: date-time */
+      readonly updated_at: string;
+    };
+    HourReview: {
+      confirm: boolean;
+      /** @default  */
+      note: string;
+    };
+    /**
+     * @description * `pending` - Waiting for the host
+     *     * `confirmed` - Confirmed
+     *     * `disputed` - Disputed
+     * @enum {string}
+     */
+    HourStatusEnum: "pending" | "confirmed" | "disputed";
+    HoursCheck: {
+      allowed: boolean;
+      problems: string[];
+      warnings: string[];
+      /** Format: date */
+      week_start: string;
+      week_minutes: number;
+      week_days: number;
+      weekly_cap_minutes: number;
+      days_per_week: number;
+    };
+    HoursWeek: {
+      /** Format: date */
+      week_start: string;
+      /** Format: date */
+      week_end: string;
+      logs: components["schemas"]["HourLog"][];
+      minutes: number;
+      days_worked: number;
+      weekly_cap_minutes: number;
+      hours_per_day: number;
+      days_per_week: number;
+    };
     /**
      * @description * `aadhaar` - Aadhaar
      *     * `passport` - Passport
@@ -3772,6 +4205,18 @@ export interface components {
      * @enum {string}
      */
     IdDocumentTypeEnum: "aadhaar" | "passport" | "driving_licence" | "voter_id";
+    InHouse: {
+      /** Format: uuid */
+      booking_id: string;
+      talent_name: string;
+      gig_title: string;
+      /** Format: date */
+      start_date: string;
+      /** Format: date */
+      end_date: string;
+      status: string;
+      hours_to_review: number;
+    };
     Interview: {
       /** Format: uuid */
       readonly id: string;
@@ -3957,6 +4402,24 @@ export interface components {
       /** @default  */
       holder_name: string;
     };
+    Location: {
+      /** Format: decimal */
+      latitude: string;
+      /** Format: decimal */
+      longitude: string;
+      accuracy_m?: number | null;
+    };
+    LogHours: {
+      /** Format: date */
+      day: string;
+      minutes: number;
+      /** @default  */
+      note: string;
+    };
+    LoggedHours: {
+      log: components["schemas"]["HourLog"];
+      check: components["schemas"]["HoursCheck"];
+    };
     MakeOffer: {
       /** @description Checked against the gig's pay model. */
       terms: components["schemas"]["Terms"];
@@ -4035,6 +4498,9 @@ export interface components {
       /** @description Active badges. */
       badges: components["schemas"]["Badge"][];
       trusted_member: boolean;
+    };
+    NoShow: {
+      reason: string;
     };
     Note: {
       /** Format: uuid */
@@ -4196,6 +4662,21 @@ export interface components {
       previous?: string | null;
       results: components["schemas"]["BookingListItem"][];
     };
+    PaginatedCheckInList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["CheckIn"][];
+    };
     PaginatedConversationList: {
       /** @example 123 */
       count: number;
@@ -4256,6 +4737,21 @@ export interface components {
       previous?: string | null;
       results: components["schemas"]["Notification"][];
     };
+    PaginatedPendingHourLogList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["PendingHourLog"][];
+    };
     PaginatedPropertyList: {
       /** @example 123 */
       count: number;
@@ -4298,6 +4794,28 @@ export interface components {
      * @enum {string}
      */
     PartyEnum: "vendor" | "talent";
+    /**
+     * @description Show `token` as a QR code. If scanning fails, show the six-digit code: TOTP
+     *     (HMAC-SHA1) of `code_secret` (base32), changing every `code_period_seconds`.
+     */
+    Pass: {
+      /** Format: uuid */
+      booking_id: string;
+      token: string;
+      code_secret: string;
+      /** @default 300 */
+      code_period_seconds: number;
+      /** @default 6 */
+      code_digits: number;
+      /** Format: date-time */
+      valid_from: string;
+      /** Format: date-time */
+      valid_until: string;
+    };
+    PassRequest: {
+      /** @description Where you are now (for the host's records). */
+      location?: components["schemas"]["Location"] | null;
+    };
     PatchedGig: {
       /** Format: uuid */
       readonly id?: string;
@@ -4628,6 +5146,26 @@ export interface components {
       sha256: string;
       size: number;
     };
+    PendingHourLog: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: date */
+      readonly day: string;
+      readonly minutes: number;
+      readonly note: string;
+      readonly status: components["schemas"]["HourStatusEnum"];
+      readonly vendor_note: string;
+      /** Format: date-time */
+      readonly reviewed_at: string | null;
+      /** Format: date-time */
+      readonly created_at: string;
+      /** Format: date-time */
+      readonly updated_at: string;
+      /** Format: uuid */
+      readonly booking_id: string;
+      readonly talent_name: string;
+      readonly gig_title: string;
+    };
     Photo: {
       /** Format: uuid */
       readonly id: string;
@@ -4773,6 +5311,12 @@ export interface components {
       /** @default 30 */
       duration_minutes: number;
       note?: string;
+    };
+    PublicKey: {
+      kid: string;
+      alg: string;
+      /** @description Raw Ed25519 public key, base64url. */
+      public_key: string;
     };
     PublicPhoto: {
       /** Format: uuid */
@@ -5205,6 +5749,27 @@ export interface components {
      */
     SubscriptionStatusEnum:
       "created" | "authenticated" | "active" | "past_due" | "halted" | "cancelled" | "completed";
+    SyncRequest: {
+      events: components["schemas"]["CheckInRequest"][];
+    };
+    SyncResponse: {
+      results: components["schemas"]["SyncResult"][];
+    };
+    SyncResult: {
+      /** Format: uuid */
+      client_id: string;
+      status: components["schemas"]["SyncResultStatusEnum"];
+      message: string;
+      /** Format: uuid */
+      booking_id: string | null;
+    };
+    /**
+     * @description * `applied` - applied
+     *     * `duplicate` - duplicate
+     *     * `refused` - refused
+     * @enum {string}
+     */
+    SyncResultStatusEnum: "applied" | "duplicate" | "refused";
     Tags: {
       tags: string[];
     };
@@ -5642,6 +6207,97 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  attendance_admin_flag_review: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        check_in_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["FlagReview"];
+        "application/x-www-form-urlencoded": components["schemas"]["FlagReview"];
+        "multipart/form-data": components["schemas"]["FlagReview"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CheckIn"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_admin_flagged: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedCheckInList"];
+        };
+      };
+    };
+  };
   money_admin_decide: {
     parameters: {
       query?: never;
@@ -7547,6 +8203,224 @@ export interface operations {
       };
     };
   };
+  attendance_arrivals: {
+    parameters: {
+      query?: {
+        date?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Arrivals"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_check_in: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CheckInRequest"];
+        "application/x-www-form-urlencoded": components["schemas"]["CheckInRequest"];
+        "multipart/form-data": components["schemas"]["CheckInRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CheckIn"];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CheckIn"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_hours_pending: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedPendingHourLogList"];
+        };
+      };
+    };
+  };
+  attendance_keys: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PublicKey"][];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_sync: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SyncRequest"];
+        "application/x-www-form-urlencoded": components["schemas"]["SyncRequest"];
+        "multipart/form-data": components["schemas"]["SyncRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SyncResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
   auth_exchange: {
     parameters: {
       query?: never;
@@ -8294,6 +9168,232 @@ export interface operations {
       };
     };
   };
+  attendance_check_in_record: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CheckIn"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_check_out: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CheckIn"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_no_show: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NoShow"];
+        "application/x-www-form-urlencoded": components["schemas"]["NoShow"];
+        "multipart/form-data": components["schemas"]["NoShow"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            status?: string;
+          };
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_pass: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["PassRequest"];
+        "application/x-www-form-urlencoded": components["schemas"]["PassRequest"];
+        "multipart/form-data": components["schemas"]["PassRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Pass"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
   bookings_cancel_preview: {
     parameters: {
       query?: never;
@@ -8668,6 +9768,187 @@ export interface operations {
         };
       };
       503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_hours_week: {
+    parameters: {
+      query?: {
+        week?: string;
+      };
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HoursWeek"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_hours_log: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LogHours"];
+        "application/x-www-form-urlencoded": components["schemas"]["LogHours"];
+        "multipart/form-data": components["schemas"]["LogHours"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LoggedHours"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_hours_check: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LogHours"];
+        "application/x-www-form-urlencoded": components["schemas"]["LogHours"];
+        "multipart/form-data": components["schemas"]["LogHours"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HoursCheck"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -10156,6 +11437,73 @@ export interface operations {
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_hours_review: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        log_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["HourReview"];
+        "application/x-www-form-urlencoded": components["schemas"]["HourReview"];
+        "multipart/form-data": components["schemas"]["HourReview"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HourLog"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
         headers: {
           [name: string]: unknown;
         };

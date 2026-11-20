@@ -79,3 +79,10 @@ export type BillingPlan = Schemas["Plan"];
 export type BillingOverview = Schemas["BillingOverview"];
 export type BillingSubscription = Schemas["Subscription"];
 export type Invoice = Schemas["Invoice"];
+
+export type Arrivals = Schemas["Arrivals"];
+export type Arrival = Schemas["Arrival"];
+export type InHouse = Schemas["InHouse"];
+export type CheckInRequest = Schemas["CheckInRequest"];
+export type SyncResult = Schemas["SyncResult"];
+export type PendingHourLog = Schemas["PendingHourLog"];

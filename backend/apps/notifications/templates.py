@@ -162,6 +162,10 @@ TEMPLATES: dict[str, Template] = {
             "हम {account} को सत्यापित नहीं कर सके। विवरण जाँचकर फिर से जोड़ें।",
         ),
     },
+    "attendance.hours_disputed": {
+        "en": ("Hours disputed", "{gig_title}: your host disputed your hours on {day}: {note}"),
+        "hi": ("घंटों पर आपत्ति", "{gig_title}: होस्ट ने {day} के आपके घंटों पर आपत्ति की: {note}"),
+    },
     catalog.OTHER: {
         "en": ("{label}", "{gig_title}"),
         "hi": ("{label}", "{gig_title}"),
@@ -193,6 +197,7 @@ VARIABLES: dict[str, tuple[str, ...]] = {
     "money.payout_failed": ("amount", "gig_title", "account"),
     "money.payout_on_hold": ("gig_title", "message"),
     "money.payout_account_failed": ("account",),
+    "attendance.hours_disputed": ("gig_title", "day", "note"),
     catalog.OTHER: ("label", "gig_title"),
 }
 
