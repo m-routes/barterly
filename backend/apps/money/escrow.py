@@ -515,22 +515,41 @@ def refund_or_flag(booking_id, *, reason: str, now) -> None:
 # ---------- Auto-release ----------
 
 
-def auto_release(now) -> dict[str, int]:
-    """Job: release escrows whose latest submission has had no answer for
-    ESCROW_AUTO_RELEASE_HOURS."""
-    if paused():
-        return {"released": 0, "paused": 1}
+def _release_due(booking, cutoff) -> str | None:
+    """Who a due release is by ("vendor": approved; "system": the window ran out), or
+    None. Bookings with tracked deliverables (apps.deliverables) wait for every one of
+    them: the window starts when the last is handed in. Others use their latest single
+    submission."""
+    from apps.deliverables.services import release_window
     from apps.money.models import DeliverableSubmission, SubmissionReview
 
+    window = release_window(booking)
+    if window is not None:
+        state, at = window
+        if state == "approved":
+            return "vendor"
+        return "system" if state == "waiting" and at <= cutoff else None
+    latest = DeliverableSubmission.objects.filter(booking_id=booking.pk).first()
+    if latest is None:
+        return None
+    # Approved, but the release couldn't happen then (kill switch, say): try again.
+    if latest.review == SubmissionReview.APPROVED:
+        return "vendor"
+    if latest.review == SubmissionReview.PENDING and latest.submitted_at <= cutoff:
+        return "system"
+    return None
+
+
+def auto_release(now) -> dict[str, int]:
+    """Job: release escrows whose deliverables have had no answer for
+    ESCROW_AUTO_RELEASE_HOURS after the last was handed in (or were all approved)."""
+    if paused():
+        return {"released": 0, "paused": 1}
     cutoff = now - timedelta(hours=settings.ESCROW_AUTO_RELEASE_HOURS)
     released = 0
     for escrow in Escrow.objects.filter(status=E.HELD, frozen=False).select_related("booking"):
-        latest = DeliverableSubmission.objects.filter(booking_id=escrow.booking_id).first()
-        if latest is None:
-            continue
-        due = latest.review == SubmissionReview.PENDING and latest.submitted_at <= cutoff
-        # Approved, but the release couldn't happen then (kill switch, say): try again.
-        if not (due or latest.review == SubmissionReview.APPROVED):
+        by = _release_due(escrow.booking, cutoff)
+        if by is None:
             continue
         if (
             escrow.booking.status not in RELEASABLE
@@ -538,7 +557,6 @@ def auto_release(now) -> dict[str, int]:
         ):
             continue
         try:
-            by = "vendor" if latest.review == SubmissionReview.APPROVED else "system"
             release(escrow.booking_id, by=by, now=now)
             released += 1
         except EscrowError:

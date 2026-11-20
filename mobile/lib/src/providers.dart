@@ -11,6 +11,7 @@ import 'package:barterly/src/chat/chat_repository.dart';
 import 'package:barterly/src/chat/chat_transport.dart';
 import 'package:barterly/src/config/env.dart';
 import 'package:barterly/src/crash/crash_reporter.dart';
+import 'package:barterly/src/deliverables/deliverables_repository.dart';
 import 'package:barterly/src/discover/gigs_repository.dart';
 import 'package:barterly/src/notifications/notifications_repository.dart';
 import 'package:barterly/src/notifications/push.dart';
@@ -123,6 +124,10 @@ final attendanceRepositoryProvider = Provider<AttendanceRepository>(
     ref.watch(dioProvider),
     ref.watch(keyValueStoreProvider),
   ),
+);
+
+final deliverablesRepositoryProvider = Provider<DeliverablesRepository>(
+  (ref) => DeliverablesRepository(ref.watch(dioProvider)),
 );
 
 /// Where the talent is when they open their pass (optional; never blocks).

@@ -76,6 +76,7 @@ Surfaces: the vendor console (web), the talent app (mobile) and the admin consol
 | `billing` | Plans as data, subscriptions through Razorpay (behind `PaymentGateway`), entitlements, GST invoices and dunning |
 | `money` | Double-entry ledger (append-only, integer paise), escrow for paid and hybrid bookings, deliverables, payout accounts, payout runs, the talent wallet, statements and TDS records, webhooks, reconciliation and the kill switch ([money.md](money.md)) |
 | `attendance` | Signed check-in passes (Ed25519 QR + six-digit code), offline check-in sync, the soft geofence, check-out, no-show grace, volunteer hour logs ([attendance.md](attendance.md)) |
+| `deliverables` | Barter and hybrid deliverables: one per unit of the agreement, submissions with the collaboration-label check, two rounds of changes, post stats (YouTube/Instagram APIs or self-reported), usage rights, the host's content library, reminders, and escrow's 72-hour window ([deliverables.md](deliverables.md)) |
 | `reliability` | The reliability score v1 (a pure function, [reliability.md](reliability.md)) and each person's stored score per side |
 | `verification` | Verification cases per check, evidence (provider references and masked numbers only), badges, the KYC provider interface and webhook, re-verification on profile edits, the review API |
 
@@ -295,6 +296,8 @@ A confirmed booking gives its slot back. The place is then offered on: offers he
 | `billing_dunning` | Daily at 10:00 | Payment-failed reminders before the grace period ends; paid features lock after it |
 | `billing_invoices` | Every 30 minutes | GST invoices left unrendered or unsent are finished |
 | `escrow_auto_release` | Hourly at :15 | Release escrow 72 hours after the latest unanswered submission, or after an approval that couldn't release then |
+| `deliverable_reminders` | Daily at 09:00 | Deliverables due in two days, today, or overdue |
+| `deliverable_stats` | Daily at 06:00 | Views, likes and comments for handed-in posts |
 | `payout_run` | Every 20 minutes | Pay what releases owe talent; retry failed payouts after their back-off; resend stuck ones |
 | `payout_validations` | Every 10 minutes | Ask the payout provider about account validations still pending |
 | `escrow_reconcile` | Daily at 02:30 | Yesterday's ledger totals against the gateway's; alert on any difference |
@@ -469,6 +472,10 @@ Escrow for paid and hybrid bookings on a double-entry ledger. The host funds the
 
 Talent show a signed QR pass (or read a six-digit code); the console's Arrivals screen, an installable PWA, verifies it offline and queues the check-in until it can sync. Check-in records the talent's distance from the property (flagged over 1 km, never blocking). Check-out completes the stay; a no-show waits for a grace period into the first day. Talent log daily hours, which the host confirms or disputes, within the agreement's weekly cap and day off. See [attendance.md](attendance.md).
 
+### Deliverables (`apps/deliverables`)
+
+For barter and hybrid gigs, each item the agreement lists becomes a deliverable per unit at check-in, due on the last day unless the host moves it. Talent hand in a post link or files; public posts need the collaboration label, which the talent confirms and the platform's caption is checked for. Hosts approve or ask for changes (twice at most). Post stats come from YouTube and, after Meta app review, Instagram, or are self-reported with a screenshot. Approved content shows its usage rights and appears in the host's library. For hybrid gigs, the last submission starts escrow's 72-hour window. See [deliverables.md](deliverables.md).
+
 ### Audit log
 
 Money and status changes write an `AuditLog` entry through `apps.common.services.audit.log_action()`, in the same transaction as the change. Each entry records the actor, a dotted action (`user.role_changed`), the target's type and id, JSON before/after, the client IP and the request id. Entries are append-only: updates and deletes raise, and the admin is read-only. Users with audit history can't be hard-deleted (`PROTECT`); deactivate them. Role and `is_active` changes go through `apps.accounts.services.users` (and the admin's save hook), which audit them.
@@ -503,7 +510,7 @@ Staff work in the Django admin at `/admin/`, served by `BarterlyAdminSite`, whic
 
 ## Web console
 
-Next.js 16 App Router with Cache Components. Pages: `/` (landing), `/login`, `/start` (sends a signed-in person to the right place), `/onboarding/role`, `/onboarding/vendor`, `/talent` (talent are pointed at the mobile app) and `/console/*` (Dashboard, Arrivals, Gigs, Applicants, Talent search, Agreements, Payments, Analytics; unbuilt sections show an empty state).
+Next.js 16 App Router with Cache Components. Pages: `/` (landing), `/login`, `/start` (sends a signed-in person to the right place), `/onboarding/role`, `/onboarding/vendor`, `/talent` (talent are pointed at the mobile app) and `/console/*` (Dashboard, Arrivals, Content, Gigs, Applicants, Talent search, Agreements, Payments, Analytics; unbuilt sections show an empty state).
 
 **Calling the API.** The browser only talks to its own origin. `src/app/api/v1/[...path]/route.ts` forwards `/api/v1/*` to `API_URL`, so the API needs no CORS.
 - The JWTs live in httpOnly, SameSite=Lax cookies (`barterly_access`, `barterly_refresh`) that expire with their tokens. Browser JavaScript never sees a token.

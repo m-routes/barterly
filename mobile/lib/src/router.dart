@@ -9,6 +9,7 @@ import 'package:barterly/src/auth/onboarding_screens.dart';
 import 'package:barterly/src/auth/session.dart';
 import 'package:barterly/src/auth/user.dart';
 import 'package:barterly/src/chat/chat_screen.dart';
+import 'package:barterly/src/deliverables/deliverables_screen.dart';
 import 'package:barterly/src/discover/discover_screen.dart';
 import 'package:barterly/src/discover/gig_detail_screen.dart';
 import 'package:barterly/src/notifications/notifications_screen.dart';
@@ -45,6 +46,8 @@ abstract final class Routes {
       '/trips/agreement/$agreementId';
   static String checkInPass(String bookingId) => '/trips/pass/$bookingId';
   static String hours(String bookingId) => '/trips/hours/$bookingId';
+  static String deliverables(String bookingId) =>
+      '/trips/deliverables/$bookingId';
 
   /// Screens that only make sense before the person is fully in.
   static const Set<String> gates = {splash, login, join, wrongApp, setup};
@@ -145,6 +148,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'pass/:id',
                     builder: (_, state) => CheckInPassScreen(
+                      bookingId: state.pathParameters['id']!,
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'deliverables/:id',
+                    builder: (_, state) => DeliverablesScreen(
                       bookingId: state.pathParameters['id']!,
                     ),
                   ),

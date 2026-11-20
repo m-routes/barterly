@@ -25,6 +25,7 @@ from apps.bookings.lifecycle import OFFER_TTL, STALE_INTERVIEW_AFTER, Actor
 from apps.bookings.models import JobRun
 from apps.common.events import DomainEvent, publish
 from apps.common.services.audit import log_action
+from apps.deliverables import services as deliverables
 from apps.discovery.alerts import run_alerts
 from apps.gigs.services import close_expired_gigs
 from apps.hiring.services import send_reminders
@@ -139,6 +140,8 @@ JOBS: dict[str, Callable[..., dict]] = {
     "billing_dunning": lambda now: billing_dunning(now),
     "billing_invoices": lambda now: finish_invoices(now),
     "escrow_auto_release": lambda now: auto_release(now),
+    "deliverable_reminders": lambda now: deliverables.send_reminders(now),
+    "deliverable_stats": lambda now: deliverables.refresh_all(now),
     "payout_run": lambda now: payouts.scheduled(now),
     "payout_validations": lambda now: payout_accounts.sync_pending(now),
     "escrow_reconcile": lambda now: reconciliation.run_job(now),

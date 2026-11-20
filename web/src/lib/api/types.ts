@@ -86,3 +86,7 @@ export type InHouse = Schemas["InHouse"];
 export type CheckInRequest = Schemas["CheckInRequest"];
 export type SyncResult = Schemas["SyncResult"];
 export type PendingHourLog = Schemas["PendingHourLog"];
+
+export type TrackedDeliverable = Schemas["TrackedDeliverable"];
+export type LibraryItem = Schemas["LibraryItem"];
+export type PostStats = Schemas["PostStats"];

@@ -1159,6 +1159,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/bookings/{booking_id}/deliverables/items/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A booking's deliverables
+     * @description Barter and hybrid gigs: one per unit of each item in the agreement, with the latest submission, post stats (self-reported ones marked), and once approved the usage rights. Empty before check-in.
+     */
+    get: operations["deliverables_for_booking"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/bookings/{booking_id}/details/": {
     parameters: {
       query?: never;
@@ -1277,6 +1297,46 @@ export interface paths {
      * @description Check in, start delivering, complete, report a no-show, dispute, review; admins also resolve disputes and refund. Cancelling before check-in goes through bookings/{id}/cancel/ (a reason from the list). The transition table decides who may make each move and when (409 with the reason if not now).
      */
     post: operations["bookings_transition"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/content/library/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Your approved content
+     * @description Newest first, each with its usage rights from the agreement (and until when they last), the post link and download links (valid 10 minutes).
+     */
+    get: operations["deliverables_library"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/content/to-review/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Deliverables waiting for your review
+     * @description Oldest submission first, across your bookings.
+     */
+    get: operations["deliverables_to_review"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -1410,6 +1470,86 @@ export interface paths {
      * @description Approving releases the stipend: commission and GST to Barterly, TDS withheld, the rest paid out to the talent. Asking for changes needs a note.
      */
     post: operations["money_deliverables_review"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/deliverables/items/{deliverable_id}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Move a deliverable's due date
+     * @description During the stay or up to 30 days after it. The talent is told.
+     */
+    patch: operations["deliverables_due_date"];
+    trace?: never;
+  };
+  "/api/v1/deliverables/items/{deliverable_id}/review/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Approve a deliverable, or ask for changes
+     * @description Asking for changes needs a note and is allowed twice per deliverable; after that, approve or open a dispute. Approving the last one releases a hybrid gig's stipend.
+     */
+    post: operations["deliverables_review"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/deliverables/items/{deliverable_id}/stats/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Enter a post's numbers by hand
+     * @description With a screenshot of the numbers (an uploaded photo). Shown to the host as self-reported, beside any numbers from the platform.
+     */
+    post: operations["deliverables_report_stats"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/deliverables/items/{deliverable_id}/submit/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Hand in a deliverable
+     * @description A post link and/or uploaded files (media ids). Public posts must carry the collaboration label: confirm it with `disclosure_confirmed`. Handing in the last one starts the host's 72-hour approval window.
+     */
+    post: operations["deliverables_submit"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1727,7 +1867,7 @@ export interface paths {
     put?: never;
     /**
      * Run a scheduled job (Cloud Scheduler only)
-     * @description Jobs: billing_dunning, billing_invoices, close_expired_gigs, dispatch_notifications, escrow_auto_release, escrow_reconcile, expire_offers, expire_verifications, flag_stale_interviews, payout_run, payout_validations, render_agreements, run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
+     * @description Jobs: billing_dunning, billing_invoices, close_expired_gigs, deliverable_reminders, deliverable_stats, dispatch_notifications, escrow_auto_release, escrow_reconcile, expire_offers, expire_verifications, flag_stale_interviews, payout_run, payout_validations, render_agreements, run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
      */
     post: operations["jobs_run"];
     delete?: never;
@@ -3670,6 +3810,31 @@ export interface components {
       quantity: number;
       notes?: string;
     };
+    /**
+     * @description * `reel` - Reel
+     *     * `story` - Story
+     *     * `photo_set` - Photo set
+     *     * `google_review` - Google review
+     *     * `custom` - Custom
+     * @enum {string}
+     */
+    DeliverableKindEnum: "reel" | "story" | "photo_set" | "google_review" | "custom";
+    /**
+     * @description * `instagram` - Instagram
+     *     * `youtube` - YouTube
+     *     * `google` - Google
+     *     * `other` - Other
+     * @enum {string}
+     */
+    DeliverablePlatformEnum: "instagram" | "youtube" | "google" | "other";
+    /**
+     * @description * `pending` - Not submitted yet
+     *     * `submitted` - Waiting for the host
+     *     * `changes_requested` - Changes asked for
+     *     * `approved` - Approved
+     * @enum {string}
+     */
+    DeliverableStatusEnum: "pending" | "submitted" | "changes_requested" | "approved";
     DeliverableSubmission: {
       /** Format: uuid */
       readonly id: string;
@@ -3691,6 +3856,7 @@ export interface components {
      *     * `blog_post` - Blog post
      *     * `photo_set` - Edited photo set
      *     * `mural` - Mural / artwork
+     *     * `google_review` - Google review
      *     * `other` - Other
      * @enum {string}
      */
@@ -3702,6 +3868,7 @@ export interface components {
       | "blog_post"
       | "photo_set"
       | "mural"
+      | "google_review"
       | "other";
     Device: {
       token: string;
@@ -3843,6 +4010,7 @@ export interface components {
      *     * `gigs.search_alert` - gigs.search_alert
      *     * `reminder` - reminder
      *     * `billing` - billing
+     *     * `deliverables` - deliverables
      *     * `payouts` - payouts
      *     * `other` - other
      * @enum {string}
@@ -3859,6 +4027,7 @@ export interface components {
       | "gigs.search_alert"
       | "reminder"
       | "billing"
+      | "deliverables"
       | "payouts"
       | "other";
     EventTypeSetting: {
@@ -3893,6 +4062,17 @@ export interface components {
       /** @description True until the user picks vendor or talent at /api/v1/me/role/. */
       needs_role: boolean;
       user: components["schemas"]["User"];
+    };
+    FileLink: {
+      /** Format: uuid */
+      id: string;
+      content_type: string;
+      size_bytes: number;
+      /**
+       * Format: uri
+       * @description Valid for 10 minutes.
+       */
+      url: string;
     };
     FilterParams: {
       /** @description Comma list. */
@@ -4388,6 +4568,39 @@ export interface components {
      * @enum {string}
      */
     LevelEnum: "new" | "excellent" | "good" | "fair" | "poor";
+    LibraryItem: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly booking_id: string;
+      readonly gig_title: string;
+      readonly kind: components["schemas"]["DeliverableKindEnum"];
+      readonly platform: components["schemas"]["DeliverablePlatformEnum"];
+      /** @description The agreement's deliverable type. */
+      readonly spec_type: string;
+      readonly title: string;
+      readonly notes: string;
+      /** Format: date */
+      readonly due_date: string;
+      readonly status: components["schemas"]["DeliverableStatusEnum"];
+      readonly change_rounds: number;
+      readonly change_rounds_left: number;
+      /** @description A public post: it must carry the collaboration label (#collab, #ad, ...). */
+      readonly disclosure_required: boolean;
+      /**
+       * Format: date-time
+       * @description Latest submission.
+       */
+      readonly submitted_at: string | null;
+      /** Format: date-time */
+      readonly approved_at: string | null;
+      readonly latest_submission: components["schemas"]["Submission"] | null;
+      readonly stats: components["schemas"]["PostStats"][];
+      readonly usage_rights: components["schemas"]["UsageRights"] | null;
+      readonly usable_until: string | null;
+      readonly talent_name: string;
+      readonly downloads: components["schemas"]["FileLink"][];
+    };
     LinkPayoutAccount: {
       method: components["schemas"]["PayoutMethodEnum"];
       /**
@@ -4424,6 +4637,16 @@ export interface components {
       /** @description Checked against the gig's pay model. */
       terms: components["schemas"]["Terms"];
       message?: string;
+    };
+    ManualStats: {
+      views?: number | null;
+      likes?: number | null;
+      comments?: number | null;
+      /**
+       * Format: uuid
+       * @description An uploaded photo of the numbers.
+       */
+      screenshot_id: string;
     };
     MarkRead: {
       /**
@@ -4722,6 +4945,21 @@ export interface components {
       previous?: string | null;
       results: components["schemas"]["Invoice"][];
     };
+    PaginatedLibraryItemList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["LibraryItem"][];
+    };
     PaginatedNotificationList: {
       /** @example 123 */
       count: number;
@@ -4797,6 +5035,21 @@ export interface components {
       previous?: string | null;
       results: components["schemas"]["Property"][];
     };
+    PaginatedTrackedDeliverableList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["TrackedDeliverable"][];
+    };
     PaginatedVendorApplicationListItemList: {
       /** @example 123 */
       count: number;
@@ -4860,6 +5113,10 @@ export interface components {
     PassRequest: {
       /** @description Where you are now (for the host's records). */
       location?: components["schemas"]["Location"] | null;
+    };
+    PatchedDueDate: {
+      /** Format: date */
+      due_date?: string;
     };
     PatchedGig: {
       /** Format: uuid */
@@ -5268,6 +5525,23 @@ export interface components {
         [key: string]: boolean;
       };
     };
+    PostStats: {
+      readonly source: components["schemas"]["PostStatsSourceEnum"];
+      readonly self_reported: boolean;
+      readonly views: number | null;
+      readonly likes: number | null;
+      readonly comments: number | null;
+      /** Format: date-time */
+      readonly captured_at: string;
+      readonly screenshot_url: string | null;
+    };
+    /**
+     * @description * `instagram` - Instagram API
+     *     * `youtube` - YouTube API
+     *     * `manual` - Self-reported
+     * @enum {string}
+     */
+    PostStatsSourceEnum: "instagram" | "youtube" | "manual";
     PreferenceChange: {
       event_type: components["schemas"]["EventTypeEnum"];
       channel: components["schemas"]["NotificationChannelEnum"];
@@ -5479,6 +5753,11 @@ export interface components {
      * @enum {string}
      */
     RequiredVerificationEnum: "none" | "id_verified" | "trusted_member";
+    Review: {
+      approve: boolean;
+      /** @default  */
+      note: string;
+    };
     ReviewDeliverable: {
       approve: boolean;
       /** @default  */
@@ -5738,6 +6017,24 @@ export interface components {
      * @enum {string}
      */
     SubjectTypeEnum: "user" | "property" | "social_account";
+    Submission: {
+      readonly version: number;
+      /** Format: uri */
+      readonly post_url: string;
+      readonly files: components["schemas"]["FileLink"][];
+      readonly note: string;
+      /** @description The talent confirms the post carries the collaboration label. */
+      readonly disclosure_confirmed: boolean;
+      /** @description Seen in the post's caption (empty: couldn't check). */
+      readonly disclosure_detected: boolean | null;
+      /** Format: date-time */
+      readonly submitted_at: string;
+      readonly review:
+        components["schemas"]["SubmissionReviewEnum"] | components["schemas"]["BlankEnum"];
+      readonly review_note: string;
+      /** Format: date-time */
+      readonly reviewed_at: string | null;
+    };
     /**
      * @description * `` - Waiting for the host
      *     * `approved` - Approved
@@ -5745,6 +6042,17 @@ export interface components {
      * @enum {string}
      */
     SubmissionReviewEnum: "approved" | "changes";
+    Submit: {
+      post_url?: string;
+      file_ids?: string[];
+      /** @default  */
+      note: string;
+      /**
+       * @description The post carries the collaboration label (#collab, #ad or the paid partnership tag). Required for public posts.
+       * @default false
+       */
+      disclosure_confirmed: boolean;
+    };
     SubmitDeliverable: {
       /** @default  */
       note: string;
@@ -5940,6 +6248,37 @@ export interface components {
       access: string;
       /** @description Exchange at /api/v1/auth/refresh/ for new tokens. */
       refresh: string;
+    };
+    TrackedDeliverable: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly booking_id: string;
+      readonly gig_title: string;
+      readonly kind: components["schemas"]["DeliverableKindEnum"];
+      readonly platform: components["schemas"]["DeliverablePlatformEnum"];
+      /** @description The agreement's deliverable type. */
+      readonly spec_type: string;
+      readonly title: string;
+      readonly notes: string;
+      /** Format: date */
+      readonly due_date: string;
+      readonly status: components["schemas"]["DeliverableStatusEnum"];
+      readonly change_rounds: number;
+      readonly change_rounds_left: number;
+      /** @description A public post: it must carry the collaboration label (#collab, #ad, ...). */
+      readonly disclosure_required: boolean;
+      /**
+       * Format: date-time
+       * @description Latest submission.
+       */
+      readonly submitted_at: string | null;
+      /** Format: date-time */
+      readonly approved_at: string | null;
+      readonly latest_submission: components["schemas"]["Submission"] | null;
+      readonly stats: components["schemas"]["PostStats"][];
+      readonly usage_rights: components["schemas"]["UsageRights"] | null;
+      readonly usable_until: string | null;
     };
     /**
      * @description Shared once both have signed: each side's verified phone, and for the talent the
@@ -9624,6 +9963,51 @@ export interface operations {
       };
     };
   };
+  deliverables_for_booking: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TrackedDeliverable"][];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
   bookings_details: {
     parameters: {
       query?: never;
@@ -10023,6 +10407,54 @@ export interface operations {
       };
     };
   };
+  deliverables_library: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedLibraryItemList"];
+        };
+      };
+    };
+  };
+  deliverables_to_review: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedTrackedDeliverableList"];
+        };
+      };
+    };
+  };
   chat_conversations_list: {
     parameters: {
       query?: {
@@ -10418,6 +10850,274 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ReviewResult"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  deliverables_due_date: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deliverable_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["PatchedDueDate"];
+        "application/x-www-form-urlencoded": components["schemas"]["PatchedDueDate"];
+        "multipart/form-data": components["schemas"]["PatchedDueDate"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TrackedDeliverable"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  deliverables_review: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deliverable_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Review"];
+        "application/x-www-form-urlencoded": components["schemas"]["Review"];
+        "multipart/form-data": components["schemas"]["Review"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TrackedDeliverable"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  deliverables_report_stats: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deliverable_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ManualStats"];
+        "application/x-www-form-urlencoded": components["schemas"]["ManualStats"];
+        "multipart/form-data": components["schemas"]["ManualStats"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PostStats"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  deliverables_submit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deliverable_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["Submit"];
+        "application/x-www-form-urlencoded": components["schemas"]["Submit"];
+        "multipart/form-data": components["schemas"]["Submit"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TrackedDeliverable"];
         };
       };
       400: {

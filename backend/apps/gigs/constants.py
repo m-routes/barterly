@@ -60,6 +60,9 @@ class DeliverableType(models.TextChoices):
     BLOG_POST = "blog_post", "Blog post"
     PHOTO_SET = "photo_set", "Edited photo set"
     MURAL = "mural", "Mural / artwork"
+    # LEGAL REVIEW NEEDED: Google's policy forbids incentivised reviews, and India's
+    # fake-review rules (IS 19000:2022) need paid reviews disclosed. See docs/deliverables.md.
+    GOOGLE_REVIEW = "google_review", "Google review"
     OTHER = "other", "Other"
 
 
