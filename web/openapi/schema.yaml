@@ -163,6 +163,235 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/admin/money/payout-runs/:
+    get:
+      operationId: money_admin_payout_runs
+      description: 'Newest first: what each run sent, held back (and why) and failed.'
+      summary: Payout runs (admin)
+      tags:
+      - money
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PayoutRun'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    post:
+      operationId: money_admin_payout_run_start
+      summary: Start a payout run now (admin)
+      tags:
+      - money
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayoutRunDetail'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/admin/money/payout-runs/{run_id}/:
+    get:
+      operationId: money_admin_payout_run
+      summary: One payout run and its payouts (admin)
+      parameters:
+      - in: path
+        name: run_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - money
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayoutRunDetail'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/admin/money/payouts/:
+    get:
+      operationId: money_admin_payouts
+      description: Newest first. `status=failed` with `needs_admin=true` lists the
+        payouts that ran out of automatic retries.
+      summary: Payouts (admin)
+      parameters:
+      - in: query
+        name: needs_admin
+        schema:
+          type: boolean
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - creating
+          - failed
+          - processed
+          - processing
+          - reversed
+      tags:
+      - money
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Payout'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/admin/money/payouts/{payout_id}/retry/:
+    post:
+      operationId: money_admin_payout_retry
+      description: The latest failed attempt of an escrow; skips the back-off. Audited.
+      summary: Retry a failed payout now (admin)
+      parameters:
+      - in: path
+        name: payout_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - money
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PayoutRetry'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PayoutRetry'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PayoutRetry'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayoutRunDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/admin/money/reconciliation/:
     get:
       operationId: money_admin_reconciliation
@@ -4328,11 +4557,11 @@ paths:
     post:
       operationId: jobs_run
       description: 'Jobs: billing_dunning, billing_invoices, close_expired_gigs, dispatch_notifications,
-        escrow_auto_release, escrow_reconcile, escrow_retry_payouts, expire_offers,
-        expire_verifications, flag_stale_interviews, render_agreements, run_search_alerts,
-        send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed
-        OIDC token for the scheduler service account. Idempotent; overlapping runs
-        of one job are skipped.'
+        escrow_auto_release, escrow_reconcile, expire_offers, expire_verifications,
+        flag_stale_interviews, payout_run, payout_validations, render_agreements,
+        run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results.
+        Needs a Google-signed OIDC token for the scheduler service account. Idempotent;
+        overlapping runs of one job are skipped.'
       summary: Run a scheduled job (Cloud Scheduler only)
       parameters:
       - in: path
@@ -4678,11 +4907,42 @@ paths:
   /api/v1/money/webhooks/razorpay/:
     post:
       operationId: money_razorpay_webhook
-      description: 'payment.captured/failed, refund.processed/failed, transfer.processed/settled/failed.
-        Signed with X-Razorpay-Signature (HMAC-SHA256 of the body) and identified
-        by X-Razorpay-Event-Id: each event is applied once; repeats answer 200 and
-        change nothing.'
+      description: 'payment.captured/failed, refund.processed/failed. Signed with
+        X-Razorpay-Signature (HMAC-SHA256 of the body) and identified by X-Razorpay-Event-Id:
+        each event is applied once; repeats answer 200 and change nothing.'
       summary: Razorpay escrow events (webhook)
+      tags:
+      - money
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  outcome:
+                    type: string
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/money/webhooks/razorpayx/:
+    post:
+      operationId: money_razorpayx_webhook
+      description: payout.processed/reversed/failed/rejected and fund_account.validation.completed/failed.
+        Signed with X-Razorpay-Signature; each X-Razorpay-Event-Id is applied once.
+      summary: RazorpayX payout events (webhook)
       tags:
       - money
       requestBody:
@@ -5168,6 +5428,103 @@ paths:
                 $ref: '#/components/schemas/OfferThread'
           description: ''
         '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/payout-account/:
+    get:
+      operationId: money_payout_account
+      description: Masked. 404 until one is linked.
+      summary: Your payout account
+      tags:
+      - money
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayoutAccount'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    put:
+      operationId: money_payout_account_link
+      description: 'A UPI id, or a bank account (number, IFSC, name on the account).
+        The payout provider verifies it (a ₹1 deposit or an account check) before
+        payouts use it: `validation_status` goes pending → verified or failed. Changing
+        an account holds payouts for 24 hours and notifies you on every channel. Only
+        a masked version is kept.'
+      summary: Add or change your payout account
+      tags:
+      - money
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkPayoutAccount'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LinkPayoutAccount'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LinkPayoutAccount'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayoutAccount'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '502':
           content:
             application/json:
               schema:
@@ -6406,6 +6763,377 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: ''
         '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/wallet/:
+    get:
+      operationId: money_wallet
+      description: Pending (held in escrow), available (released, not yet paid out),
+        in transit, paid out, and TDS this financial year. Amounts in paise.
+      summary: Your wallet
+      tags:
+      - money
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/wallet/history/:
+    get:
+      operationId: money_wallet_history
+      description: Newest first. Filter by kind, status, dates (India) or financial
+        year.
+      summary: Your releases and payouts
+      parameters:
+      - in: query
+        name: end
+        schema:
+          type: string
+          format: date
+        description: To (India date).
+      - in: query
+        name: fy
+        schema:
+          type: string
+          default: ''
+          pattern: ^\d{4}-\d{2}$
+          minLength: 1
+        description: Financial year, like 2026-27.
+      - in: query
+        name: kind
+        schema:
+          enum:
+          - release
+          - payout
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `release` - release
+          * `payout` - payout
+      - in: query
+        name: start
+        schema:
+          type: string
+          format: date
+        description: From (India date).
+      - in: query
+        name: status
+        schema:
+          type: string
+          default: ''
+          maxLength: 30
+          minLength: 1
+      tags:
+      - money
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WalletEntry'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/wallet/payout/:
+    post:
+      operationId: money_wallet_request_payout
+      description: Starts a payout run for your available money. Payouts that must
+        wait (no verified account, a recent account change, ID not verified) are held,
+        and `held_reasons` says why. At most once every few minutes.
+      summary: Pay out what's available now
+      tags:
+      - money
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayoutRun'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/wallet/statements/{fy}/:
+    get:
+      operationId: money_statement
+      description: 'Releases (gross, commission, GST, TDS, net) and their payouts.
+        fy: 2026-27.'
+      summary: Your earnings statement for a financial year
+      parameters:
+      - in: path
+        name: fy
+        schema:
+          type: string
+        required: true
+      tags:
+      - money
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Statement'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/wallet/statements/{fy}/{kind}/:
+    get:
+      operationId: money_statement_file
+      summary: Download your statement (CSV or PDF)
+      parameters:
+      - in: path
+        name: fy
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      tags:
+      - money
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/wallet/tds/{fy}/:
+    get:
+      operationId: money_tds
+      description: 'By quarter and by release, with the deductor''s details. A summary
+        for your records: the certificate itself is Form 16A.'
+      summary: TDS deducted from you in a financial year
+      parameters:
+      - in: path
+        name: fy
+        schema:
+          type: string
+        required: true
+      tags:
+      - money
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TdsRecord'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/wallet/tds/{fy}/{kind}/:
+    get:
+      operationId: money_tds_file
+      summary: Download your TDS summary (CSV or PDF)
+      parameters:
+      - in: path
+        name: fy
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      tags:
+      - money
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
           content:
             application/json:
               schema:
@@ -8352,6 +9080,32 @@ components:
         reason:
           type: string
           maxLength: 500
+    Deductee:
+      type: object
+      properties:
+        name:
+          type: string
+        id:
+          type: string
+        pan_on_file:
+          type: boolean
+      required:
+      - id
+      - name
+      - pan_on_file
+    Deductor:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        tan:
+          type: string
+      required:
+      - address
+      - name
+      - tan
     Deliverable:
       type: object
       properties:
@@ -8736,6 +9490,7 @@ components:
       - gigs.search_alert
       - reminder
       - billing
+      - payouts
       - other
       type: string
       description: |-
@@ -8750,6 +9505,7 @@ components:
         * `gigs.search_alert` - gigs.search_alert
         * `reminder` - reminder
         * `billing` - billing
+        * `payouts` - payouts
         * `other` - other
     EventTypeSetting:
       type: object
@@ -9798,6 +10554,32 @@ components:
         * `good` - good
         * `fair` - fair
         * `poor` - poor
+    LinkPayoutAccount:
+      type: object
+      properties:
+        method:
+          $ref: '#/components/schemas/PayoutMethodEnum'
+        vpa:
+          type: string
+          writeOnly: true
+          default: ''
+          description: UPI id, for method upi.
+          maxLength: 256
+        account_number:
+          type: string
+          writeOnly: true
+          default: ''
+          maxLength: 24
+        ifsc:
+          type: string
+          default: ''
+          maxLength: 11
+        holder_name:
+          type: string
+          default: ''
+          maxLength: 100
+      required:
+      - method
     MakeOffer:
       type: object
       properties:
@@ -10866,9 +11648,290 @@ components:
           type: string
           format: date-time
           readOnly: true
+    Payout:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        escrow_id:
+          type: string
+          format: uuid
+          readOnly: true
+        booking_id:
+          type: string
+          format: uuid
+          readOnly: true
+        talent_id:
+          type: string
+          format: uuid
+          readOnly: true
+        attempt:
+          type: integer
+          readOnly: true
+        amount_paise:
+          type: integer
+          readOnly: true
+        account_display:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/PayoutAttemptStatusEnum'
+          readOnly: true
+        provider_payout_id:
+          type: string
+          readOnly: true
+        utr:
+          type: string
+          readOnly: true
+          description: The bank's reference.
+        failure_reason:
+          type: string
+          readOnly: true
+        next_attempt_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: 'When a failed payout is tried again; empty: an admin.'
+        processed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - account_display
+      - amount_paise
+      - attempt
+      - booking_id
+      - created_at
+      - escrow_id
+      - failure_reason
+      - id
+      - next_attempt_at
+      - processed_at
+      - provider_payout_id
+      - status
+      - talent_id
+      - utr
+    PayoutAccount:
+      type: object
+      description: 'Masked: the full UPI id or account number is never stored or returned.'
+      properties:
+        method:
+          allOf:
+          - $ref: '#/components/schemas/PayoutMethodEnum'
+          readOnly: true
+        display:
+          type: string
+          readOnly: true
+          description: Masked, for showing.
+        validation_status:
+          readOnly: true
+          oneOf:
+          - $ref: '#/components/schemas/PayoutValidationStatusEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        validation_reason:
+          type: string
+          readOnly: true
+        verified_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        changed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Last replaced.
+        hold_until:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: No payouts before this (set by a change).
+        pan_on_file:
+          type: boolean
+          readOnly: true
+          description: 'Decides the TDS rate (no PAN: the higher rate).'
+      required:
+      - changed_at
+      - display
+      - hold_until
+      - method
+      - pan_on_file
+      - validation_reason
+      - validation_status
+      - verified_at
+    PayoutAttemptStatusEnum:
+      enum:
+      - creating
+      - processing
+      - processed
+      - failed
+      - reversed
+      type: string
+      description: |-
+        * `creating` - Being created
+        * `processing` - With the provider
+        * `processed` - Paid out
+        * `failed` - Failed
+        * `reversed` - Reversed by the bank
+    PayoutMethodEnum:
+      enum:
+      - upi
+      - bank
+      type: string
+      description: |-
+        * `upi` - UPI
+        * `bank` - Bank account
+    PayoutRetry:
+      type: object
+      properties:
+        note:
+          type: string
+          maxLength: 500
+      required:
+      - note
+    PayoutRun:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        trigger:
+          allOf:
+          - $ref: '#/components/schemas/PayoutTriggerEnum'
+          readOnly: true
+        started_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        talent:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          description: Only this talent's payouts (on demand).
+        started_at:
+          type: string
+          format: date-time
+          readOnly: true
+        finished_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        considered:
+          type: integer
+          readOnly: true
+        sent:
+          type: integer
+          readOnly: true
+        held:
+          type: integer
+          readOnly: true
+        failed:
+          type: integer
+          readOnly: true
+        sent_paise:
+          type: integer
+          readOnly: true
+        held_reasons:
+          readOnly: true
+          description: 'reason: count'
+      required:
+      - considered
+      - failed
+      - finished_at
+      - held
+      - held_reasons
+      - id
+      - sent
+      - sent_paise
+      - started_at
+      - started_by
+      - talent
+      - trigger
+    PayoutRunDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        trigger:
+          allOf:
+          - $ref: '#/components/schemas/PayoutTriggerEnum'
+          readOnly: true
+        started_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        talent:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          description: Only this talent's payouts (on demand).
+        started_at:
+          type: string
+          format: date-time
+          readOnly: true
+        finished_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        considered:
+          type: integer
+          readOnly: true
+        sent:
+          type: integer
+          readOnly: true
+        held:
+          type: integer
+          readOnly: true
+        failed:
+          type: integer
+          readOnly: true
+        sent_paise:
+          type: integer
+          readOnly: true
+        held_reasons:
+          readOnly: true
+          description: 'reason: count'
+        payouts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Payout'
+          readOnly: true
+      required:
+      - considered
+      - failed
+      - finished_at
+      - held
+      - held_reasons
+      - id
+      - payouts
+      - sent
+      - sent_paise
+      - started_at
+      - started_by
+      - talent
+      - trigger
     PayoutStatusEnum:
       enum:
       - waiting_for_account
+      - on_hold
       - paused
       - sending
       - sent
@@ -10877,12 +11940,36 @@ components:
       type: string
       description: |-
         * `` - No payout
-        * `waiting_for_account` - Waiting for the talent's payout account
+        * `waiting_for_account` - Waiting for a verified payout account
+        * `on_hold` - On hold (ID check or a recent account change)
         * `paused` - Paused by the kill switch
-        * `sending` - Transfer being created
-        * `sent` - Transfer created
-        * `settled` - Settled to the talent
-        * `failed` - Transfer failed
+        * `sending` - Payout being created
+        * `sent` - With the payout provider
+        * `settled` - Paid out
+        * `failed` - Payout failed
+    PayoutTriggerEnum:
+      enum:
+      - scheduled
+      - release
+      - on_demand
+      - admin
+      type: string
+      description: |-
+        * `scheduled` - Scheduled
+        * `release` - After a release
+        * `on_demand` - Asked for by the talent
+        * `admin` - Started by an admin
+    PayoutValidationStatusEnum:
+      enum:
+      - pending
+      - verified
+      - failed
+      type: string
+      description: |-
+        * `` - Not linked
+        * `pending` - Being checked
+        * `verified` - Verified
+        * `failed` - Couldn't be verified
     PdfLink:
       type: object
       properties:
@@ -11864,6 +12951,77 @@ components:
         * `Ladakh` - Ladakh
         * `Lakshadweep` - Lakshadweep
         * `Puducherry` - Puducherry
+    Statement:
+      type: object
+      properties:
+        financial_year:
+          type: string
+        talent:
+          $ref: '#/components/schemas/StatementParty'
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatementRow'
+        totals:
+          type: object
+          additionalProperties:
+            type: integer
+      required:
+      - financial_year
+      - rows
+      - talent
+      - totals
+    StatementParty:
+      type: object
+      properties:
+        name:
+          type: string
+        id:
+          type: string
+      required:
+      - id
+      - name
+    StatementRow:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        booking_id:
+          type: string
+          format: uuid
+        gig_title:
+          type: string
+        gross_paise:
+          type: integer
+        commission_paise:
+          type: integer
+        commission_gst_paise:
+          type: integer
+        tds_paise:
+          type: integer
+        net_paise:
+          type: integer
+        payout_status:
+          type: string
+        paid_on:
+          type: string
+          format: date
+          nullable: true
+        utr:
+          type: string
+      required:
+      - booking_id
+      - commission_gst_paise
+      - commission_paise
+      - date
+      - gig_title
+      - gross_paise
+      - net_paise
+      - paid_on
+      - payout_status
+      - tds_paise
+      - utr
     StatusChange:
       type: object
       properties:
@@ -12149,6 +13307,78 @@ components:
         * `tech` - Tech / design
         * `outdoor` - Outdoor / trek guide
         * `other` - Other
+    TdsQuarter:
+      type: object
+      properties:
+        quarter:
+          type: string
+        amount_credited_paise:
+          type: integer
+        tds_paise:
+          type: integer
+      required:
+      - amount_credited_paise
+      - quarter
+      - tds_paise
+    TdsRecord:
+      type: object
+      properties:
+        financial_year:
+          type: string
+        section:
+          type: string
+        deductor:
+          $ref: '#/components/schemas/Deductor'
+        deductee:
+          $ref: '#/components/schemas/Deductee'
+        quarters:
+          type: array
+          items:
+            $ref: '#/components/schemas/TdsQuarter'
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/TdsRow'
+        total_credited_paise:
+          type: integer
+        total_tds_paise:
+          type: integer
+        note:
+          type: string
+      required:
+      - deductee
+      - deductor
+      - financial_year
+      - note
+      - quarters
+      - rows
+      - section
+      - total_credited_paise
+      - total_tds_paise
+    TdsRow:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        quarter:
+          type: string
+        booking_id:
+          type: string
+          format: uuid
+        gig_title:
+          type: string
+        amount_credited_paise:
+          type: integer
+        tds_paise:
+          type: integer
+      required:
+      - amount_credited_paise
+      - booking_id
+      - date
+      - gig_title
+      - quarter
+      - tds_paise
     Terms:
       type: object
       description: Everything both sides agree to. Validated against the gig's pay
@@ -12790,6 +14020,104 @@ components:
         * `rejected` - Rejected
         * `changes_requested` - Changes requested
         * `expired` - Expired
+    Wallet:
+      type: object
+      properties:
+        pending_paise:
+          type: integer
+          description: Held in escrow, not yet released.
+        pending_net_estimate_paise:
+          type: integer
+          description: Roughly what pending would pay you, after commission, GST and
+            TDS.
+        available_paise:
+          type: integer
+          description: Released to you, not yet paid out.
+        in_transit_paise:
+          type: integer
+        paid_out_paise:
+          type: integer
+        tds_this_year_paise:
+          type: integer
+        financial_year:
+          type: string
+        payout_account:
+          allOf:
+          - $ref: '#/components/schemas/PayoutAccount'
+          nullable: true
+        on_hold_reason:
+          type: string
+          description: Why payouts wait, as a code; or empty.
+        on_hold_message:
+          type: string
+        can_request_payout:
+          type: boolean
+      required:
+      - available_paise
+      - can_request_payout
+      - financial_year
+      - in_transit_paise
+      - on_hold_message
+      - on_hold_reason
+      - paid_out_paise
+      - payout_account
+      - pending_net_estimate_paise
+      - pending_paise
+      - tds_this_year_paise
+    WalletEntry:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/WalletEntryKindEnum'
+        at:
+          type: string
+          format: date-time
+        amount_paise:
+          type: integer
+          description: 'Release: your net; payout: the amount.'
+        status:
+          type: string
+        booking_id:
+          type: string
+          format: uuid
+        gig_title:
+          type: string
+        gross_paise:
+          type: integer
+        commission_paise:
+          type: integer
+        commission_gst_paise:
+          type: integer
+        tds_paise:
+          type: integer
+        account:
+          type: string
+        reference:
+          type: string
+        failure_reason:
+          type: string
+      required:
+      - account
+      - amount_paise
+      - at
+      - booking_id
+      - commission_gst_paise
+      - commission_paise
+      - failure_reason
+      - gig_title
+      - gross_paise
+      - kind
+      - reference
+      - status
+      - tds_paise
+    WalletEntryKindEnum:
+      enum:
+      - release
+      - payout
+      type: string
+      description: |-
+        * `release` - release
+        * `payout` - payout
     WebhookResponse:
       type: object
       properties:

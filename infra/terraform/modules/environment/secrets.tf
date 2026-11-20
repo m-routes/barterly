@@ -12,6 +12,9 @@ locals {
     razorpay_webhook_secret = "razorpay-webhook-secret-${local.env}"
     # The escrow webhook (apps.money) is a separate Razorpay webhook with its own secret.
     razorpay_escrow_webhook_secret = "razorpay-escrow-webhook-secret-${local.env}"
+    # Payouts (RazorpayX): its own webhook secret, and the account payouts leave from.
+    razorpayx_webhook_secret = "razorpayx-webhook-secret-${local.env}"
+    razorpayx_account_number = "razorpayx-account-number-${local.env}"
   }
 
   secret_access = {
@@ -23,6 +26,8 @@ locals {
     api_razorpay_secret  = { secret = "razorpay_key_secret", member = google_service_account.api.member }
     api_razorpay_webhook = { secret = "razorpay_webhook_secret", member = google_service_account.api.member }
     api_razorpay_escrow  = { secret = "razorpay_escrow_webhook_secret", member = google_service_account.api.member }
+    api_razorpayx_hook   = { secret = "razorpayx_webhook_secret", member = google_service_account.api.member }
+    api_razorpayx_acct   = { secret = "razorpayx_account_number", member = google_service_account.api.member }
   }
 }
 

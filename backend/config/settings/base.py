@@ -174,6 +174,12 @@ SPECTACULAR_SETTINGS = {
         "EscrowDecisionEnum": "apps.money.escrow.DECISIONS",
         "DecisionEnum": "apps.verification.services.cases.Decision.CHOICES",
         "SubmissionReviewEnum": "apps.money.models.SubmissionReview",
+        "PayoutMethodEnum": "apps.money.models.PayoutMethod",
+        # The agreements signing method (otp/none), named before payouts added a "method".
+        "MethodEnum": "apps.agreements.serializers.CHALLENGE_METHODS",
+        "PayoutValidationStatusEnum": "apps.money.models.ValidationStatus",
+        "PayoutAttemptStatusEnum": "apps.money.models.PayoutAttemptStatus",
+        "PayoutTriggerEnum": "apps.money.models.PayoutTrigger",
         "CancellationReasonEnum": "apps.bookings.models.CancellationReason",
         "CancellationEffectEnum": "apps.bookings.models.CancellationEffect",
         "CancelledByEnum": "apps.bookings.models.CancelledBy",
@@ -262,7 +268,7 @@ BILLING_SUPPLIER = {
 # Money (apps.money): the ledger and escrow for paid and hybrid bookings.
 # LEGAL REVIEW NEEDED: the fund-flow structure behind ESCROW_GATEWAY.
 # CA REVIEW NEEDED: every rate and threshold below. Rates are basis points (800 = 8%).
-ESCROW_GATEWAY = env_str("ESCROW_GATEWAY", "apps.money.gateway.route.RazorpayRouteGateway")
+ESCROW_GATEWAY = env_str("ESCROW_GATEWAY", "apps.money.gateway.razorpay.RazorpayEscrowGateway")
 RAZORPAY_ESCROW_WEBHOOK_SECRET = env_str("RAZORPAY_ESCROW_WEBHOOK_SECRET", "")
 ESCROW_COMMISSION_BPS = env_int("ESCROW_COMMISSION_BPS", 800)
 ESCROW_GST_BPS = env_int("ESCROW_GST_BPS", 1800)  # on the commission and the fee recovery
@@ -275,6 +281,19 @@ ESCROW_AUTO_RELEASE_HOURS = env_int("ESCROW_AUTO_RELEASE_HOURS", 72)
 # The kill switch (also in admin, Money > Escrow control): no new funding or payouts.
 ESCROW_PAUSED = env_bool("ESCROW_PAUSED", False)
 ESCROW_ALERT_EMAILS = env_list("ESCROW_ALERT_EMAILS", "")
+# TDS records (apps.money.wallet). CA REVIEW NEEDED: the section and the rates above.
+ESCROW_TDS_SECTION = env_str("ESCROW_TDS_SECTION", "194-O")
+ESCROW_TDS_TAN = env_str("ESCROW_TDS_TAN", "[TAN]")
+
+# Payouts to talent (apps.money.payouts): RazorpayX fund accounts and payouts.
+# LEGAL REVIEW NEEDED: funding the RazorpayX account from the gateway settlement.
+PAYOUT_PROVIDER = env_str("PAYOUT_PROVIDER", "apps.money.gateway.payouts.RazorpayXProvider")
+RAZORPAYX_ACCOUNT_NUMBER = env_str("RAZORPAYX_ACCOUNT_NUMBER", "")
+RAZORPAYX_WEBHOOK_SECRET = env_str("RAZORPAYX_WEBHOOK_SECRET", "")
+PAYOUT_ACCOUNT_CHANGE_HOLD_HOURS = env_int("PAYOUT_ACCOUNT_CHANGE_HOLD_HOURS", 24)
+PAYOUT_MAX_ATTEMPTS = env_int("PAYOUT_MAX_ATTEMPTS", 5)
+PAYOUT_RUN_LIMIT = env_int("PAYOUT_RUN_LIMIT", 500)
+PAYOUT_ON_DEMAND_EVERY_MINUTES = env_int("PAYOUT_ON_DEMAND_EVERY_MINUTES", 10)
 
 # Discovery (apps.discovery). Fit-score weights: they needn't add to 100 (they are
 # scaled), but keeping them at 100 makes each one read as "points".

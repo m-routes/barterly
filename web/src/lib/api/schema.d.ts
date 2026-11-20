@@ -45,6 +45,84 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/admin/money/payout-runs/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Payout runs (admin)
+     * @description Newest first: what each run sent, held back (and why) and failed.
+     */
+    get: operations["money_admin_payout_runs"];
+    put?: never;
+    /** Start a payout run now (admin) */
+    post: operations["money_admin_payout_run_start"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/money/payout-runs/{run_id}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One payout run and its payouts (admin) */
+    get: operations["money_admin_payout_run"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/money/payouts/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Payouts (admin)
+     * @description Newest first. `status=failed` with `needs_admin=true` lists the payouts that ran out of automatic retries.
+     */
+    get: operations["money_admin_payouts"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/money/payouts/{payout_id}/retry/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Retry a failed payout now (admin)
+     * @description The latest failed attempt of an escrow; skips the back-off. Audited.
+     */
+    post: operations["money_admin_payout_retry"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/admin/money/reconciliation/": {
     parameters: {
       query?: never;
@@ -1371,7 +1449,7 @@ export interface paths {
     put?: never;
     /**
      * Run a scheduled job (Cloud Scheduler only)
-     * @description Jobs: billing_dunning, billing_invoices, close_expired_gigs, dispatch_notifications, escrow_auto_release, escrow_reconcile, escrow_retry_payouts, expire_offers, expire_verifications, flag_stale_interviews, render_agreements, run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
+     * @description Jobs: billing_dunning, billing_invoices, close_expired_gigs, dispatch_notifications, escrow_auto_release, escrow_reconcile, expire_offers, expire_verifications, flag_stale_interviews, payout_run, payout_validations, render_agreements, run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
      */
     post: operations["jobs_run"];
     delete?: never;
@@ -1505,9 +1583,29 @@ export interface paths {
     put?: never;
     /**
      * Razorpay escrow events (webhook)
-     * @description payment.captured/failed, refund.processed/failed, transfer.processed/settled/failed. Signed with X-Razorpay-Signature (HMAC-SHA256 of the body) and identified by X-Razorpay-Event-Id: each event is applied once; repeats answer 200 and change nothing.
+     * @description payment.captured/failed, refund.processed/failed. Signed with X-Razorpay-Signature (HMAC-SHA256 of the body) and identified by X-Razorpay-Event-Id: each event is applied once; repeats answer 200 and change nothing.
      */
     post: operations["money_razorpay_webhook"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/money/webhooks/razorpayx/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * RazorpayX payout events (webhook)
+     * @description payout.processed/reversed/failed/rejected and fund_account.validation.completed/failed. Signed with X-Razorpay-Signature; each X-Razorpay-Event-Id is applied once.
+     */
+    post: operations["money_razorpayx_webhook"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1694,6 +1792,30 @@ export interface paths {
      * @description Say no to the open offer addressed to you. The talent declining ends the application. The host declining the talent's counter sends the original terms back as a final offer, which the talent can only accept or decline.
      */
     post: operations["offers_decline"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/payout-account/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Your payout account
+     * @description Masked. 404 until one is linked.
+     */
+    get: operations["money_payout_account"];
+    /**
+     * Add or change your payout account
+     * @description A UPI id, or a bank account (number, IFSC, name on the account). The payout provider verifies it (a ₹1 deposit or an account check) before payouts use it: `validation_status` goes pending → verified or failed. Changing an account holds payouts for 24 hours and notifies you on every channel. Only a masked version is kept.
+     */
+    put: operations["money_payout_account_link"];
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -2110,6 +2232,140 @@ export interface paths {
      * @description Signed by the provider over the raw body; deliveries are de-duplicated by idempotency key, so retries are safe. `outcome` is applied, duplicate, pending, stale, ignored or unknown_reference.
      */
     post: operations["verification_kyc_webhook"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/wallet/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Your wallet
+     * @description Pending (held in escrow), available (released, not yet paid out), in transit, paid out, and TDS this financial year. Amounts in paise.
+     */
+    get: operations["money_wallet"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/wallet/history/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Your releases and payouts
+     * @description Newest first. Filter by kind, status, dates (India) or financial year.
+     */
+    get: operations["money_wallet_history"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/wallet/payout/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Pay out what's available now
+     * @description Starts a payout run for your available money. Payouts that must wait (no verified account, a recent account change, ID not verified) are held, and `held_reasons` says why. At most once every few minutes.
+     */
+    post: operations["money_wallet_request_payout"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/wallet/statements/{fy}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Your earnings statement for a financial year
+     * @description Releases (gross, commission, GST, TDS, net) and their payouts. fy: 2026-27.
+     */
+    get: operations["money_statement"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/wallet/statements/{fy}/{kind}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Download your statement (CSV or PDF) */
+    get: operations["money_statement_file"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/wallet/tds/{fy}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * TDS deducted from you in a financial year
+     * @description By quarter and by release, with the deductor's details. A summary for your records: the certificate itself is Form 16A.
+     */
+    get: operations["money_tds"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/wallet/tds/{fy}/{kind}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Download your TDS summary (CSV or PDF) */
+    get: operations["money_tds_file"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -3026,6 +3282,16 @@ export interface components {
     DeclineChange: {
       reason?: string;
     };
+    Deductee: {
+      name: string;
+      id: string;
+      pan_on_file: boolean;
+    };
+    Deductor: {
+      name: string;
+      address: string;
+      tan: string;
+    };
     Deliverable: {
       type: components["schemas"]["DeliverableTypeEnum"];
       quantity: number;
@@ -3204,6 +3470,7 @@ export interface components {
      *     * `gigs.search_alert` - gigs.search_alert
      *     * `reminder` - reminder
      *     * `billing` - billing
+     *     * `payouts` - payouts
      *     * `other` - other
      * @enum {string}
      */
@@ -3219,6 +3486,7 @@ export interface components {
       | "gigs.search_alert"
       | "reminder"
       | "billing"
+      | "payouts"
       | "other";
     EventTypeSetting: {
       key: string;
@@ -3675,6 +3943,20 @@ export interface components {
      * @enum {string}
      */
     LevelEnum: "new" | "excellent" | "good" | "fair" | "poor";
+    LinkPayoutAccount: {
+      method: components["schemas"]["PayoutMethodEnum"];
+      /**
+       * @description UPI id, for method upi.
+       * @default
+       */
+      vpa: string;
+      /** @default  */
+      account_number: string;
+      /** @default  */
+      ifsc: string;
+      /** @default  */
+      holder_name: string;
+    };
     MakeOffer: {
       /** @description Checked against the gig's pay model. */
       terms: components["schemas"]["Terms"];
@@ -4196,17 +4478,148 @@ export interface components {
       /** Format: date-time */
       readonly updated_at?: string;
     };
+    Payout: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly escrow_id: string;
+      /** Format: uuid */
+      readonly booking_id: string;
+      /** Format: uuid */
+      readonly talent_id: string;
+      readonly attempt: number;
+      readonly amount_paise: number;
+      readonly account_display: string;
+      readonly status: components["schemas"]["PayoutAttemptStatusEnum"];
+      readonly provider_payout_id: string;
+      /** @description The bank's reference. */
+      readonly utr: string;
+      readonly failure_reason: string;
+      /**
+       * Format: date-time
+       * @description When a failed payout is tried again; empty: an admin.
+       */
+      readonly next_attempt_at: string | null;
+      /** Format: date-time */
+      readonly processed_at: string | null;
+      /** Format: date-time */
+      readonly created_at: string;
+    };
+    /** @description Masked: the full UPI id or account number is never stored or returned. */
+    PayoutAccount: {
+      readonly method: components["schemas"]["PayoutMethodEnum"];
+      /** @description Masked, for showing. */
+      readonly display: string;
+      readonly validation_status:
+        components["schemas"]["PayoutValidationStatusEnum"] | components["schemas"]["BlankEnum"];
+      readonly validation_reason: string;
+      /** Format: date-time */
+      readonly verified_at: string | null;
+      /**
+       * Format: date-time
+       * @description Last replaced.
+       */
+      readonly changed_at: string | null;
+      /**
+       * Format: date-time
+       * @description No payouts before this (set by a change).
+       */
+      readonly hold_until: string | null;
+      /** @description Decides the TDS rate (no PAN: the higher rate). */
+      readonly pan_on_file: boolean;
+    };
     /**
-     * @description * `` - No payout
-     *     * `waiting_for_account` - Waiting for the talent's payout account
-     *     * `paused` - Paused by the kill switch
-     *     * `sending` - Transfer being created
-     *     * `sent` - Transfer created
-     *     * `settled` - Settled to the talent
-     *     * `failed` - Transfer failed
+     * @description * `creating` - Being created
+     *     * `processing` - With the provider
+     *     * `processed` - Paid out
+     *     * `failed` - Failed
+     *     * `reversed` - Reversed by the bank
      * @enum {string}
      */
-    PayoutStatusEnum: "waiting_for_account" | "paused" | "sending" | "sent" | "settled" | "failed";
+    PayoutAttemptStatusEnum: "creating" | "processing" | "processed" | "failed" | "reversed";
+    /**
+     * @description * `upi` - UPI
+     *     * `bank` - Bank account
+     * @enum {string}
+     */
+    PayoutMethodEnum: "upi" | "bank";
+    PayoutRetry: {
+      note: string;
+    };
+    PayoutRun: {
+      readonly id: number;
+      readonly trigger: components["schemas"]["PayoutTriggerEnum"];
+      /** Format: uuid */
+      readonly started_by: string | null;
+      /**
+       * Format: uuid
+       * @description Only this talent's payouts (on demand).
+       */
+      readonly talent: string | null;
+      /** Format: date-time */
+      readonly started_at: string;
+      /** Format: date-time */
+      readonly finished_at: string | null;
+      readonly considered: number;
+      readonly sent: number;
+      readonly held: number;
+      readonly failed: number;
+      readonly sent_paise: number;
+      /** @description reason: count */
+      readonly held_reasons: unknown;
+    };
+    PayoutRunDetail: {
+      readonly id: number;
+      readonly trigger: components["schemas"]["PayoutTriggerEnum"];
+      /** Format: uuid */
+      readonly started_by: string | null;
+      /**
+       * Format: uuid
+       * @description Only this talent's payouts (on demand).
+       */
+      readonly talent: string | null;
+      /** Format: date-time */
+      readonly started_at: string;
+      /** Format: date-time */
+      readonly finished_at: string | null;
+      readonly considered: number;
+      readonly sent: number;
+      readonly held: number;
+      readonly failed: number;
+      readonly sent_paise: number;
+      /** @description reason: count */
+      readonly held_reasons: unknown;
+      readonly payouts: components["schemas"]["Payout"][];
+    };
+    /**
+     * @description * `` - No payout
+     *     * `waiting_for_account` - Waiting for a verified payout account
+     *     * `on_hold` - On hold (ID check or a recent account change)
+     *     * `paused` - Paused by the kill switch
+     *     * `sending` - Payout being created
+     *     * `sent` - With the payout provider
+     *     * `settled` - Paid out
+     *     * `failed` - Payout failed
+     * @enum {string}
+     */
+    PayoutStatusEnum:
+      "waiting_for_account" | "on_hold" | "paused" | "sending" | "sent" | "settled" | "failed";
+    /**
+     * @description * `scheduled` - Scheduled
+     *     * `release` - After a release
+     *     * `on_demand` - Asked for by the talent
+     *     * `admin` - Started by an admin
+     * @enum {string}
+     */
+    PayoutTriggerEnum: "scheduled" | "release" | "on_demand" | "admin";
+    /**
+     * @description * `` - Not linked
+     *     * `pending` - Being checked
+     *     * `verified` - Verified
+     *     * `failed` - Couldn't be verified
+     * @enum {string}
+     */
+    PayoutValidationStatusEnum: "pending" | "verified" | "failed";
     PdfLink: {
       /** Format: uri */
       url: string;
@@ -4680,6 +5093,34 @@ export interface components {
       | "Ladakh"
       | "Lakshadweep"
       | "Puducherry";
+    Statement: {
+      financial_year: string;
+      talent: components["schemas"]["StatementParty"];
+      rows: components["schemas"]["StatementRow"][];
+      totals: {
+        [key: string]: number;
+      };
+    };
+    StatementParty: {
+      name: string;
+      id: string;
+    };
+    StatementRow: {
+      /** Format: date */
+      date: string;
+      /** Format: uuid */
+      booking_id: string;
+      gig_title: string;
+      gross_paise: number;
+      commission_paise: number;
+      commission_gst_paise: number;
+      tds_paise: number;
+      net_paise: number;
+      payout_status: string;
+      /** Format: date */
+      paid_on: string | null;
+      utr: string;
+    };
     StatusChange: {
       status: components["schemas"]["GigStatusEnum"];
       /** @description Required when an admin sends a gig back. Shown to the vendor. */
@@ -4821,6 +5262,32 @@ export interface components {
       | "tech"
       | "outdoor"
       | "other";
+    TdsQuarter: {
+      quarter: string;
+      amount_credited_paise: number;
+      tds_paise: number;
+    };
+    TdsRecord: {
+      financial_year: string;
+      section: string;
+      deductor: components["schemas"]["Deductor"];
+      deductee: components["schemas"]["Deductee"];
+      quarters: components["schemas"]["TdsQuarter"][];
+      rows: components["schemas"]["TdsRow"][];
+      total_credited_paise: number;
+      total_tds_paise: number;
+      note: string;
+    };
+    TdsRow: {
+      /** Format: date */
+      date: string;
+      quarter: string;
+      /** Format: uuid */
+      booking_id: string;
+      gig_title: string;
+      amount_credited_paise: number;
+      tds_paise: number;
+    };
     /** @description Everything both sides agree to. Validated against the gig's pay model. */
     Terms: {
       readonly compensation_model: components["schemas"]["CompensationModelEnum"];
@@ -5119,6 +5586,47 @@ export interface components {
       | "rejected"
       | "changes_requested"
       | "expired";
+    Wallet: {
+      /** @description Held in escrow, not yet released. */
+      pending_paise: number;
+      /** @description Roughly what pending would pay you, after commission, GST and TDS. */
+      pending_net_estimate_paise: number;
+      /** @description Released to you, not yet paid out. */
+      available_paise: number;
+      in_transit_paise: number;
+      paid_out_paise: number;
+      tds_this_year_paise: number;
+      financial_year: string;
+      payout_account: components["schemas"]["PayoutAccount"] | null;
+      /** @description Why payouts wait, as a code; or empty. */
+      on_hold_reason: string;
+      on_hold_message: string;
+      can_request_payout: boolean;
+    };
+    WalletEntry: {
+      kind: components["schemas"]["WalletEntryKindEnum"];
+      /** Format: date-time */
+      at: string;
+      /** @description Release: your net; payout: the amount. */
+      amount_paise: number;
+      status: string;
+      /** Format: uuid */
+      booking_id: string;
+      gig_title: string;
+      gross_paise: number;
+      commission_paise: number;
+      commission_gst_paise: number;
+      tds_paise: number;
+      account: string;
+      reference: string;
+      failure_reason: string;
+    };
+    /**
+     * @description * `release` - release
+     *     * `payout` - payout
+     * @enum {string}
+     */
+    WalletEntryKindEnum: "release" | "payout";
     WebhookResponse: {
       outcome: string;
     };
@@ -5300,6 +5808,250 @@ export interface operations {
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_admin_payout_runs: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PayoutRun"][];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_admin_payout_run_start: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PayoutRunDetail"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_admin_payout_run: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        run_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PayoutRunDetail"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_admin_payouts: {
+    parameters: {
+      query?: {
+        needs_admin?: boolean;
+        status?: "creating" | "failed" | "processed" | "processing" | "reversed";
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Payout"][];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_admin_payout_retry: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        payout_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PayoutRetry"];
+        "application/x-www-form-urlencoded": components["schemas"]["PayoutRetry"];
+        "multipart/form-data": components["schemas"]["PayoutRetry"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PayoutRunDetail"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -9819,6 +10571,41 @@ export interface operations {
       };
     };
   };
+  money_razorpayx_webhook: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          [key: string]: unknown;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            outcome?: string;
+          };
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
   notifications_list: {
     parameters: {
       query?: {
@@ -10316,6 +11103,114 @@ export interface operations {
         };
       };
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_payout_account: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PayoutAccount"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_payout_account_link: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LinkPayoutAccount"];
+        "application/x-www-form-urlencoded": components["schemas"]["LinkPayoutAccount"];
+        "multipart/form-data": components["schemas"]["LinkPayoutAccount"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PayoutAccount"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      502: {
         headers: {
           [name: string]: unknown;
         };
@@ -11613,6 +12508,380 @@ export interface operations {
         };
       };
       503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_wallet: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Wallet"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_wallet_history: {
+    parameters: {
+      query?: {
+        /** @description To (India date). */
+        end?: string;
+        /** @description Financial year, like 2026-27. */
+        fy?: string;
+        /**
+         * @description * `release` - release
+         *     * `payout` - payout
+         */
+        kind?: "release" | "payout";
+        /** @description From (India date). */
+        start?: string;
+        status?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WalletEntry"][];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_wallet_request_payout: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PayoutRun"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_statement: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        fy: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Statement"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_statement_file: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        fy: string;
+        kind: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/csv": string;
+          "application/pdf": string;
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_tds: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        fy: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TdsRecord"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_tds_file: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        fy: string;
+        kind: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/csv": string;
+          "application/pdf": string;
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
         headers: {
           [name: string]: unknown;
         };

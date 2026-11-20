@@ -117,7 +117,7 @@ def preferences_for(user) -> dict:
                 "label": t.label_hi if locale == "hi" else t.label_en,
                 "urgent": t.urgent or t.key in catalog.URGENT_EVENTS,
                 "channels": {
-                    c: {"enabled": c in on, "locked": c == Channel.IN_APP}
+                    c: {"enabled": c in on, "locked": c == Channel.IN_APP or not t.configurable}
                     for c in channels_available
                 },
             }

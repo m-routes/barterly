@@ -77,6 +77,27 @@ FEATURED: tuple[EventType, ...] = (
         "बिलिंग और भुगतान",
         aliases=("billing.payment_failed", "billing.grace_ending", "billing.features_locked"),
     ),
+    EventType(
+        "payouts",
+        "Payouts",
+        "भुगतान",
+        aliases=(
+            "money.payout_paid",
+            "money.payout_failed",
+            "money.payout_on_hold",
+            "money.payout_account_failed",
+        ),
+    ),
+    # Can't be switched off: someone else changing where money goes must be noticed.
+    EventType(
+        "security",
+        "Account security",
+        "खाते की सुरक्षा",
+        defaults=frozenset({C.IN_APP, C.PUSH, C.EMAIL, C.SMS}),
+        urgent=True,
+        configurable=False,
+        aliases=("money.payout_account_changed",),
+    ),
     EventType(OTHER, "Other updates", "अन्य अपडेट", defaults=frozenset({C.IN_APP})),
 )
 BY_KEY = {t.key: t for t in FEATURED}
@@ -161,6 +182,8 @@ def links(kind: str, side: str, payload: dict) -> tuple[str, str]:
         return "/trips", _web("/console/agreements")
     if kind.startswith("billing."):
         return "/trips", _web("/console/billing")
+    if kind.startswith("money.payout"):
+        return "/trips", _web("/talent")  # no wallet screen yet
     if kind == "gigs.search_alert":
         return "/discover", _web("/talent")
     if application:
@@ -185,6 +208,8 @@ def enabled_channels(kind: str, overrides: dict[tuple[str, str], bool]) -> set[s
     (`overrides[(event_type, channel)]`). In-app can't be switched off: it's the inbox."""
     t = type_for(kind)
     on = set(t.defaults)
+    if not t.configurable:
+        return on | {Channel.IN_APP}
     for channel in ALL_CHANNELS:
         if (t.key, channel) in overrides:
             if overrides[(t.key, channel)]:

@@ -1,9 +1,9 @@
-"""Razorpay Orders, Route transfers and refunds over the REST API.
+"""Razorpay Orders and refunds over the REST API.
 
 The host pays a Razorpay order at checkout (captured automatically); money sits in the
-platform's Razorpay balance until a release transfers the talent's share to their
-Route linked account. Webhooks are signed like Razorpay's others: X-Razorpay-Signature
-is the HMAC-SHA256 of the body with RAZORPAY_ESCROW_WEBHOOK_SECRET.
+platform's Razorpay balance until it's released and paid out (gateway/payouts.py).
+Webhooks are signed like Razorpay's others: X-Razorpay-Signature is the HMAC-SHA256 of
+the body with RAZORPAY_ESCROW_WEBHOOK_SECRET.
 """
 
 import hashlib
@@ -26,7 +26,7 @@ def signature(body: bytes, secret: str) -> str:
     return hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
 
 
-class RazorpayRouteGateway:
+class RazorpayEscrowGateway:
     name = "razorpay"
 
     def _call(self, method: str, path: str, payload: dict | None = None, params=None) -> dict:
@@ -65,19 +65,6 @@ class RazorpayRouteGateway:
         )
         return Order(id=data["id"], amount_paise=int(data["amount"]))
 
-    def transfer(self, *, account_id, amount_paise, notes) -> str:
-        data = self._call(
-            "POST",
-            "/transfers",
-            {
-                "account": account_id,
-                "amount": amount_paise,
-                "currency": "INR",
-                "notes": {k: str(v) for k, v in notes.items()},
-            },
-        )
-        return data["id"]
-
     def refund(self, *, payment_id, amount_paise, notes) -> str:
         data = self._call(
             "POST",
@@ -108,7 +95,6 @@ class RazorpayRouteGateway:
             event=data.get("event", ""),
             payment=entity("payment"),
             refund=entity("refund"),
-            transfer=entity("transfer"),
             raw=data,
         )
 
@@ -133,10 +119,8 @@ class RazorpayRouteGateway:
             p for p in self._all("/payments", day) if p.get("status") in ("captured", "refunded")
         ]
         refunds = [r for r in self._all("/refunds", day) if r.get("status") == "processed"]
-        transfers = [t for t in self._all("/transfers", day) if t.get("status") != "failed"]
         return DayTotals(
             captured=sum(int(p["amount"]) for p in payments),
             refunded=sum(int(r["amount"]) for r in refunds),
-            transferred=sum(int(t["amount"]) for t in transfers),
             fees=sum(int(p.get("fee") or 0) for p in payments),
         )

@@ -94,9 +94,44 @@ def check_in(booking, *, delivering=True):
 
 
 def payout_account(talent, *, pan=True, active=True) -> PayoutAccount:
+    """A verified UPI payout account, as if linked and validated a while ago."""
     return PayoutAccount.objects.create(
         talent=talent,
-        gateway_account_id=f"acc_{talent.pk.hex[:12]}",
+        method="upi",
+        display="ta•••@okicici",
+        provider_contact_id=f"cont_{talent.pk.hex[:8]}",
+        fund_account_id=f"fa_{talent.pk.hex[:12]}",
+        validation_status="verified" if active else "pending",
         active=active,
         pan_on_file=pan,
     )
+
+
+def send_payout(escrow_id, now=None) -> Escrow:
+    """One payout attempt for an escrow (as a release or a run makes)."""
+    from apps.money import payouts
+
+    payouts.pay(escrow_id, now=now)
+    return Escrow.objects.get(pk=escrow_id)
+
+
+def retry_payouts(hours_later: int = 1) -> dict:
+    """A scheduled payout run after any back-off has passed."""
+    from datetime import timedelta
+
+    from apps.money import payouts
+
+    return payouts.scheduled(timezone.now() + timedelta(hours=hours_later))
+
+
+def deliver_x(event: str, entity_name: str, entity: dict, *, event_id=None, now=None) -> str:
+    """A signed RazorpayX webhook."""
+    from apps.money import payouts
+    from apps.money.gateway.fake import signed_x
+
+    body, headers = signed_x(
+        {"event": event, "payload": {entity_name: {"entity": entity}}},
+        settings.RAZORPAYX_WEBHOOK_SECRET,
+        event_id or uuid.uuid4().hex,
+    )
+    return payouts.handle_webhook(body, headers, now=now)

@@ -1,5 +1,5 @@
 """Escrow webhooks from the gateway: payment captured or failed, refund processed or
-failed, transfer processed/settled or failed.
+failed. (Payout webhooks come from the payout provider: payouts.py.)
 
 The signature is checked first (the gateway's parse_webhook). Each event is stored as a
 GatewayEvent under its unique event id in the same transaction as its effects, so a
@@ -27,10 +27,9 @@ from apps.money.ledger import (
     GATEWAY_FEES,
     GST_INPUT,
     GST_OUTPUT,
-    TALENT,
     Line,
 )
-from apps.money.models import Escrow, EscrowStatus, GatewayEvent, PayoutStatus
+from apps.money.models import Escrow, EscrowStatus, GatewayEvent
 
 log = logging.getLogger(__name__)
 E = EscrowStatus
@@ -195,69 +194,9 @@ def refund_failed(data: GatewayEventData, now) -> str:
     return _alert(f"refund {data.refund.get('id')} failed; retry it by hand", data, escrow)
 
 
-# ---------- Transfers (payouts) ----------
-
-
-def transfer_settled(data: GatewayEventData, now) -> str:
-    escrow = (
-        Escrow.objects.select_for_update()
-        .filter(payout_transfer_id=data.transfer.get("id") or "-")
-        .first()
-    )
-    if escrow is None:
-        return "not an escrow transfer"
-    if escrow.payout_status == PayoutStatus.SETTLED:
-        return "already settled"
-    before = snapshot(escrow, AUDIT)
-    escrow.payout_status = PayoutStatus.SETTLED
-    if escrow.status == E.RELEASED:
-        escrow.status = E.PAID_OUT
-    escrow.save(update_fields=["payout_status", "status", "updated_at"])
-    log_action(
-        actor=None,
-        action="money.payout_settled",
-        obj=escrow,
-        before=before,
-        after={**snapshot(escrow, AUDIT), "transfer_id": escrow.payout_transfer_id},
-    )
-    return "payout settled"
-
-
-def transfer_failed(data: GatewayEventData, now) -> str:
-    transfer_id = data.transfer.get("id") or "-"
-    escrow = Escrow.objects.select_for_update().filter(payout_transfer_id=transfer_id).first()
-    if escrow is None:
-        return "not an escrow transfer"
-    if escrow.payout_status == PayoutStatus.FAILED:
-        return "already failed"
-    # The transfer didn't happen: the money is owed to the talent again.
-    ledger.post(
-        "payout_reversed",
-        f"payout_failed:{transfer_id}",
-        [Line(GATEWAY, TALENT, escrow.payout_paise)],
-        booking=escrow.booking,
-        reference=transfer_id,
-        now=now,
-    )
-    before = snapshot(escrow, AUDIT)
-    escrow.payout_status = PayoutStatus.FAILED
-    escrow.save(update_fields=["payout_status", "updated_at"])
-    log_action(
-        actor=None,
-        action="money.payout_failed",
-        obj=escrow,
-        before=before,
-        after={**snapshot(escrow, AUDIT), "transfer_id": transfer_id},
-    )
-    return "payout failed; will retry"
-
-
 HANDLERS = {
     "payment.captured": payment_captured,
     "payment.failed": payment_failed,
     "refund.processed": refund_processed,
     "refund.failed": refund_failed,
-    "transfer.processed": transfer_settled,
-    "transfer.settled": transfer_settled,
-    "transfer.failed": transfer_failed,
 }

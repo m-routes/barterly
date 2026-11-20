@@ -187,9 +187,12 @@ class AgreementListItemSerializer(serializers.ModelSerializer):
         return not any(s.party == party for s in version.signatures.all())
 
 
+CHALLENGE_METHODS = [("otp", "Re-confirm your phone by OTP"), ("none", "Consent only (tests)")]
+
+
 class ChallengeSerializer(serializers.Serializer):
     method = serializers.ChoiceField(
-        choices=[("otp", "Re-confirm your phone by OTP"), ("none", "Consent only (tests)")]
+        choices=CHALLENGE_METHODS
     )
     consent_text = serializers.CharField()
     phone_hint = serializers.CharField(allow_blank=True)

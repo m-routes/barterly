@@ -1,0 +1,47 @@
+{% load money_tags %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TDS summary {{ financial_year }}</title>
+<style>
+  @page { size: A4 landscape; margin: 14mm 12mm; @bottom-center { content: "Page " counter(page) " of " counter(pages); font-family: "DejaVu Sans", sans-serif; font-size: 8pt; color: #56615a; } }
+  body { font-family: "DejaVu Sans", sans-serif; font-size: 8.5pt; color: #1f2a24; line-height: 1.4; }
+  h1 { font-size: 16pt; margin: 0 0 1mm; }
+  .muted { color: #56615a; }
+  table { width: 100%; border-collapse: collapse; margin-top: 5mm; }
+  th, td { padding: 1.6mm 1.6mm; border-bottom: 1px solid #e3dccf; text-align: left; vertical-align: top; }
+  th { font-size: 7.5pt; color: #56615a; }
+  .num { text-align: right; white-space: nowrap; }
+  .total td { font-weight: bold; border-top: 2px solid #1f2a24; border-bottom: 0; }
+  .note { margin-top: 6mm; font-size: 7.5pt; color: #56615a; }
+</style>
+</head>
+<body>
+  <h1>TDS deducted, FY {{ financial_year }}</h1>
+  <table style="margin-top: 3mm">
+    <tr><td class="muted">Deductor</td><td><strong>{{ deductor.name }}</strong><br>{{ deductor.address|linebreaksbr }}<br>TAN: {{ deductor.tan }}</td>
+        <td class="muted">Deductee</td><td><strong>{{ deductee.name }}</strong><br>PAN on file: {{ deductee.pan_on_file|yesno:"Yes,No (the higher rate applied)" }}</td></tr>
+    <tr><td class="muted">Section</td><td>{{ section }}</td><td></td><td></td></tr>
+  </table>
+  <table>
+    <thead><tr><th>Quarter</th><th class="num">Amount credited</th><th class="num">TDS deducted</th></tr></thead>
+    <tbody>
+      {% for q in quarters %}
+      <tr><td>{{ q.quarter }}</td><td class="num">{{ q.amount_credited_paise|rupees }}</td><td class="num">{{ q.tds_paise|rupees }}</td></tr>
+      {% endfor %}
+      <tr class="total"><td>Total</td><td class="num">{{ total_credited_paise|rupees }}</td><td class="num">{{ total_tds_paise|rupees }}</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <thead><tr><th>Date</th><th>Quarter</th><th>Gig</th><th class="num">Amount credited</th><th class="num">TDS</th></tr></thead>
+    <tbody>
+      {% for row in rows %}
+      <tr><td>{{ row.date|date:"j M Y" }}</td><td>{{ row.quarter }}</td><td>{{ row.gig_title }}</td><td class="num">{{ row.amount_credited_paise|rupees }}</td><td class="num">{{ row.tds_paise|rupees }}</td></tr>
+      {% empty %}
+      <tr><td colspan="5" class="muted">No TDS was deducted this financial year.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="note">{{ note }} Amounts in rupees.</p>
+</body>
+</html>

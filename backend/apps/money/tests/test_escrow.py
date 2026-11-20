@@ -15,7 +15,7 @@ from apps.gigs.constants import CompensationModel, StipendPeriod
 from apps.money import deliverables, escrow, ledger
 from apps.money.escrow import EscrowError
 from apps.money.gateway.base import GatewayError
-from apps.money.gateway.fake import FakeEscrowGateway
+from apps.money.gateway.fake import FakeEscrowGateway, FakePayoutProvider
 from apps.money.ledger import (
     COMMISSION,
     ESCROW,
@@ -47,9 +47,12 @@ from apps.money.tests.helpers import (
     check_in,
     day_one,
     deliver,
+    deliver_x,
     funded,
     paid_booking,
     payout_account,
+    retry_payouts,
+    send_payout,
 )
 from apps.notifications.models import Notification
 
@@ -241,10 +244,11 @@ class TestRelease:
             record.payout_paise,
         ) == (COMMISSION_P, COMMISSION_GST_P, TDS_P, PAYOUT)
         assert record.payout_status == PayoutStatus.SENT
-        assert FakeEscrowGateway.calls[-1] == (
-            "transfer",
-            booking.talent.payout_account.gateway_account_id,
+        assert FakePayoutProvider.calls[-1] == (
+            "payout",
+            booking.talent.payout_account.fund_account_id,
             PAYOUT,
+            "upi",
         )
         assert ledger.balance(ESCROW) == 0
         assert ledger.balance(COMMISSION) == COMMISSION_P
@@ -254,9 +258,15 @@ class TestRelease:
         assert ledger.is_balanced()
         assert audit("money.released").count() == 1 and audit("money.payout_sent").count() == 1
         assert Notification.objects.filter(kind="money.released", user=booking.talent).exists()
-        # The transfer settles.
-        assert deliver("transfer.processed", "transfer", {"id": record.payout_transfer_id}) == (
-            "payout settled"
+        # The bank confirms the payout.
+        payout = record.payouts.get()
+        assert (
+            deliver_x(
+                "payout.processed",
+                "payout",
+                {"id": payout.provider_payout_id, "reference_id": str(payout.pk), "utr": "UTR1"},
+            )
+            == "payout processed"
         )
         record.refresh_from_db()
         assert (record.status, record.payout_status) == (E.PAID_OUT, PayoutStatus.SETTLED)
@@ -279,33 +289,33 @@ class TestRelease:
     def test_a_payout_waits_for_the_talents_account(self):
         booking, record = ready_to_release(account=False)
         approve(booking)
-        record = escrow.send_payout(record.pk)
+        record = send_payout(record.pk)
         assert record.payout_status == PayoutStatus.WAITING_FOR_ACCOUNT
         payout_account(booking.talent)
-        assert escrow.retry_payouts() == {"payouts_sent": 1}
+        assert retry_payouts()["sent"] == 1
         record.refresh_from_db()
         assert record.payout_status == PayoutStatus.SENT
-        assert escrow.retry_payouts() == {"payouts_sent": 0}  # sent once only
+        assert retry_payouts()["sent"] == 0  # sent once only
         assert ledger.balance(TALENT) == 0
 
     def test_a_gateway_error_marks_the_payout_failed_and_it_is_retried(self):
         booking, record = ready_to_release()
         approve(booking)
-        FakeEscrowGateway.fail_next.append(GatewayError("down"))
-        assert escrow.send_payout(record.pk).payout_status == PayoutStatus.FAILED
+        FakePayoutProvider.fail_next.append(GatewayError("down"))
+        assert send_payout(record.pk).payout_status == PayoutStatus.FAILED
         assert ledger.balance(TALENT) == PAYOUT  # nothing left the platform
-        escrow.retry_payouts()
+        retry_payouts()
         record.refresh_from_db()
         assert record.payout_status == PayoutStatus.SENT and ledger.balance(TALENT) == 0
 
-    def test_a_failed_transfer_is_reversed_and_retried(self):
+    def test_a_failed_payout_is_reversed_and_retried(self):
         booking, record = ready_to_release()
         approve(booking)
-        record = escrow.send_payout(record.pk)
+        record = send_payout(record.pk)
         first = record.payout_transfer_id
-        assert deliver("transfer.failed", "transfer", {"id": first}) == "payout failed; will retry"
+        assert deliver_x("payout.failed", "payout", {"id": first}) == "payout failed"
         assert ledger.balance(TALENT) == PAYOUT
-        escrow.retry_payouts()
+        retry_payouts()
         record.refresh_from_db()
         assert record.payout_status == PayoutStatus.SENT and record.payout_transfer_id != first
         assert ledger.balance(TALENT) == 0 and ledger.is_balanced()
@@ -413,9 +423,9 @@ class TestKillSwitch:
         booking, record = ready_to_release()
         approve(booking)
         on()
-        assert escrow.send_payout(record.pk).payout_status == PayoutStatus.PAUSED
+        assert send_payout(record.pk).payout_status == PayoutStatus.PAUSED
         off()
-        escrow.retry_payouts()
+        retry_payouts()
         record.refresh_from_db()
         assert record.payout_status == PayoutStatus.SENT
 
@@ -490,7 +500,7 @@ class TestDisputesAndRefunds:
         )
         assert ledger.balance(ESCROW) == 0 and ledger.is_balanced()
         # The talent's share is paid out like any release.
-        assert escrow.send_payout(record.pk).payout_status == PayoutStatus.SENT
+        assert send_payout(record.pk).payout_status == PayoutStatus.SENT
 
     def test_an_admin_refund_returns_the_whole_stipend(self):
         booking, record = ready_to_release()
@@ -563,7 +573,7 @@ class TestDisputesAndRefunds:
     def test_ledger_movements_are_never_duplicated(self):
         booking, record = ready_to_release()
         approve(booking)
-        escrow.send_payout(record.pk)
-        escrow.send_payout(record.pk)
+        send_payout(record.pk)
+        send_payout(record.pk)
         kinds = list(LedgerTransaction.objects.values_list("kind", flat=True).order_by("id"))
         assert kinds == ["escrow_funded", "escrow_released", "payout_sent"]

@@ -8,8 +8,8 @@
 3. Release, on the host approving the deliverables, or automatically
    ESCROW_AUTO_RELEASE_HOURS after the latest submission with no answer
    (auto_release()). The stipend is split: platform commission (ESCROW_COMMISSION_BPS)
-   + GST on the commission + TDS (ESCROW_TDS_*) + the talent's payout, which goes to
-   their payout account by a transfer (send_payout()).
+   + GST on the commission + TDS (ESCROW_TDS_*) + the talent's payout, which is paid
+   to their verified payout account by the payout provider (payouts.py).
 4. A dispute freezes the escrow; only an admin decision releases, splits or refunds it.
    A booking cancelled before any release is refunded to the host (the gateway's fee is
    not refundable).
@@ -40,7 +40,6 @@ from apps.money.gateway.base import GatewayError, get_gateway
 from apps.money.ledger import (
     COMMISSION,
     ESCROW,
-    GATEWAY,
     GST_OUTPUT,
     TALENT,
     TDS,
@@ -53,7 +52,6 @@ from apps.money.models import (
     EscrowControl,
     EscrowStatus,
     PayoutAccount,
-    PayoutStatus,
 )
 
 E = EscrowStatus
@@ -343,87 +341,14 @@ def release(
             payout_paise=parts["payout"],
             notify=["talent", "vendor"],
         )
-        transaction.on_commit(lambda: send_payout(escrow.pk))
+        transaction.on_commit(lambda: _pay_out(escrow.pk))
     return escrow
 
 
-def send_payout(escrow_id, now=None) -> Escrow:
-    """Transfer the talent's payout. Marked `sending` in its own commit before the call,
-    so a crash mid-call can't send twice: a stuck `sending` is left for a person (the
-    reconciliation shows whether the transfer happened)."""
-    now = now or timezone.now()
-    with transaction.atomic():
-        escrow = Escrow.objects.select_for_update().select_related("booking").get(pk=escrow_id)
-        if escrow.status not in PAID_STATES or escrow.payout_status in (
-            PayoutStatus.SENT,
-            PayoutStatus.SETTLED,
-            PayoutStatus.SENDING,
-        ):
-            return escrow
-        if paused():
-            escrow.payout_status = PayoutStatus.PAUSED
-            escrow.save(update_fields=["payout_status", "updated_at"])
-            return escrow
-        account = PayoutAccount.objects.filter(
-            talent_id=escrow.booking.talent_id, active=True
-        ).first()
-        if account is None:
-            escrow.payout_status = PayoutStatus.WAITING_FOR_ACCOUNT
-            escrow.save(update_fields=["payout_status", "updated_at"])
-            return escrow
-        escrow.payout_status = PayoutStatus.SENDING
-        escrow.save(update_fields=["payout_status", "updated_at"])
-    try:
-        transfer_id = get_gateway().transfer(
-            account_id=account.gateway_account_id,
-            amount_paise=escrow.payout_paise,
-            notes={"booking_id": escrow.booking_id, "escrow_id": escrow.pk},
-        )
-    except GatewayError:
-        Escrow.objects.filter(pk=escrow.pk).update(payout_status=PayoutStatus.FAILED)
-        log_action(
-            actor=None,
-            action="money.payout_failed",
-            obj=escrow,
-            after={"payout_paise": escrow.payout_paise},
-        )
-        escrow.refresh_from_db()
-        return escrow
-    with transaction.atomic():
-        escrow = Escrow.objects.select_for_update().get(pk=escrow_id)
-        ledger.post(
-            "payout_sent",
-            f"payout:{escrow.pk}:{transfer_id}",
-            [Line(TALENT, GATEWAY, escrow.payout_paise)],
-            booking=escrow.booking,
-            reference=transfer_id,
-            now=now,
-        )
-        before = snapshot(escrow, AUDIT)
-        escrow.payout_status, escrow.payout_transfer_id = PayoutStatus.SENT, transfer_id
-        escrow.save(update_fields=["payout_status", "payout_transfer_id", "updated_at"])
-        _audit(
-            escrow, "payout_sent", before, transfer_id=transfer_id, payout_paise=escrow.payout_paise
-        )
-    return escrow
+def _pay_out(escrow_id) -> None:
+    from apps.money import payouts
 
-
-def retry_payouts(now=None) -> dict[str, int]:
-    """Job: payouts waiting for an account, paused, or failed get another go."""
-    waiting = Escrow.objects.filter(
-        status__in=PAID_STATES,
-        payout_status__in=(
-            PayoutStatus.WAITING_FOR_ACCOUNT,
-            PayoutStatus.PAUSED,
-            PayoutStatus.FAILED,
-            PayoutStatus.NONE,
-        ),
-    ).values_list("pk", flat=True)
-    sent = 0
-    for pk in list(waiting[:200]):
-        if send_payout(pk, now=now).payout_status == PayoutStatus.SENT:
-            sent += 1
-    return {"payouts_sent": sent}
+    payouts.after_release(escrow_id)
 
 
 # ---------- Refunds and disputes ----------

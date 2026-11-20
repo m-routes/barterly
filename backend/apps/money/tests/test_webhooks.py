@@ -117,12 +117,10 @@ class TestRefunds:
         ).startswith("alert")
         assert alerts().count() == 1
 
-    def test_refunds_and_transfers_for_unknown_payments_are_not_ours(self):
+    def test_refunds_for_unknown_payments_are_not_ours(self):
         for event, name in [
             ("refund.processed", "refund"),
             ("refund.failed", "refund"),
-            ("transfer.processed", "transfer"),
-            ("transfer.failed", "transfer"),
         ]:
             assert deliver(event, name, {"id": "x", "payment_id": "nope"}).startswith(
                 "not an escrow"

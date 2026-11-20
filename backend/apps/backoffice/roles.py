@@ -70,6 +70,9 @@ PERMISSIONS: dict[str, list[str]] = {
         "money.view_escrowcontrol",
         "money.decide_escrow",
         "money.toggle_kill_switch",
+        "money.view_payoutrun",
+        "money.view_payout",
+        "money.run_payouts",
     ],
     # Helps people: looks things up, changes nothing.
     AdminRole.SUPPORT: [*LOOKUP, *VERIFICATION_READ],

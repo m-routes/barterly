@@ -27,7 +27,7 @@ def test_matching_totals_are_ok():
         "captured": TOTAL,
         "fees": GATEWAY_FEE,
         "refunded": 0,
-        "transferred": 0,
+        "paid_out": 0,
     }
     assert not AuditLog.objects.filter(action="money.alert").exists()
 
@@ -71,4 +71,6 @@ def test_the_job_checks_yesterday():
 
 
 def test_the_escrow_jobs_are_registered():
-    assert {"escrow_auto_release", "escrow_retry_payouts", "escrow_reconcile"} <= set(jobs.JOBS)
+    assert {"escrow_auto_release", "payout_run", "payout_validations", "escrow_reconcile"} <= set(
+        jobs.JOBS
+    )
