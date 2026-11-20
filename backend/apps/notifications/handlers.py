@@ -170,3 +170,4 @@ def register() -> None:
     subscribe("chat.message", notify_chat_message)
     subscribe("billing.", notify)
     subscribe("money.", notify)
+    subscribe("attendance.", notify)

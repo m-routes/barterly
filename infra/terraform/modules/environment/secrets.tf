@@ -15,6 +15,8 @@ locals {
     # Payouts (RazorpayX): its own webhook secret, and the account payouts leave from.
     razorpayx_webhook_secret = "razorpayx-webhook-secret-${local.env}"
     razorpayx_account_number = "razorpayx-account-number-${local.env}"
+    # Signs check-in passes (apps.attendance): 32 random bytes, base64.
+    attendance_signing_key = "attendance-signing-key-${local.env}"
   }
 
   secret_access = {
@@ -28,6 +30,8 @@ locals {
     api_razorpay_escrow  = { secret = "razorpay_escrow_webhook_secret", member = google_service_account.api.member }
     api_razorpayx_hook   = { secret = "razorpayx_webhook_secret", member = google_service_account.api.member }
     api_razorpayx_acct   = { secret = "razorpayx_account_number", member = google_service_account.api.member }
+    api_attendance_key   = { secret = "attendance_signing_key", member = google_service_account.api.member }
+    migrate_attendance   = { secret = "attendance_signing_key", member = google_service_account.migrate.member }
   }
 }
 

@@ -2,6 +2,8 @@ import 'package:barterly/src/agreements/agreement_screen.dart';
 import 'package:barterly/src/agreements/offer_screen.dart';
 import 'package:barterly/src/apply/apply_screen.dart';
 import 'package:barterly/src/apply/my_applications_screen.dart';
+import 'package:barterly/src/attendance/hours_screen.dart';
+import 'package:barterly/src/attendance/pass_screen.dart';
 import 'package:barterly/src/auth/login_screen.dart';
 import 'package:barterly/src/auth/onboarding_screens.dart';
 import 'package:barterly/src/auth/session.dart';
@@ -41,6 +43,8 @@ abstract final class Routes {
       '/trips/application/$applicationId';
   static String agreement(String agreementId) =>
       '/trips/agreement/$agreementId';
+  static String checkInPass(String bookingId) => '/trips/pass/$bookingId';
+  static String hours(String bookingId) => '/trips/hours/$bookingId';
 
   /// Screens that only make sense before the person is fully in.
   static const Set<String> gates = {splash, login, join, wrongApp, setup};
@@ -137,6 +141,17 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (_, state) => AgreementScreen(
                       agreementId: state.pathParameters['id']!,
                     ),
+                  ),
+                  GoRoute(
+                    path: 'pass/:id',
+                    builder: (_, state) => CheckInPassScreen(
+                      bookingId: state.pathParameters['id']!,
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'hours/:id',
+                    builder: (_, state) =>
+                        HoursScreen(bookingId: state.pathParameters['id']!),
                   ),
                 ],
               ),

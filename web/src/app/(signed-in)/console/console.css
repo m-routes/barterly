@@ -2181,3 +2181,28 @@
   text-align: right;
   white-space: nowrap;
 }
+
+/* Arrivals (offline check-in) */
+.arrivals__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
+}
+
+.notice {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.scanner__video {
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 12px;
+  background: #000;
+}

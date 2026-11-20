@@ -20,6 +20,7 @@ dependencies = [
   "pillow>=11.0",
   "weasyprint>=66",
   "google-cloud-tasks>=2.18",
+  "cryptography>=44",
 ]
 
 [dependency-groups]

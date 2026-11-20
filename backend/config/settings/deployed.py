@@ -17,6 +17,9 @@ if not ALLOWED_HOSTS:
     raise ImproperlyConfigured("DJANGO_ALLOWED_HOSTS must list at least one host")
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
+# Check-in passes must be signed with the real key, never one derived from SECRET_KEY.
+ATTENDANCE_SIGNING_KEY = env_str("ATTENDANCE_SIGNING_KEY")
+
 DATABASES = {"default": database_config(ssl_require=True, pool=True)}
 
 # Google's front end appends the real client IP to X-Forwarded-For; trust only that

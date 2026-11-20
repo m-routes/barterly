@@ -75,6 +75,7 @@ Surfaces: the vendor console (web), the talent app (mobile) and the admin consol
 | `agreements` | `Agreement`, its versions and signatures, the PDF template and WeasyPrint renderer, the `ESignProvider` interface (in-app OTP provider and a fake) |
 | `billing` | Plans as data, subscriptions through Razorpay (behind `PaymentGateway`), entitlements, GST invoices and dunning |
 | `money` | Double-entry ledger (append-only, integer paise), escrow for paid and hybrid bookings, deliverables, payout accounts, payout runs, the talent wallet, statements and TDS records, webhooks, reconciliation and the kill switch ([money.md](money.md)) |
+| `attendance` | Signed check-in passes (Ed25519 QR + six-digit code), offline check-in sync, the soft geofence, check-out, no-show grace, volunteer hour logs ([attendance.md](attendance.md)) |
 | `reliability` | The reliability score v1 (a pure function, [reliability.md](reliability.md)) and each person's stored score per side |
 | `verification` | Verification cases per check, evidence (provider references and masked numbers only), badges, the KYC provider interface and webhook, re-verification on profile edits, the review API |
 
@@ -464,6 +465,10 @@ A downgrade never takes gigs down: live ones keep running, and new ones are refu
 
 Escrow for paid and hybrid bookings on a double-entry ledger. The host funds the stipend before check-in; approval of the deliverables (or 72 hours without an answer) releases it as commission + GST + TDS + the talent's payout; disputes freeze it until a finance admin decides. See [money.md](money.md) for the rules, accounts, webhooks, reconciliation and kill switch.
 
+### Attendance (`apps/attendance`)
+
+Talent show a signed QR pass (or read a six-digit code); the console's Arrivals screen, an installable PWA, verifies it offline and queues the check-in until it can sync. Check-in records the talent's distance from the property (flagged over 1 km, never blocking). Check-out completes the stay; a no-show waits for a grace period into the first day. Talent log daily hours, which the host confirms or disputes, within the agreement's weekly cap and day off. See [attendance.md](attendance.md).
+
 ### Audit log
 
 Money and status changes write an `AuditLog` entry through `apps.common.services.audit.log_action()`, in the same transaction as the change. Each entry records the actor, a dotted action (`user.role_changed`), the target's type and id, JSON before/after, the client IP and the request id. Entries are append-only: updates and deletes raise, and the admin is read-only. Users with audit history can't be hard-deleted (`PROTECT`); deactivate them. Role and `is_active` changes go through `apps.accounts.services.users` (and the admin's save hook), which audit them.
@@ -473,7 +478,7 @@ Money and status changes write an `AuditLog` entry through `apps.common.services
 Staff work in the Django admin at `/admin/`, served by `BarterlyAdminSite`, which adds review queues. Decisions go through the same services as the API, so they are checked, keep badges in step and write AuditLog rows.
 
 - **Roles.** `super_admin`, `ops`, `trust`, `finance` and `support` are auth groups whose permissions are exactly the lists in `apps/backoffice/roles.py`. They are re-synced after every migrate, so hand edits to a group don't stick. Give or take a role with `manage.py grant_admin_role <phone> <role> [--remove]`; it makes the account a staff admin and is audited. Vendor and talent accounts can't be given a role. Changing someone's groups in the user admin is audited as `user.admin_roles_changed`.
-  - ops: approves gigs, reads accounts, gigs, properties and applications, and reads the audit log.
+  - ops: approves gigs, reads accounts, gigs, properties and applications, reads the audit log, and reviews check-ins flagged as far from the property.
   - trust: decides verification cases, reads verification records and KYC events, and reads the audit log.
   - finance: reads users, gigs, applications, the audit log and everything in money; decides held escrows, runs the escrow kill switch, and starts payout runs and retries.
   - support: read-only lookups, including verification records; no actions and no audit log.
@@ -498,7 +503,7 @@ Staff work in the Django admin at `/admin/`, served by `BarterlyAdminSite`, whic
 
 ## Web console
 
-Next.js 16 App Router with Cache Components. Pages: `/` (landing), `/login`, `/start` (sends a signed-in person to the right place), `/onboarding/role`, `/onboarding/vendor`, `/talent` (talent are pointed at the mobile app) and `/console/*` (Dashboard, Gigs, Applicants, Talent search, Agreements, Payments, Analytics; unbuilt sections show an empty state).
+Next.js 16 App Router with Cache Components. Pages: `/` (landing), `/login`, `/start` (sends a signed-in person to the right place), `/onboarding/role`, `/onboarding/vendor`, `/talent` (talent are pointed at the mobile app) and `/console/*` (Dashboard, Arrivals, Gigs, Applicants, Talent search, Agreements, Payments, Analytics; unbuilt sections show an empty state).
 
 **Calling the API.** The browser only talks to its own origin. `src/app/api/v1/[...path]/route.ts` forwards `/api/v1/*` to `API_URL`, so the API needs no CORS.
 - The JWTs live in httpOnly, SameSite=Lax cookies (`barterly_access`, `barterly_refresh`) that expire with their tokens. Browser JavaScript never sees a token.

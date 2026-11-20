@@ -5,6 +5,9 @@
     <!-- connectivity_plus: knowing when the network returns, to send queued
          applications. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <!-- Check-in pass: where the talent is, for the host's records (optional). -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <application
         android:label="barterly"
         android:name="${applicationName}"

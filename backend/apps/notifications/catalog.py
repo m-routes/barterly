@@ -134,6 +134,7 @@ OTHER_LABELS: dict[str, tuple[str, str]] = {
     "booking.reviewed": ("Reviewed", "समीक्षा हुई"),
     "booking.waiting_for_place": ("Waiting for a place", "जगह की प्रतीक्षा"),
     "booking.place_opened": ("A place opened up", "एक जगह ख़ाली हुई"),
+    "attendance.hours_disputed": ("Hours disputed", "घंटों पर आपत्ति"),
     "money.funded": ("Stipend funded and held", "स्टाइपेंड जमा और सुरक्षित"),
     "money.payment_failed": ("Stipend payment failed", "स्टाइपेंड का भुगतान नहीं हुआ"),
     "money.released": ("Stipend released", "स्टाइपेंड जारी हुआ"),
@@ -176,7 +177,7 @@ def links(kind: str, side: str, payload: dict) -> tuple[str, str]:
     conversation = payload.get("conversation_id", "")
     if kind == "chat.message" and conversation:
         return f"/trips/chat/{conversation}", _web(f"/console/messages/{conversation}")
-    if agreement or kind.startswith(("agreement.", "booking.", "money.")):
+    if agreement or kind.startswith(("agreement.", "booking.", "money.", "attendance.")):
         if agreement:
             return f"/trips/agreement/{agreement}", _web(f"/console/agreements/{agreement}")
         return "/trips", _web("/console/agreements")
