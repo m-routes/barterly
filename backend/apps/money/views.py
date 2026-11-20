@@ -3,14 +3,13 @@ from django.db.models import Q
 from django.http import HttpResponse
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import exceptions, status
+from rest_framework import exceptions, generics, status
 from rest_framework.permissions import AllowAny, BasePermission, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.bookings.models import Booking
-from apps.common.pagination import DefaultPagination
 from apps.common.permissions import IsAdminRole, IsTalent, IsVendor
 from apps.common.serializers import ErrorSerializer
 from apps.common.services.audit import log_action
@@ -429,27 +428,27 @@ class WalletView(APIView):
         return Response(WalletSerializer(wallet.summary(request.user)).data)
 
 
-class WalletHistoryView(APIView):
+class WalletHistoryView(generics.ListAPIView):
     permission_classes = [IsTalent]
+    serializer_class = WalletEntrySerializer
+
+    def get_queryset(self):
+        query = WalletHistoryQuerySerializer(data=self.request.query_params)
+        query.is_valid(raise_exception=True)
+        try:
+            return wallet.history(self.request.user, **query.validated_data)
+        except wallet.WalletError as exc:
+            raise refuse(exc) from exc
 
     @extend_schema(
         operation_id="money_wallet_history",
         summary="Your releases and payouts",
         description="Newest first. Filter by kind, status, dates (India) or financial year.",
         parameters=[WalletHistoryQuerySerializer],
-        responses={200: WalletEntrySerializer(many=True), 400: ErrorSerializer, **ERRORS},
         tags=TAG,
     )
-    def get(self, request: Request) -> Response:
-        query = WalletHistoryQuerySerializer(data=request.query_params)
-        query.is_valid(raise_exception=True)
-        try:
-            entries = wallet.history(request.user, **query.validated_data)
-        except wallet.WalletError as exc:
-            raise refuse(exc) from exc
-        paginator = DefaultPagination()
-        page = paginator.paginate_queryset(entries, request, view=self)
-        return paginator.get_paginated_response(WalletEntrySerializer(page, many=True).data)
+    def get(self, request: Request, *args, **kwargs) -> Response:
+        return super().get(request, *args, **kwargs)
 
 
 class WalletPayoutView(APIView):
@@ -575,8 +574,10 @@ class TdsFileView(APIView):
 # ---------- Payout runs (admin) ----------
 
 
-class PayoutRunsView(APIView):
+class PayoutRunsView(generics.ListAPIView):
     permission_classes = [IsAdminRole, _has_perm("money.view_payoutrun")]
+    serializer_class = PayoutRunSerializer
+    queryset = PayoutRun.objects.all()
 
     def get_permissions(self):
         if self.request.method == "POST":
@@ -587,13 +588,10 @@ class PayoutRunsView(APIView):
         operation_id="money_admin_payout_runs",
         summary="Payout runs (admin)",
         description="Newest first: what each run sent, held back (and why) and failed.",
-        responses={200: PayoutRunSerializer(many=True), **ERRORS},
         tags=TAG,
     )
-    def get(self, request: Request) -> Response:
-        paginator = DefaultPagination()
-        page = paginator.paginate_queryset(PayoutRun.objects.all(), request, view=self)
-        return paginator.get_paginated_response(PayoutRunSerializer(page, many=True).data)
+    def get(self, request: Request, *args, **kwargs) -> Response:
+        return super().get(request, *args, **kwargs)
 
     @extend_schema(
         operation_id="money_admin_payout_run_start",
@@ -630,8 +628,17 @@ class PayoutRunDetailView(APIView):
         return Response(PayoutRunDetailSerializer(run).data)
 
 
-class PayoutsAdminView(APIView):
+class PayoutsAdminView(generics.ListAPIView):
     permission_classes = [IsAdminRole, _has_perm("money.view_payout")]
+    serializer_class = PayoutSerializer
+
+    def get_queryset(self):
+        rows = Payout.objects.select_related("escrow")
+        if wanted := self.request.query_params.get("status"):
+            rows = rows.filter(status=wanted)
+        if self.request.query_params.get("needs_admin") in ("true", "1"):
+            rows = rows.filter(status__in=("failed", "reversed"), next_attempt_at__isnull=True)
+        return rows
 
     @extend_schema(
         operation_id="money_admin_payouts",
@@ -644,18 +651,10 @@ class PayoutsAdminView(APIView):
             OpenApiParameter("status", str, enum=[c for c, _ in PayoutAttemptStatus.choices]),
             OpenApiParameter("needs_admin", bool),
         ],
-        responses={200: PayoutSerializer(many=True), **ERRORS},
         tags=TAG,
     )
-    def get(self, request: Request) -> Response:
-        rows = Payout.objects.select_related("escrow")
-        if wanted := request.query_params.get("status"):
-            rows = rows.filter(status=wanted)
-        if request.query_params.get("needs_admin") in ("true", "1"):
-            rows = rows.filter(status__in=("failed", "reversed"), next_attempt_at__isnull=True)
-        paginator = DefaultPagination()
-        page = paginator.paginate_queryset(rows, request, view=self)
-        return paginator.get_paginated_response(PayoutSerializer(page, many=True).data)
+    def get(self, request: Request, *args, **kwargs) -> Response:
+        return super().get(request, *args, **kwargs)
 
 
 class PayoutRetryView(APIView):
