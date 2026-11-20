@@ -191,9 +191,7 @@ CHALLENGE_METHODS = [("otp", "Re-confirm your phone by OTP"), ("none", "Consent 
 
 
 class ChallengeSerializer(serializers.Serializer):
-    method = serializers.ChoiceField(
-        choices=CHALLENGE_METHODS
-    )
+    method = serializers.ChoiceField(choices=CHALLENGE_METHODS)
     consent_text = serializers.CharField()
     phone_hint = serializers.CharField(allow_blank=True)
     max_age_seconds = serializers.IntegerField()
