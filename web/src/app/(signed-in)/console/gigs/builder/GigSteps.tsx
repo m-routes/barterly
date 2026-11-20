@@ -411,6 +411,13 @@ export function PayStep({ draft, set, error }: StepProps) {
                   set({ deliverables: next });
                 }}
               />
+              {item.type === "google_review" ? (
+                <p className="field__hint" role="note">
+                  Google doesn&apos;t allow reviews given in return for a stay or payment, and
+                  India&apos;s rules on reviews say such reviews must be disclosed. The talent will
+                  be asked to say so in the review. Consider a post instead.
+                </p>
+              ) : null}
               <Button
                 variant="ghost"
                 onClick={() =>

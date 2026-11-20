@@ -2206,3 +2206,18 @@
   border-radius: 12px;
   background: #000;
 }
+
+/* Content (deliverables) */
+.content-card {
+  align-items: flex-start;
+}
+
+.usage-rights {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: color-mix(in srgb, currentColor 5%, transparent);
+}
+
+.usage-rights p {
+  margin: 0;
+}

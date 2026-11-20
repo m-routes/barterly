@@ -130,3 +130,21 @@ variable "firebase_web" {
   })
   default = { api_key = "", app_id = "" }
 }
+
+variable "youtube_stats_enabled" {
+  description = "Wire YOUTUBE_API_KEY into the API (add the secret's value first)."
+  type        = bool
+  default     = false
+}
+
+variable "instagram_stats_enabled" {
+  description = "Fetch Instagram post stats. Needs Meta app review, the Graph token secret and the business account id."
+  type        = bool
+  default     = false
+}
+
+variable "instagram_business_account_id" {
+  description = "Barterly's Instagram business account id (for business discovery)."
+  type        = string
+  default     = ""
+}

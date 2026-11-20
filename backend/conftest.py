@@ -47,6 +47,7 @@ def _fake_sign_in_and_fresh_cache(settings):
     settings.RAZORPAY_ESCROW_WEBHOOK_SECRET = "test-escrow-secret"  # noqa: S105
     settings.ESCROW_PAUSED = False
     settings.PAYOUT_PROVIDER = "apps.money.gateway.fake.FakePayoutProvider"
+    settings.SOCIAL_STATS_PROVIDER = "apps.deliverables.stats.providers.FakeProvider"
     settings.RAZORPAYX_WEBHOOK_SECRET = "test-payout-secret"  # noqa: S105
     settings.RAZORPAYX_ACCOUNT_NUMBER = "2323230000000000"
     settings.CACHES = {
@@ -67,6 +68,11 @@ def _fake_sign_in_and_fresh_cache(settings):
     FakeEscrowGateway.reset()
     payout_provider._build.cache_clear()
     FakePayoutProvider.reset()
+    from apps.deliverables.stats import base as social_stats
+    from apps.deliverables.stats.providers import FakeProvider as FakeStats
+
+    social_stats._build.cache_clear()
+    FakeStats.answers = {}
     yield
     cache.clear()
     _build.cache_clear()

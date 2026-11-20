@@ -142,6 +142,7 @@ export const DELIVERABLE_LABELS: Record<DeliverableType, string> = {
   blog_post: "Blog post",
   photo_set: "Edited photo set",
   mural: "Mural / artwork",
+  google_review: "Google review",
   other: "Other",
 };
 

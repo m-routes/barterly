@@ -26,9 +26,10 @@ class InMemoryMediaStorage:
             headers=upload_headers(content_type, max_bytes, md5_b64),
         )
 
-    def signed_read_url(self, key, *, expires, download_name=None):
+    def signed_read_url(self, key, *, expires, download_name=None, attachment=False):
         self.signed.append(("GET", key))
-        return f"https://storage.test/read/{key}?X-Goog-Expires={int(expires.total_seconds())}"
+        how = "&download=1" if attachment else ""
+        return f"https://storage.test/read/{key}?X-Goog-Expires={int(expires.total_seconds())}{how}"
 
     def stat(self, key):
         if key not in self.objects:

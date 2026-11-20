@@ -17,6 +17,10 @@ locals {
     razorpayx_account_number = "razorpayx-account-number-${local.env}"
     # Signs check-in passes (apps.attendance): 32 random bytes, base64.
     attendance_signing_key = "attendance-signing-key-${local.env}"
+    # Post stats (apps.deliverables): a YouTube Data API key; the Instagram Graph token
+    # is added after Meta app review.
+    youtube_api_key       = "youtube-api-key-${local.env}"
+    instagram_graph_token = "instagram-graph-token-${local.env}"
   }
 
   secret_access = {
@@ -32,6 +36,8 @@ locals {
     api_razorpayx_acct   = { secret = "razorpayx_account_number", member = google_service_account.api.member }
     api_attendance_key   = { secret = "attendance_signing_key", member = google_service_account.api.member }
     migrate_attendance   = { secret = "attendance_signing_key", member = google_service_account.migrate.member }
+    api_youtube_key      = { secret = "youtube_api_key", member = google_service_account.api.member }
+    api_instagram_token  = { secret = "instagram_graph_token", member = google_service_account.api.member }
   }
 }
 

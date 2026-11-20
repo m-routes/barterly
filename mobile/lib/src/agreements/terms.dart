@@ -188,6 +188,7 @@ const deliverableLabels = {
   'blog_post': 'Blog post',
   'photo_set': 'Edited photo set',
   'mural': 'Mural / artwork',
+  'google_review': 'Google review',
   'other': 'Other',
 };
 const usageLabels = {

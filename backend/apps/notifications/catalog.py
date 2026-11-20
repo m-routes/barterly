@@ -78,6 +78,21 @@ FEATURED: tuple[EventType, ...] = (
         aliases=("billing.payment_failed", "billing.grace_ending", "billing.features_locked"),
     ),
     EventType(
+        "deliverables",
+        "Deliverables",
+        "डिलिवरेबल्स",
+        aliases=(
+            "deliverables.submitted",
+            "deliverables.all_submitted",
+            "deliverables.approved",
+            "deliverables.changes_requested",
+            "deliverables.due_date_changed",
+            "deliverables.due_in_two_days",
+            "deliverables.due_today",
+            "deliverables.due_overdue",
+        ),
+    ),
+    EventType(
         "payouts",
         "Payouts",
         "भुगतान",
@@ -183,6 +198,8 @@ def links(kind: str, side: str, payload: dict) -> tuple[str, str]:
         return "/trips", _web("/console/agreements")
     if kind.startswith("billing."):
         return "/trips", _web("/console/billing")
+    if kind.startswith("deliverables."):
+        return "/trips", _web("/console/content")
     if kind.startswith("money.payout"):
         return "/trips", _web("/talent")  # no wallet screen yet
     if kind == "gigs.search_alert":

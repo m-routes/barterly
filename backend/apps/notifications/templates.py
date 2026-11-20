@@ -166,6 +166,50 @@ TEMPLATES: dict[str, Template] = {
         "en": ("Hours disputed", "{gig_title}: your host disputed your hours on {day}: {note}"),
         "hi": ("घंटों पर आपत्ति", "{gig_title}: होस्ट ने {day} के आपके घंटों पर आपत्ति की: {note}"),
     },
+    "deliverables.submitted": {
+        "en": ("Work handed in", "{gig_title}: {deliverable} is ready for you to review."),
+        "hi": ("काम जमा हुआ", "{gig_title}: {deliverable} आपकी समीक्षा के लिए तैयार है।"),
+    },
+    "deliverables.all_submitted": {
+        "en": (
+            "Everything's handed in",
+            "{gig_title}: review it within 72 hours, or it's approved automatically.",
+        ),
+        "hi": (
+            "सारा काम जमा हुआ",
+            "{gig_title}: 72 घंटों में समीक्षा करें, वरना यह अपने-आप स्वीकृत हो जाएगा।",
+        ),
+    },
+    "deliverables.approved": {
+        "en": ("Approved", "{gig_title}: your host approved {deliverable}."),
+        "hi": ("स्वीकृत", "{gig_title}: होस्ट ने {deliverable} स्वीकृत किया।"),
+    },
+    "deliverables.changes_requested": {
+        "en": ("Changes asked for", "{deliverable}: {note}"),
+        "hi": ("बदलाव माँगे गए", "{deliverable}: {note}"),
+    },
+    "deliverables.due_date_changed": {
+        "en": ("New due date", "{deliverable} is now due {due}."),
+        "hi": ("नई तारीख़", "{deliverable} अब {due} तक देना है।"),
+    },
+    "deliverables.due_in_two_days": {
+        "en": ("Due in two days", "{deliverable} for {gig_title} is due {due}."),
+        "hi": ("दो दिन बाक़ी", "{gig_title} के लिए {deliverable} {due} तक देना है।"),
+    },
+    "deliverables.due_today": {
+        "en": ("Due today", "{deliverable} for {gig_title} is due today."),
+        "hi": ("आज देना है", "{gig_title} के लिए {deliverable} आज देना है।"),
+    },
+    "deliverables.due_overdue": {
+        "en": (
+            "Overdue",
+            "{deliverable} for {gig_title} was due {due}. Hand it in, or talk to your host.",
+        ),
+        "hi": (
+            "देर हो गई",
+            "{gig_title} के लिए {deliverable} {due} तक देना था। जमा करें या होस्ट से बात करें।",
+        ),
+    },
     catalog.OTHER: {
         "en": ("{label}", "{gig_title}"),
         "hi": ("{label}", "{gig_title}"),
@@ -198,6 +242,14 @@ VARIABLES: dict[str, tuple[str, ...]] = {
     "money.payout_on_hold": ("gig_title", "message"),
     "money.payout_account_failed": ("account",),
     "attendance.hours_disputed": ("gig_title", "day", "note"),
+    "deliverables.submitted": ("gig_title", "deliverable"),
+    "deliverables.all_submitted": ("gig_title",),
+    "deliverables.approved": ("gig_title", "deliverable"),
+    "deliverables.changes_requested": ("deliverable", "note"),
+    "deliverables.due_date_changed": ("deliverable", "due"),
+    "deliverables.due_in_two_days": ("deliverable", "gig_title", "due"),
+    "deliverables.due_today": ("deliverable", "gig_title"),
+    "deliverables.due_overdue": ("deliverable", "gig_title", "due"),
     catalog.OTHER: ("label", "gig_title"),
 }
 

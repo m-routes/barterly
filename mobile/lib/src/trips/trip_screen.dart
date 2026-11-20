@@ -685,10 +685,20 @@ class _StayCard extends StatelessWidget {
               ? 'You can still log hours for a week after the stay ends.'
               : 'Log your hours each day. Your host confirms them.',
         ),
-        OutlinedButton.icon(
-          onPressed: () => context.push(Routes.hours(bookingId)),
-          icon: const Icon(Icons.schedule, size: 18),
-          label: const Text('Log hours'),
+        Wrap(
+          spacing: BarterlySpace.sm,
+          children: [
+            OutlinedButton.icon(
+              onPressed: () => context.push(Routes.hours(bookingId)),
+              icon: const Icon(Icons.schedule, size: 18),
+              label: const Text('Log hours'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => context.push(Routes.deliverables(bookingId)),
+              icon: const Icon(Icons.collections_outlined, size: 18),
+              label: const Text('Deliverables'),
+            ),
+          ],
         ),
       ],
     ),

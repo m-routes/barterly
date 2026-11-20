@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "apps.billing",
     "apps.money",
     "apps.attendance",
+    "apps.deliverables",
     "apps.backoffice.apps.BackofficeConfig",
 ]
 
@@ -183,6 +184,10 @@ SPECTACULAR_SETTINGS = {
         "PayoutTriggerEnum": "apps.money.models.PayoutTrigger",
         "CheckInMethodEnum": "apps.attendance.models.CheckInMethod",
         "HourStatusEnum": "apps.attendance.models.HourStatus",
+        "DeliverableKindEnum": "apps.deliverables.models.Kind",
+        "DeliverablePlatformEnum": "apps.deliverables.models.Platform",
+        "DeliverableStatusEnum": "apps.deliverables.models.Status",
+        "PostStatsSourceEnum": "apps.deliverables.models.StatsSource",
         "CancellationReasonEnum": "apps.bookings.models.CancellationReason",
         "CancellationEffectEnum": "apps.bookings.models.CancellationEffect",
         "CancelledByEnum": "apps.bookings.models.CancelledBy",
@@ -309,6 +314,22 @@ ATTENDANCE_GEOFENCE_FLAG_METERS = env_int("ATTENDANCE_GEOFENCE_FLAG_METERS", 100
 ATTENDANCE_SYNC_MAX_AGE_HOURS = env_int("ATTENDANCE_SYNC_MAX_AGE_HOURS", 72)
 ATTENDANCE_CLOCK_SKEW_SECONDS = env_int("ATTENDANCE_CLOCK_SKEW_SECONDS", 120)
 ATTENDANCE_NO_SHOW_GRACE_HOURS = env_int("ATTENDANCE_NO_SHOW_GRACE_HOURS", 18)
+
+# Deliverables (apps.deliverables): post stats from the platforms, behind
+# SOCIAL_STATS_PROVIDER. YouTube: a Data API key. Instagram: the Graph API's business
+# discovery through Barterly's own business account. META APP REVIEW NEEDED before
+# INSTAGRAM_STATS_ENABLED; until then talent enter numbers by hand (self-reported).
+SOCIAL_STATS_PROVIDER = env_str(
+    "SOCIAL_STATS_PROVIDER", "apps.deliverables.stats.base.CombinedProvider"
+)
+SOCIAL_STATS_PROVIDERS = [
+    "apps.deliverables.stats.providers.YouTubeProvider",
+    "apps.deliverables.stats.providers.InstagramProvider",
+]
+YOUTUBE_API_KEY = env_str("YOUTUBE_API_KEY", "")
+INSTAGRAM_STATS_ENABLED = env_bool("INSTAGRAM_STATS_ENABLED", False)
+INSTAGRAM_GRAPH_TOKEN = env_str("INSTAGRAM_GRAPH_TOKEN", "")
+INSTAGRAM_BUSINESS_ACCOUNT_ID = env_str("INSTAGRAM_BUSINESS_ACCOUNT_ID", "")
 
 # Discovery (apps.discovery). Fit-score weights: they needn't add to 100 (they are
 # scaled), but keeping them at 100 makes each one read as "points".

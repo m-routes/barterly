@@ -24,6 +24,9 @@ locals {
     TASKS_INVOKER_EMAIL  = google_service_account.tasks.email
     # Links in emails, SMS and web push open the web console.
     WEB_APP_URL = local.web_origins[length(local.web_origins) - 1]
+    # Instagram post stats, after Meta app review (see docs/deliverables.md).
+    INSTAGRAM_STATS_ENABLED       = var.instagram_stats_enabled ? "true" : "false"
+    INSTAGRAM_BUSINESS_ACCOUNT_ID = var.instagram_business_account_id
   }
 }
 
@@ -164,6 +167,34 @@ resource "google_cloud_run_v2_service" "api" {
           secret_key_ref {
             secret  = google_secret_manager_secret.this["attendance_signing_key"].secret_id
             version = "latest"
+          }
+        }
+      }
+
+      # Post stats. Each is wired only once its secret has a value (a secret with no
+      # version would stop the revision starting): set the variables after adding them.
+      dynamic "env" {
+        for_each = var.youtube_stats_enabled ? ["YOUTUBE_API_KEY"] : []
+        content {
+          name = env.value
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.this["youtube_api_key"].secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.instagram_stats_enabled ? ["INSTAGRAM_GRAPH_TOKEN"] : []
+        content {
+          name = env.value
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.this["instagram_graph_token"].secret_id
+              version = "latest"
+            }
           }
         }
       }

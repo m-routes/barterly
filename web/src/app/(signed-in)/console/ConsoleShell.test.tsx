@@ -43,6 +43,7 @@ describe("ConsoleShell", () => {
       "Verification",
       "Talent search",
       "Agreements",
+      "Content",
       "Billing",
       "Analytics",
     ]);

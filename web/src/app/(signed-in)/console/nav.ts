@@ -83,6 +83,14 @@ export const CONSOLE_SECTIONS: readonly ConsoleSection[] = [
     },
   },
   {
+    href: "/console/content",
+    label: "Content",
+    empty: {
+      title: "No content yet",
+      description: "Reels, posts and photos talent hand in for barter and hybrid gigs.",
+    },
+  },
+  {
     href: "/console/billing",
     label: "Billing",
     empty: {

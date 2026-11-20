@@ -49,8 +49,15 @@ class MediaStorage(Protocol):
     ) -> SignedUpload: ...
 
     def signed_read_url(
-        self, key: str, *, expires: timedelta, download_name: str | None = None
-    ) -> str: ...
+        self,
+        key: str,
+        *,
+        expires: timedelta,
+        download_name: str | None = None,
+        attachment: bool = False,
+    ) -> str:
+        """A read link. With `attachment`, browsers save the file instead of showing it."""
+        ...
 
     def stat(self, key: str) -> StoredObject | None: ...
 
@@ -123,8 +130,9 @@ class GCSMediaStorage:
         )
         return SignedUpload(url=url, expires_at=timezone.now() + expires, headers=headers)
 
-    def signed_read_url(self, key, *, expires, download_name=None):
-        disposition = f'inline; filename="{download_name}"' if download_name else None
+    def signed_read_url(self, key, *, expires, download_name=None, attachment=False):
+        how = "attachment" if attachment else "inline"
+        disposition = f'{how}; filename="{download_name}"' if download_name else None
         return self._bucket.blob(key).generate_signed_url(
             version="v4",
             method="GET",

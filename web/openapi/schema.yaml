@@ -3289,6 +3289,52 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/bookings/{booking_id}/deliverables/items/:
+    get:
+      operationId: deliverables_for_booking
+      description: 'Barter and hybrid gigs: one per unit of each item in the agreement,
+        with the latest submission, post stats (self-reported ones marked), and once
+        approved the usage rights. Empty before check-in.'
+      summary: A booking's deliverables
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - deliverables
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrackedDeliverable'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/bookings/{booking_id}/details/:
     get:
       operationId: bookings_details
@@ -3684,6 +3730,67 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/content/library/:
+    get:
+      operationId: deliverables_library
+      description: Newest first, each with its usage rights from the agreement (and
+        until when they last), the post link and download links (valid 10 minutes).
+      summary: Your approved content
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - deliverables
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLibraryItemList'
+          description: ''
+  /api/v1/content/to-review/:
+    get:
+      operationId: deliverables_to_review
+      description: Oldest submission first, across your bookings.
+      summary: Deliverables waiting for your review
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - deliverables
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTrackedDeliverableList'
           description: ''
   /api/v1/conversations/:
     get:
@@ -4088,6 +4195,273 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ReviewResult'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/deliverables/items/{deliverable_id}/:
+    patch:
+      operationId: deliverables_due_date
+      description: During the stay or up to 30 days after it. The talent is told.
+      summary: Move a deliverable's due date
+      parameters:
+      - in: path
+        name: deliverable_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - deliverables
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDueDate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDueDate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDueDate'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackedDeliverable'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/deliverables/items/{deliverable_id}/review/:
+    post:
+      operationId: deliverables_review
+      description: Asking for changes needs a note and is allowed twice per deliverable;
+        after that, approve or open a dispute. Approving the last one releases a hybrid
+        gig's stipend.
+      summary: Approve a deliverable, or ask for changes
+      parameters:
+      - in: path
+        name: deliverable_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - deliverables
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Review'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Review'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Review'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackedDeliverable'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/deliverables/items/{deliverable_id}/stats/:
+    post:
+      operationId: deliverables_report_stats
+      description: With a screenshot of the numbers (an uploaded photo). Shown to
+        the host as self-reported, beside any numbers from the platform.
+      summary: Enter a post's numbers by hand
+      parameters:
+      - in: path
+        name: deliverable_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - deliverables
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManualStats'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ManualStats'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ManualStats'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostStats'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/deliverables/items/{deliverable_id}/submit/:
+    post:
+      operationId: deliverables_submit
+      description: 'A post link and/or uploaded files (media ids). Public posts must
+        carry the collaboration label: confirm it with `disclosure_confirmed`. Handing
+        in the last one starts the host''s 72-hour approval window.'
+      summary: Hand in a deliverable
+      parameters:
+      - in: path
+        name: deliverable_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - deliverables
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Submit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Submit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Submit'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackedDeliverable'
           description: ''
         '400':
           content:
@@ -5319,12 +5693,12 @@ paths:
   /api/v1/jobs/{job}/:
     post:
       operationId: jobs_run
-      description: 'Jobs: billing_dunning, billing_invoices, close_expired_gigs, dispatch_notifications,
-        escrow_auto_release, escrow_reconcile, expire_offers, expire_verifications,
-        flag_stale_interviews, payout_run, payout_validations, render_agreements,
-        run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results.
-        Needs a Google-signed OIDC token for the scheduler service account. Idempotent;
-        overlapping runs of one job are skipped.'
+      description: 'Jobs: billing_dunning, billing_invoices, close_expired_gigs, deliverable_reminders,
+        deliverable_stats, dispatch_notifications, escrow_auto_release, escrow_reconcile,
+        expire_offers, expire_verifications, flag_stale_interviews, payout_run, payout_validations,
+        render_agreements, run_search_alerts, send_interview_reminders, send_reminders,
+        sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service
+        account. Idempotent; overlapping runs of one job are skipped.'
       summary: Run a scheduled job (Cloud Scheduler only)
       parameters:
       - in: path
@@ -10081,6 +10455,44 @@ components:
       required:
       - quantity
       - type
+    DeliverableKindEnum:
+      enum:
+      - reel
+      - story
+      - photo_set
+      - google_review
+      - custom
+      type: string
+      description: |-
+        * `reel` - Reel
+        * `story` - Story
+        * `photo_set` - Photo set
+        * `google_review` - Google review
+        * `custom` - Custom
+    DeliverablePlatformEnum:
+      enum:
+      - instagram
+      - youtube
+      - google
+      - other
+      type: string
+      description: |-
+        * `instagram` - Instagram
+        * `youtube` - YouTube
+        * `google` - Google
+        * `other` - Other
+    DeliverableStatusEnum:
+      enum:
+      - pending
+      - submitted
+      - changes_requested
+      - approved
+      type: string
+      description: |-
+        * `pending` - Not submitted yet
+        * `submitted` - Waiting for the host
+        * `changes_requested` - Changes asked for
+        * `approved` - Approved
     DeliverableSubmission:
       type: object
       properties:
@@ -10124,6 +10536,7 @@ components:
       - blog_post
       - photo_set
       - mural
+      - google_review
       - other
       type: string
       description: |-
@@ -10134,6 +10547,7 @@ components:
         * `blog_post` - Blog post
         * `photo_set` - Edited photo set
         * `mural` - Mural / artwork
+        * `google_review` - Google review
         * `other` - Other
     Device:
       type: object
@@ -10450,6 +10864,7 @@ components:
       - gigs.search_alert
       - reminder
       - billing
+      - deliverables
       - payouts
       - other
       type: string
@@ -10465,6 +10880,7 @@ components:
         * `gigs.search_alert` - gigs.search_alert
         * `reminder` - reminder
         * `billing` - billing
+        * `deliverables` - deliverables
         * `payouts` - payouts
         * `other` - other
     EventTypeSetting:
@@ -10543,6 +10959,25 @@ components:
       - profile_complete
       - refresh
       - user
+    FileLink:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        content_type:
+          type: string
+        size_bytes:
+          type: integer
+        url:
+          type: string
+          format: uri
+          description: Valid for 10 minutes.
+      required:
+      - content_type
+      - id
+      - size_bytes
+      - url
     FilterParams:
       type: object
       properties:
@@ -11690,6 +12125,117 @@ components:
         * `good` - good
         * `fair` - fair
         * `poor` - poor
+    LibraryItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        booking_id:
+          type: string
+          format: uuid
+          readOnly: true
+        gig_title:
+          type: string
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/DeliverableKindEnum'
+          readOnly: true
+        platform:
+          allOf:
+          - $ref: '#/components/schemas/DeliverablePlatformEnum'
+          readOnly: true
+        spec_type:
+          type: string
+          readOnly: true
+          description: The agreement's deliverable type.
+        title:
+          type: string
+          readOnly: true
+        notes:
+          type: string
+          readOnly: true
+        due_date:
+          type: string
+          format: date
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DeliverableStatusEnum'
+          readOnly: true
+        change_rounds:
+          type: integer
+          readOnly: true
+        change_rounds_left:
+          type: integer
+          readOnly: true
+        disclosure_required:
+          type: boolean
+          readOnly: true
+          description: 'A public post: it must carry the collaboration label (#collab,
+            #ad, ...).'
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Latest submission.
+        approved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        latest_submission:
+          allOf:
+          - $ref: '#/components/schemas/Submission'
+          nullable: true
+          readOnly: true
+        stats:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostStats'
+          readOnly: true
+        usage_rights:
+          allOf:
+          - $ref: '#/components/schemas/UsageRights'
+          nullable: true
+          readOnly: true
+        usable_until:
+          type: string
+          nullable: true
+          readOnly: true
+        talent_name:
+          type: string
+          readOnly: true
+        downloads:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileLink'
+          readOnly: true
+      required:
+      - approved_at
+      - booking_id
+      - change_rounds
+      - change_rounds_left
+      - disclosure_required
+      - downloads
+      - due_date
+      - gig_title
+      - id
+      - kind
+      - latest_submission
+      - notes
+      - platform
+      - spec_type
+      - stats
+      - status
+      - submitted_at
+      - talent_name
+      - title
+      - usable_until
+      - usage_rights
     LinkPayoutAccount:
       type: object
       properties:
@@ -11774,6 +12320,27 @@ components:
           maxLength: 1000
       required:
       - terms
+    ManualStats:
+      type: object
+      properties:
+        views:
+          type: integer
+          minimum: 0
+          nullable: true
+        likes:
+          type: integer
+          minimum: 0
+          nullable: true
+        comments:
+          type: integer
+          minimum: 0
+          nullable: true
+        screenshot_id:
+          type: string
+          format: uuid
+          description: An uploaded photo of the numbers.
+      required:
+      - screenshot_id
     MarkRead:
       type: object
       properties:
@@ -12357,6 +12924,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Invoice'
+    PaginatedLibraryItemList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LibraryItem'
     PaginatedNotificationList:
       type: object
       required:
@@ -12472,6 +13062,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Property'
+    PaginatedTrackedDeliverableList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrackedDeliverable'
     PaginatedVendorApplicationListItemList:
       type: object
       required:
@@ -12579,6 +13192,12 @@ components:
           - $ref: '#/components/schemas/Location'
           nullable: true
           description: Where you are now (for the host's records).
+    PatchedDueDate:
+      type: object
+      properties:
+        due_date:
+          type: string
+          format: date
     PatchedGig:
       type: object
       properties:
@@ -13538,6 +14157,54 @@ components:
       - max_live_gigs
       - name
       - price_paise
+    PostStats:
+      type: object
+      properties:
+        source:
+          allOf:
+          - $ref: '#/components/schemas/PostStatsSourceEnum'
+          readOnly: true
+        self_reported:
+          type: boolean
+          readOnly: true
+        views:
+          type: integer
+          readOnly: true
+          nullable: true
+        likes:
+          type: integer
+          readOnly: true
+          nullable: true
+        comments:
+          type: integer
+          readOnly: true
+          nullable: true
+        captured_at:
+          type: string
+          format: date-time
+          readOnly: true
+        screenshot_url:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - captured_at
+      - comments
+      - likes
+      - screenshot_url
+      - self_reported
+      - source
+      - views
+    PostStatsSourceEnum:
+      enum:
+      - instagram
+      - youtube
+      - manual
+      type: string
+      description: |-
+        * `instagram` - Instagram API
+        * `youtube` - YouTube API
+        * `manual` - Self-reported
     PreferenceChange:
       type: object
       properties:
@@ -14023,6 +14690,17 @@ components:
         * `none` - No verification needed
         * `id_verified` - ID verified
         * `trusted_member` - Trusted member
+    Review:
+      type: object
+      properties:
+        approve:
+          type: boolean
+        note:
+          type: string
+          default: ''
+          maxLength: 1000
+      required:
+      - approve
     ReviewDeliverable:
       type: object
       properties:
@@ -14485,6 +15163,61 @@ components:
         * `user` - User
         * `property` - Property
         * `social_account` - Social account
+    Submission:
+      type: object
+      properties:
+        version:
+          type: integer
+          readOnly: true
+        post_url:
+          type: string
+          format: uri
+          readOnly: true
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileLink'
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+        disclosure_confirmed:
+          type: boolean
+          readOnly: true
+          description: The talent confirms the post carries the collaboration label.
+        disclosure_detected:
+          type: boolean
+          readOnly: true
+          nullable: true
+          description: 'Seen in the post''s caption (empty: couldn''t check).'
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        review:
+          readOnly: true
+          oneOf:
+          - $ref: '#/components/schemas/SubmissionReviewEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        review_note:
+          type: string
+          readOnly: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - disclosure_confirmed
+      - disclosure_detected
+      - files
+      - note
+      - post_url
+      - review
+      - review_note
+      - reviewed_at
+      - submitted_at
+      - version
     SubmissionReviewEnum:
       enum:
       - approved
@@ -14494,6 +15227,32 @@ components:
         * `` - Waiting for the host
         * `approved` - Approved
         * `changes` - Changes asked for
+    Submit:
+      type: object
+      properties:
+        post_url:
+          oneOf:
+          - type: string
+            format: uri
+            default: ''
+            maxLength: 500
+          - type: string
+            maxLength: 0
+        file_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 20
+        note:
+          type: string
+          default: ''
+          maxLength: 500
+        disclosure_confirmed:
+          type: boolean
+          default: false
+          description: 'The post carries the collaboration label (#collab, #ad or
+            the paid partnership tag). Required for public posts.'
     SubmitDeliverable:
       type: object
       properties:
@@ -14946,6 +15705,107 @@ components:
       required:
       - access
       - refresh
+    TrackedDeliverable:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        booking_id:
+          type: string
+          format: uuid
+          readOnly: true
+        gig_title:
+          type: string
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/DeliverableKindEnum'
+          readOnly: true
+        platform:
+          allOf:
+          - $ref: '#/components/schemas/DeliverablePlatformEnum'
+          readOnly: true
+        spec_type:
+          type: string
+          readOnly: true
+          description: The agreement's deliverable type.
+        title:
+          type: string
+          readOnly: true
+        notes:
+          type: string
+          readOnly: true
+        due_date:
+          type: string
+          format: date
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DeliverableStatusEnum'
+          readOnly: true
+        change_rounds:
+          type: integer
+          readOnly: true
+        change_rounds_left:
+          type: integer
+          readOnly: true
+        disclosure_required:
+          type: boolean
+          readOnly: true
+          description: 'A public post: it must carry the collaboration label (#collab,
+            #ad, ...).'
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Latest submission.
+        approved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        latest_submission:
+          allOf:
+          - $ref: '#/components/schemas/Submission'
+          nullable: true
+          readOnly: true
+        stats:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostStats'
+          readOnly: true
+        usage_rights:
+          allOf:
+          - $ref: '#/components/schemas/UsageRights'
+          nullable: true
+          readOnly: true
+        usable_until:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - approved_at
+      - booking_id
+      - change_rounds
+      - change_rounds_left
+      - disclosure_required
+      - due_date
+      - gig_title
+      - id
+      - kind
+      - latest_submission
+      - notes
+      - platform
+      - spec_type
+      - stats
+      - status
+      - submitted_at
+      - title
+      - usable_until
+      - usage_rights
     Unlocked:
       type: object
       description: |-

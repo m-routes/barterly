@@ -58,6 +58,8 @@ def submit(
         )
         if booking.status not in OPEN_FOR_WORK:
             raise DeliverableError("Hand in work once you've checked in.")
+        if booking.deliverables.exists():
+            raise DeliverableError("Hand in each deliverable from its own card in the app.")
         escrow = Escrow.objects.filter(booking=booking).first()
         if escrow and escrow.status != EscrowStatus.HELD:
             raise DeliverableError("The stipend for this stay is already settled.")
