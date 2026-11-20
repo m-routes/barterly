@@ -4737,6 +4737,36 @@ export interface components {
       previous?: string | null;
       results: components["schemas"]["Notification"][];
     };
+    PaginatedPayoutList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["Payout"][];
+    };
+    PaginatedPayoutRunList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["PayoutRun"][];
+    };
     PaginatedPendingHourLogList: {
       /** @example 123 */
       count: number;
@@ -4781,6 +4811,21 @@ export interface components {
        */
       previous?: string | null;
       results: components["schemas"]["VendorApplicationListItem"][];
+    };
+    PaginatedWalletEntryList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["WalletEntry"][];
     };
     Party: {
       /** Format: uuid */
@@ -6475,7 +6520,12 @@ export interface operations {
   };
   money_admin_payout_runs: {
     parameters: {
-      query?: never;
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
       header?: never;
       path?: never;
       cookie?: never;
@@ -6487,31 +6537,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["PayoutRun"][];
-        };
-      };
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
+          "application/json": components["schemas"]["PaginatedPayoutRunList"];
         };
       };
     };
@@ -6608,6 +6634,10 @@ export interface operations {
     parameters: {
       query?: {
         needs_admin?: boolean;
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
         status?: "creating" | "failed" | "processed" | "processing" | "reversed";
       };
       header?: never;
@@ -6621,31 +6651,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Payout"][];
-        };
-      };
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
+          "application/json": components["schemas"]["PaginatedPayoutList"];
         };
       };
     };
@@ -13920,6 +13926,10 @@ export interface operations {
          *     * `payout` - payout
          */
         kind?: "release" | "payout";
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
         /** @description From (India date). */
         start?: string;
         status?: string;
@@ -13935,39 +13945,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["WalletEntry"][];
-        };
-      };
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
+          "application/json": components["schemas"]["PaginatedWalletEntryList"];
         };
       };
     };
