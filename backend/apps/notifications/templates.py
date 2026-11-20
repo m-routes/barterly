@@ -120,6 +120,48 @@ TEMPLATES: dict[str, Template] = {
             "चालू गिग चलते रहेंगे, पर भुगतान तक नए गिग और {plan_name} की सुविधाएँ बंद रहेंगी।",
         ),
     },
+    "money.payout_account_changed": {
+        "en": (
+            "Your payout account changed",
+            "Payouts now go to {account}, from {hold_until_ist}. If this wasn't you, "
+            "contact Barterly support now.",
+        ),
+        "hi": (
+            "आपका पेआउट खाता बदला गया",
+            "अब भुगतान {account} में {hold_until_ist} से जाएगा। अगर यह आपने नहीं किया, "
+            "तो तुरंत Barterly सहायता से संपर्क करें।",
+        ),
+    },
+    "money.payout_paid": {
+        "en": ("Payout sent", "{amount} for {gig_title} is on its way to {account}."),
+        "hi": ("भुगतान भेजा गया", "{gig_title} के लिए {amount} {account} में भेजा जा रहा है।"),
+    },
+    "money.payout_failed": {
+        "en": (
+            "Payout didn't go through",
+            "{amount} for {gig_title} couldn't be paid to {account}. We'll try again; check "
+            "your payout account.",
+        ),
+        "hi": (
+            "भुगतान नहीं हो सका",
+            "{gig_title} के लिए {amount} {account} में नहीं भेजा जा सका। हम फिर कोशिश करेंगे; "
+            "अपना पेआउट खाता जाँचें।",
+        ),
+    },
+    "money.payout_on_hold": {
+        "en": ("Payout waiting", "{gig_title}: {message}"),
+        "hi": ("भुगतान रुका है", "{gig_title}: भुगतान पाने के लिए ऐप में अपना वॉलेट देखें।"),
+    },
+    "money.payout_account_failed": {
+        "en": (
+            "Payout account not verified",
+            "We couldn't verify {account}. Check the details and add it again.",
+        ),
+        "hi": (
+            "पेआउट खाता सत्यापित नहीं हुआ",
+            "हम {account} को सत्यापित नहीं कर सके। विवरण जाँचकर फिर से जोड़ें।",
+        ),
+    },
     catalog.OTHER: {
         "en": ("{label}", "{gig_title}"),
         "hi": ("{label}", "{gig_title}"),
@@ -146,6 +188,11 @@ VARIABLES: dict[str, tuple[str, ...]] = {
     "billing.payment_failed": ("plan_name",),
     "billing.grace_ending": ("plan_name",),
     "billing.features_locked": ("plan_name",),
+    "money.payout_account_changed": ("account", "hold_until_ist"),
+    "money.payout_paid": ("amount", "gig_title", "account"),
+    "money.payout_failed": ("amount", "gig_title", "account"),
+    "money.payout_on_hold": ("gig_title", "message"),
+    "money.payout_account_failed": ("account",),
     catalog.OTHER: ("label", "gig_title"),
 }
 

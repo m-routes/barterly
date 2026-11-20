@@ -66,7 +66,9 @@ class PreferencesSerializer(serializers.Serializer):
 
 
 class PreferenceChangeSerializer(serializers.Serializer):
-    event_type = serializers.ChoiceField(choices=[t.key for t in catalog.FEATURED])
+    event_type = serializers.ChoiceField(
+        choices=[t.key for t in catalog.FEATURED if t.configurable]
+    )
     channel = serializers.ChoiceField(choices=Channel.choices)
     enabled = serializers.BooleanField()
 

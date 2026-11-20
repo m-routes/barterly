@@ -74,7 +74,7 @@ Surfaces: the vendor console (web), the talent app (mobile) and the admin consol
 | `offers` | `Offer`: the frozen terms snapshot a vendor sends, the talent's one counter, and the terms schema (`apps/offers/terms.py`) |
 | `agreements` | `Agreement`, its versions and signatures, the PDF template and WeasyPrint renderer, the `ESignProvider` interface (in-app OTP provider and a fake) |
 | `billing` | Plans as data, subscriptions through Razorpay (behind `PaymentGateway`), entitlements, GST invoices and dunning |
-| `money` | Double-entry ledger (append-only, integer paise), escrow for paid and hybrid bookings, deliverables, payouts, webhooks, reconciliation and the kill switch ([money.md](money.md)) |
+| `money` | Double-entry ledger (append-only, integer paise), escrow for paid and hybrid bookings, deliverables, payout accounts, payout runs, the talent wallet, statements and TDS records, webhooks, reconciliation and the kill switch ([money.md](money.md)) |
 | `reliability` | The reliability score v1 (a pure function, [reliability.md](reliability.md)) and each person's stored score per side |
 | `verification` | Verification cases per check, evidence (provider references and masked numbers only), badges, the KYC provider interface and webhook, re-verification on profile edits, the review API |
 
@@ -294,7 +294,8 @@ A confirmed booking gives its slot back. The place is then offered on: offers he
 | `billing_dunning` | Daily at 10:00 | Payment-failed reminders before the grace period ends; paid features lock after it |
 | `billing_invoices` | Every 30 minutes | GST invoices left unrendered or unsent are finished |
 | `escrow_auto_release` | Hourly at :15 | Release escrow 72 hours after the latest unanswered submission, or after an approval that couldn't release then |
-| `escrow_retry_payouts` | Every 20 minutes | Payouts waiting for an account, paused or failed |
+| `payout_run` | Every 20 minutes | Pay what releases owe talent; retry failed payouts after their back-off; resend stuck ones |
+| `payout_validations` | Every 10 minutes | Ask the payout provider about account validations still pending |
 | `escrow_reconcile` | Daily at 02:30 | Yesterday's ledger totals against the gateway's; alert on any difference |
 | `dispatch_notifications` | Every 5 minutes | Notifications held for quiet hours, or whose task went missing, are queued |
 
@@ -474,7 +475,7 @@ Staff work in the Django admin at `/admin/`, served by `BarterlyAdminSite`, whic
 - **Roles.** `super_admin`, `ops`, `trust`, `finance` and `support` are auth groups whose permissions are exactly the lists in `apps/backoffice/roles.py`. They are re-synced after every migrate, so hand edits to a group don't stick. Give or take a role with `manage.py grant_admin_role <phone> <role> [--remove]`; it makes the account a staff admin and is audited. Vendor and talent accounts can't be given a role. Changing someone's groups in the user admin is audited as `user.admin_roles_changed`.
   - ops: approves gigs, reads accounts, gigs, properties and applications, and reads the audit log.
   - trust: decides verification cases, reads verification records and KYC events, and reads the audit log.
-  - finance: reads users, gigs, applications, the audit log and everything in money; decides held escrows and runs the escrow kill switch.
+  - finance: reads users, gigs, applications, the audit log and everything in money; decides held escrows, runs the escrow kill switch, and starts payout runs and retries.
   - support: read-only lookups, including verification records; no actions and no audit log.
   - super_admin: everything above, plus user and role management.
 - **Verification queue** (`/admin/queues/verification/`, needs `review_verification`). Cases waiting for a decision, oldest first, filterable by status and check. Cases waiting more than 48 hours are flagged overdue. The detail page shows the case facts, masked documents, the user's badges and other checks, and the case's audit history. Approve, request changes, reject and revoke all need a reason; starting a review doesn't.

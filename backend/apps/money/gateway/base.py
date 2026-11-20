@@ -1,9 +1,10 @@
 """The escrow payment gateway: take the host's payment into the platform's gateway
-account, transfer payouts to talent, refund hosts, and report a day's totals for
-reconciliation. Razorpay Route today (route.py); chosen by settings.ESCROW_GATEWAY.
+account, refund hosts, and report a day's totals for reconciliation. (Payouts to talent
+go through the payout provider: gateway/payouts.py.) Razorpay today (razorpay.py); chosen
+by settings.ESCROW_GATEWAY.
 
-LEGAL REVIEW NEEDED: the fund-flow structure (Route linked accounts, a nodal/escrow
-account, or another arrangement) must be the one your lawyer approves before launch.
+LEGAL REVIEW NEEDED: the fund-flow structure (the platform's Razorpay account, a
+nodal/escrow account, or another arrangement) must be the one your lawyer approves before launch.
 Only the implementation behind this interface would change.
 """
 
@@ -35,7 +36,6 @@ class GatewayEventData:
     event: str
     payment: dict = field(default_factory=dict)
     refund: dict = field(default_factory=dict)
-    transfer: dict = field(default_factory=dict)
     raw: dict = field(default_factory=dict)
 
 
@@ -45,7 +45,6 @@ class DayTotals:
 
     captured: int = 0
     refunded: int = 0
-    transferred: int = 0
     fees: int = 0
 
 
@@ -53,10 +52,6 @@ class EscrowGateway(Protocol):
     name: str
 
     def create_order(self, *, amount_paise: int, receipt: str, notes: dict) -> Order: ...
-
-    def transfer(self, *, account_id: str, amount_paise: int, notes: dict) -> str:
-        """Pay a talent's linked account from the platform balance; returns its id."""
-        ...
 
     def refund(self, *, payment_id: str, amount_paise: int, notes: dict) -> str: ...
 

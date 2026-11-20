@@ -6,7 +6,7 @@ import pytest
 import requests
 
 from apps.money.gateway.base import DayTotals, GatewayError
-from apps.money.gateway.route import RazorpayRouteGateway, signature
+from apps.money.gateway.razorpay import RazorpayEscrowGateway, signature
 
 
 class Response:
@@ -36,12 +36,11 @@ def http(monkeypatch, settings):
     return calls, replies
 
 
-def test_orders_transfers_and_refunds(http):
+def test_orders_and_refunds(http):
     calls, replies = http
-    gateway = RazorpayRouteGateway()
+    gateway = RazorpayEscrowGateway()
     replies += [
         Response(200, {"id": "order_1", "amount": 511800}),
-        Response(200, {"id": "trf_1"}),
         Response(200, {"id": "rfnd_1"}),
     ]
     order = gateway.create_order(amount_paise=511800, receipt="escrow-x", notes={"b": 1})
@@ -53,29 +52,27 @@ def test_orders_transfers_and_refunds(http):
         "payment_capture": 1,
         "notes": {"b": "1"},
     }
-    assert gateway.transfer(account_id="acc_1", amount_paise=100, notes={}) == "trf_1"
-    assert calls[1]["url"].endswith("/transfers") and calls[1]["json"]["account"] == "acc_1"
     assert gateway.refund(payment_id="pay_1", amount_paise=50, notes={}) == "rfnd_1"
-    assert calls[2]["url"].endswith("/payments/pay_1/refund")
+    assert calls[1]["url"].endswith("/payments/pay_1/refund")
 
 
 def test_errors_become_gateway_errors(http, settings):
     _, replies = http
-    gateway = RazorpayRouteGateway()
+    gateway = RazorpayEscrowGateway()
     replies += [
         Response(400, {"error": {"description": "Bad amount"}}),
         Response(500, ValueError()),
         requests.ConnectionError(),
     ]
     with pytest.raises(GatewayError, match="Bad amount"):
-        gateway.transfer(account_id="a", amount_paise=1, notes={})
+        gateway.refund(payment_id="p", amount_paise=1, notes={})
     with pytest.raises(GatewayError, match="HTTP 500"):
-        gateway.transfer(account_id="a", amount_paise=1, notes={})
+        gateway.refund(payment_id="p", amount_paise=1, notes={})
     with pytest.raises(GatewayError, match="couldn't reach"):
-        gateway.transfer(account_id="a", amount_paise=1, notes={})
+        gateway.refund(payment_id="p", amount_paise=1, notes={})
     settings.RAZORPAY_KEY_ID = ""
     with pytest.raises(GatewayError, match="aren't configured"):
-        gateway.transfer(account_id="a", amount_paise=1, notes={})
+        gateway.refund(payment_id="p", amount_paise=1, notes={})
 
 
 def test_day_totals_page_through_and_skip_failures(http):
@@ -96,27 +93,23 @@ def test_day_totals_page_through_and_skip_failures(http):
             200,
             {"items": [{"amount": 30, "status": "processed"}, {"amount": 5, "status": "pending"}]},
         ),
-        Response(
-            200,
-            {"items": [{"amount": 40, "status": "processed"}, {"amount": 9, "status": "failed"}]},
-        ),
     ]
-    totals = RazorpayRouteGateway().day_totals(date(2026, 11, 18))
-    assert totals == DayTotals(captured=10_007, refunded=30, transferred=40, fees=201)
+    totals = RazorpayEscrowGateway().day_totals(date(2026, 11, 18))
+    assert totals == DayTotals(captured=10_007, refunded=30, fees=201)
     assert calls[1]["params"]["skip"] == 100
     assert calls[0]["params"]["to"] - calls[0]["params"]["from"] == 86_399
 
 
 def test_webhooks_are_verified(settings):
     settings.RAZORPAY_ESCROW_WEBHOOK_SECRET = "s3cret"  # noqa: S105
-    body = b'{"event": "transfer.processed", "payload": {"transfer": {"entity": {"id": "t"}}}}'
+    body = b'{"event": "refund.processed", "payload": {"refund": {"entity": {"id": "r"}}}}'
     headers = {"X-Razorpay-Signature": signature(body, "s3cret"), "X-Razorpay-Event-Id": "e1"}
-    data = RazorpayRouteGateway().parse_webhook(body, headers)
-    assert (data.event_id, data.event, data.transfer) == ("e1", "transfer.processed", {"id": "t"})
+    data = RazorpayEscrowGateway().parse_webhook(body, headers)
+    assert (data.event_id, data.event, data.refund) == ("e1", "refund.processed", {"id": "r"})
     with pytest.raises(GatewayError, match="signature"):
-        RazorpayRouteGateway().parse_webhook(body + b" ", headers)
+        RazorpayEscrowGateway().parse_webhook(body + b" ", headers)
     bad = b"not json"
     with pytest.raises(GatewayError, match="isn't JSON"):
-        RazorpayRouteGateway().parse_webhook(
+        RazorpayEscrowGateway().parse_webhook(
             bad, {**headers, "X-Razorpay-Signature": signature(bad, "s3cret")}
         )

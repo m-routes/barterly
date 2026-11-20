@@ -1,8 +1,9 @@
 """The daily reconciliation: the ledger's totals for one India day against the
-gateway's report for it (payments captured, refunds, transfers, fees). Any difference,
-or a ledger out of balance, raises an alert. Re-running a day replaces its result.
+payment gateway's report for it (payments captured, refunds, fees) and the payout
+provider's (payouts made). Any difference, or a ledger out of balance, raises an alert.
+Re-running a day replaces its result.
 
-A transfer that fails on a later day than it was made is reversed in the ledger on the
+A payout that fails on a later day than it was made is reversed in the ledger on the
 day of the failure, so it shows as a difference on both days: check those by hand.
 """
 
@@ -14,11 +15,13 @@ from django.utils import timezone
 
 from apps.money import alerts, ledger
 from apps.money.gateway.base import GatewayError, get_gateway
+from apps.money.gateway.payouts import get_provider
 from apps.money.ledger import GATEWAY
 from apps.money.models import LedgerEntry, ReconciliationRun
 
 IST = ZoneInfo("Asia/Kolkata")
-FIELDS = ("captured", "refunded", "transferred", "fees")
+GATEWAY_FIELDS = ("captured", "refunded", "fees")
+FIELDS = (*GATEWAY_FIELDS, "paid_out")
 
 
 def _sum(entries) -> int:
@@ -38,7 +41,7 @@ def ledger_totals(day: date) -> dict[str, int]:
         "captured": _sum(kind("escrow_funded").filter(debit_account__code=GATEWAY)),
         "fees": _sum(kind("escrow_funded").filter(credit_account__code=GATEWAY)),
         "refunded": _sum(kind("refund_processed")),
-        "transferred": _sum(kind("payout_sent")) - _sum(kind("payout_reversed")),
+        "paid_out": _sum(kind("payout_sent")) - _sum(kind("payout_reversed")),
     }
 
 
@@ -47,14 +50,18 @@ def run(day: date | None = None, now=None) -> ReconciliationRun:
     day = day or (now.astimezone(IST).date() - timedelta(days=1))
     ours = ledger_totals(day)
     mismatches: list[dict] = []
+    theirs: dict[str, int] = {}
     try:
         report = get_gateway().day_totals(day)
-        theirs = {f: getattr(report, f) for f in FIELDS}
+        theirs.update({f: getattr(report, f) for f in GATEWAY_FIELDS})
     except GatewayError as exc:
-        theirs = {}
         mismatches.append({"field": "gateway", "error": str(exc)})
-    for field in FIELDS if theirs else ():
-        if ours[field] != theirs[field]:
+    try:
+        theirs["paid_out"] = get_provider().day_total(day)
+    except GatewayError as exc:
+        mismatches.append({"field": "payout_provider", "error": str(exc)})
+    for field in FIELDS:
+        if field in theirs and ours[field] != theirs[field]:
             mismatches.append(
                 {
                     "field": field,

@@ -1,0 +1,57 @@
+{% load money_tags %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Barterly statement {{ financial_year }}</title>
+<style>
+  @page { size: A4 landscape; margin: 14mm 12mm; @bottom-center { content: "Page " counter(page) " of " counter(pages); font-family: "DejaVu Sans", sans-serif; font-size: 8pt; color: #56615a; } }
+  body { font-family: "DejaVu Sans", sans-serif; font-size: 8.5pt; color: #1f2a24; line-height: 1.4; }
+  h1 { font-size: 16pt; margin: 0 0 1mm; }
+  .muted { color: #56615a; }
+  table { width: 100%; border-collapse: collapse; margin-top: 5mm; }
+  th, td { padding: 1.6mm 1.6mm; border-bottom: 1px solid #e3dccf; text-align: left; vertical-align: top; }
+  th { font-size: 7.5pt; color: #56615a; }
+  .num { text-align: right; white-space: nowrap; }
+  .total td { font-weight: bold; border-top: 2px solid #1f2a24; border-bottom: 0; }
+  .note { margin-top: 6mm; font-size: 7.5pt; color: #56615a; }
+</style>
+</head>
+<body>
+  <h1>Earnings statement, FY {{ financial_year }}</h1>
+  <div>{{ talent.name }} <span class="muted">· Barterly talent {{ talent.id }}</span></div>
+  <div class="muted">1 April to 31 March, India time. Amounts in rupees.</div>
+  <table>
+    <thead>
+      <tr><th>Date</th><th>Gig</th><th class="num">Gross</th><th class="num">Commission</th><th class="num">GST on commission</th><th class="num">TDS</th><th class="num">Net</th><th>Payout</th><th>Paid on</th><th>Bank reference</th></tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>{{ row.date|date:"j M Y" }}</td>
+        <td>{{ row.gig_title }}</td>
+        <td class="num">{{ row.gross_paise|rupees }}</td>
+        <td class="num">{{ row.commission_paise|rupees }}</td>
+        <td class="num">{{ row.commission_gst_paise|rupees }}</td>
+        <td class="num">{{ row.tds_paise|rupees }}</td>
+        <td class="num">{{ row.net_paise|rupees }}</td>
+        <td>{{ row.payout_status }}</td>
+        <td>{{ row.paid_on|date:"j M Y"|default:"" }}</td>
+        <td>{{ row.utr }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="10" class="muted">Nothing released to you this financial year.</td></tr>
+      {% endfor %}
+      <tr class="total">
+        <td colspan="2">Total</td>
+        <td class="num">{{ totals.gross_paise|rupees }}</td>
+        <td class="num">{{ totals.commission_paise|rupees }}</td>
+        <td class="num">{{ totals.commission_gst_paise|rupees }}</td>
+        <td class="num">{{ totals.tds_paise|rupees }}</td>
+        <td class="num">{{ totals.net_paise|rupees }}</td>
+        <td colspan="3"></td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="note">Gross is the stipend released to you. Barterly's commission and the GST on it, and TDS withheld for the government, are taken from it; net is what was paid to your account. This is a computer-generated statement.</p>
+</body>
+</html>

@@ -20,7 +20,8 @@ def _fake_sign_in_and_fresh_cache(settings):
     from apps.geo import geocoders
     from apps.media import storage
     from apps.money.gateway import base as escrow_gateway
-    from apps.money.gateway.fake import FakeEscrowGateway
+    from apps.money.gateway import payouts as payout_provider
+    from apps.money.gateway.fake import FakeEscrowGateway, FakePayoutProvider
     from apps.notifications.channels import base as channels
     from apps.notifications.channels.fake import FakeProvider
     from apps.verification.providers import base as kyc
@@ -45,6 +46,9 @@ def _fake_sign_in_and_fresh_cache(settings):
     settings.ESCROW_GATEWAY = "apps.money.gateway.fake.FakeEscrowGateway"
     settings.RAZORPAY_ESCROW_WEBHOOK_SECRET = "test-escrow-secret"  # noqa: S105
     settings.ESCROW_PAUSED = False
+    settings.PAYOUT_PROVIDER = "apps.money.gateway.fake.FakePayoutProvider"
+    settings.RAZORPAYX_WEBHOOK_SECRET = "test-payout-secret"  # noqa: S105
+    settings.RAZORPAYX_ACCOUNT_NUMBER = "2323230000000000"
     settings.CACHES = {
         "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"},
     }
@@ -61,6 +65,8 @@ def _fake_sign_in_and_fresh_cache(settings):
     FakeGateway.reset()
     escrow_gateway._build.cache_clear()
     FakeEscrowGateway.reset()
+    payout_provider._build.cache_clear()
+    FakePayoutProvider.reset()
     yield
     cache.clear()
     _build.cache_clear()

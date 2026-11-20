@@ -13,7 +13,9 @@ from apps.money.models import (
     GatewayEvent,
     LedgerEntry,
     LedgerTransaction,
+    Payout,
     PayoutAccount,
+    PayoutRun,
     ReconciliationRun,
 )
 
@@ -74,8 +76,17 @@ class EscrowAdmin(ReadOnly):
 
 @admin.register(PayoutAccount)
 class PayoutAccountAdmin(ReadOnly):
-    list_display = ["talent", "gateway_account_id", "active", "pan_on_file"]
-    search_fields = ["talent__phone", "gateway_account_id"]
+    list_display = [
+        "talent",
+        "method",
+        "display",
+        "validation_status",
+        "active",
+        "hold_until",
+        "pan_on_file",
+    ]
+    list_filter = ["method", "validation_status", "active"]
+    search_fields = ["talent__phone", "fund_account_id", "display"]
 
 
 @admin.register(DeliverableSubmission)
@@ -126,3 +137,45 @@ class EscrowControlAdmin(admin.ModelAdmin):
             after={"paused": obj.paused, "reason": obj.reason},
             request=request,
         )
+
+
+class PayoutInline(admin.TabularInline):
+    model = Payout
+    fields = [
+        "escrow",
+        "talent",
+        "attempt",
+        "amount_paise",
+        "account_display",
+        "status",
+        "failure_reason",
+        "next_attempt_at",
+    ]
+    readonly_fields = fields
+    extra = 0
+    can_delete = False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(PayoutRun)
+class PayoutRunAdmin(ReadOnly):
+    list_display = ["started_at", "trigger", "considered", "sent", "held", "failed", "sent_paise"]
+    list_filter = ["trigger"]
+    inlines = [PayoutInline]
+
+
+@admin.register(Payout)
+class PayoutAdmin(ReadOnly):
+    list_display = [
+        "created_at",
+        "talent",
+        "amount_paise",
+        "status",
+        "attempt",
+        "next_attempt_at",
+        "failure_reason",
+    ]
+    list_filter = ["status"]
+    search_fields = ["provider_payout_id", "utr", "talent__phone", "escrow__booking__id"]
