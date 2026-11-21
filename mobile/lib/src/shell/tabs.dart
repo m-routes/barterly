@@ -115,6 +115,14 @@ class _ProfileSummary extends ConsumerWidget {
         ),
         ListTile(
           contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.star_outline),
+          title: const Text('Reviews and reputation'),
+          subtitle: const Text('What hosts said, your rating and badges'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push(Routes.myReviews),
+        ),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.verified_user_outlined),
           title: const Text('Verification and badges'),
           subtitle: const Text('ID, selfie and Instagram'),

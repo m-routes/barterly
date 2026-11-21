@@ -172,3 +172,4 @@ def register() -> None:
     subscribe("money.", notify)
     subscribe("attendance.", notify)
     subscribe("deliverables.", notify)
+    subscribe("reviews.", notify)

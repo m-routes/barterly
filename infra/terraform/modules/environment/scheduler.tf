@@ -24,6 +24,8 @@ locals {
     billing_dunning          = { schedule = "0 10 * * *", description = "Remind vendors whose payment failed; lock paid features after the grace period." }
     billing_invoices         = { schedule = "*/30 * * * *", description = "Render, store and email GST invoices left unfinished." }
     escrow_auto_release      = { schedule = "15 * * * *", description = "Release escrow 72 hours after the latest unanswered submission." }
+    reviews_close_windows    = { schedule = "20 * * * *", description = "Publish reviews whose 14-day window closed; remind those yet to review." }
+    reputation_recompute     = { schedule = "0 3 * * *", description = "Recompute ratings, completion, response times and badges." }
     deliverable_reminders    = { schedule = "0 9 * * *", description = "Remind talent of deliverables due in two days, today, or overdue." }
     deliverable_stats        = { schedule = "0 6 * * *", description = "Fetch views, likes and comments for handed-in posts." }
     payout_run               = { schedule = "*/20 * * * *", description = "Pay talent what releases owe them; retry failed payouts after their back-off." }

@@ -10,6 +10,7 @@ OUR_APPS = [
     "money",
     "attendance",
     "deliverables",
+    "reviews",
     "reliability",
     "agreements",
     "offers",

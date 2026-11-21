@@ -2221,3 +2221,72 @@
 .usage-rights p {
   margin: 0;
 }
+
+/* Reviews */
+.review-card {
+  padding: 14px;
+  border: 1px solid var(--color-border, #e3dccf);
+  border-radius: 12px;
+}
+
+.review-card__scores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 4px 16px;
+  margin: 0;
+}
+
+.review-card__scores dt {
+  font-size: 0.85em;
+}
+
+.review-card__scores dd {
+  margin: 0;
+}
+
+.review-card__reply {
+  margin: 0;
+  padding-left: 12px;
+  border-left: 3px solid var(--color-border, #e3dccf);
+}
+
+.stars__empty {
+  opacity: 0.25;
+}
+
+.star-picker {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+}
+
+.star-picker legend {
+  min-width: 12rem;
+  float: left;
+}
+
+.star-picker label {
+  cursor: pointer;
+  font-size: 1.4rem;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.star-picker input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.star-picker input:focus-visible + span {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}

@@ -90,3 +90,8 @@ export type PendingHourLog = Schemas["PendingHourLog"];
 export type TrackedDeliverable = Schemas["TrackedDeliverable"];
 export type LibraryItem = Schemas["LibraryItem"];
 export type PostStats = Schemas["PostStats"];
+
+export type StayReview = Schemas["StayReview"];
+export type BookingReviews = Schemas["BookingReviews"];
+export type Reputation = Schemas["Reputation"];
+export type ReportReason = Schemas["ReportReasonEnum"];

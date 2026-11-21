@@ -276,7 +276,8 @@ TRANSITIONS: dict[tuple[str, str], Rule] = {
     (B.DELIVERING, B.COMPLETED): Rule(frozenset({V, SYS}), _stay_started),
     (B.DELIVERING, B.DISPUTED): Rule(frozenset({T, V}), needs_reason=True),
     (B.COMPLETED, B.DISPUTED): Rule(frozenset({T, V}), _within_dispute_window, needs_reason=True),
-    (B.COMPLETED, B.REVIEWED): Rule(frozenset({T, V})),
+    # Both reviews published (apps.reviews), or either side marking it.
+    (B.COMPLETED, B.REVIEWED): Rule(frozenset({T, V, SYS})),
     (B.NO_SHOW, B.DISPUTED): Rule(frozenset({T}), _within_dispute_window, needs_reason=True),
     (B.DISPUTED, B.COMPLETED): Rule(frozenset({ADM}), needs_reason=True),
     (B.DISPUTED, B.CANCELLED): Rule(frozenset({ADM}), needs_reason=True),

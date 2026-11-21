@@ -78,6 +78,12 @@ FEATURED: tuple[EventType, ...] = (
         aliases=("billing.payment_failed", "billing.grace_ending", "billing.features_locked"),
     ),
     EventType(
+        "reviews",
+        "Reviews",
+        "समीक्षाएँ",
+        aliases=("reviews.published", "reviews.awaiting_yours", "reviews.window_closing"),
+    ),
+    EventType(
         "deliverables",
         "Deliverables",
         "डिलिवरेबल्स",
@@ -198,6 +204,8 @@ def links(kind: str, side: str, payload: dict) -> tuple[str, str]:
         return "/trips", _web("/console/agreements")
     if kind.startswith("billing."):
         return "/trips", _web("/console/billing")
+    if kind.startswith("reviews."):
+        return "/trips", _web("/console/agreements")
     if kind.startswith("deliverables."):
         return "/trips", _web("/console/content")
     if kind.startswith("money.payout"):

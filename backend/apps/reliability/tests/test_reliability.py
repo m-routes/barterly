@@ -138,6 +138,24 @@ def test_hosts_see_applicants_reliability_and_talent_see_the_hosts():
     vendor, talent = client_for(application.gig.vendor), client_for(application.talent)
     listed = vendor.get(f"/api/v1/gigs/{application.gig_id}/applications/").json()
     rows = listed["results"] if isinstance(listed, dict) else listed
-    assert rows[0]["applicant"]["reliability"] == {"score": 50, "level": "new", "version": "v1"}
+    assert rows[0]["applicant"]["reliability"] == {"score": 50, "level": "new", "version": "v2"}
     thread = talent.get(f"/api/v1/applications/{application.pk}/offers/").json()
     assert thread["host_reliability"]["score"] == 50
+
+
+def test_the_recompute_command_moves_stored_scores_to_the_current_version():
+    from io import StringIO
+
+    from django.core.management import call_command
+
+    from apps.reliability.models import ReliabilityScore
+
+    booking = booked()
+    ReliabilityScore.objects.update_or_create(
+        user=booking.talent, side="talent", defaults={"version": "v1", "score": 1}
+    )
+    out = StringIO()
+    call_command("recompute_reliability", stdout=out)
+    record = ReliabilityScore.objects.get(user=booking.talent, side="talent")
+    assert (record.version, record.score) == ("v2", 51)  # 50 + 1 on-time reply
+    assert "reliability v2" in out.getvalue()

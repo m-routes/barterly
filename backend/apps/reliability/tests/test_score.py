@@ -7,7 +7,7 @@ from apps.reliability.score import NEUTRAL, Inputs, score
 
 def test_everyone_starts_neutral_and_new():
     result = score(Inputs())
-    assert (result.score, result.level, result.version) == (NEUTRAL, "new", "v1")
+    assert (result.score, result.level, result.version) == (NEUTRAL, "new", "v2")
     assert sum(result.breakdown.values()) == NEUTRAL
 
 
@@ -51,6 +51,8 @@ def test_the_breakdown_explains_the_score():
         "late_cancellations": -10,
         "last_minute_cancellations": 0,
         "no_shows": 0,
+        "good_reviews": 0,
+        "poor_reviews": 0,
     }
     assert result.score == 55
 
@@ -64,3 +66,10 @@ def test_it_is_pure_and_deterministic():
 def test_inputs_must_be_whole_numbers(bad):
     with pytest.raises(ValueError, match="whole number"):
         Inputs(completed=bad)
+
+
+def test_reviews_count_with_a_cap_on_the_good_ones():
+    assert score(Inputs(good_reviews=1)).score == 52
+    assert score(Inputs(good_reviews=20)).score == 60  # capped at +10
+    assert score(Inputs(poor_reviews=2)).score == 34  # 50 - 16, no cap
+    assert score(Inputs(good_reviews=1)).level == "fair"  # a review is a record

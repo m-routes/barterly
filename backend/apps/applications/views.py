@@ -56,6 +56,7 @@ def applications():
         .prefetch_related(
             "talent__talent_profile__skills",
             "talent__reliability_scores",
+            "talent__reputations",
             Prefetch(
                 "talent__badges",
                 queryset=Badge.objects.filter(revoked_at__isnull=True),

@@ -183,11 +183,15 @@ class _TripBodyState extends ConsumerState<_TripBody> {
                   'checked_in',
                   'delivering',
                   'completed',
+                  'reviewed',
                 }.contains(agreement.bookingStatus)) ...[
               const SizedBox(height: BarterlySpace.md),
               _StayCard(
                 bookingId: agreement.bookingId,
-                completed: agreement.bookingStatus == 'completed',
+                completed: const {
+                  'completed',
+                  'reviewed',
+                }.contains(agreement.bookingStatus),
               ),
             ],
             const SizedBox(height: BarterlySpace.md),
@@ -698,6 +702,12 @@ class _StayCard extends StatelessWidget {
               icon: const Icon(Icons.collections_outlined, size: 18),
               label: const Text('Deliverables'),
             ),
+            if (completed)
+              FilledButton.icon(
+                onPressed: () => context.push(Routes.review(bookingId)),
+                icon: const Icon(Icons.star_outline, size: 18),
+                label: const Text('Review your host'),
+              ),
           ],
         ),
       ],
