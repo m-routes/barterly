@@ -52,7 +52,11 @@ void main() {
     expect(find.text('Find a gig'), findsOneWidget);
     await tester.tap(find.text('Wallet'));
     await tester.pumpAndSettle();
-    expect(find.text('Nothing here yet'), findsOneWidget);
+    expect(
+      find.text('Add a UPI id or bank account to get paid.'),
+      findsOneWidget,
+    );
+    await tester.scrollUntilVisible(find.text('Nothing here yet.'), 200);
   });
 
   testWidgets('Profile shows the saved profile and signs out', (tester) async {

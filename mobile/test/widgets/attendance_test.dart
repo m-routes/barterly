@@ -26,9 +26,27 @@ Map<String, Object?> passJson() => {
 };
 
 class FakeLocation implements LocationReader {
+  new({this.state = LocationAccess.granted, this.grant = true});
+
+  LocationAccess state;
+
+  /// What the system prompt answers when asked.
+  final bool grant;
+  int requests = 0;
+
   @override
-  Future<Located?> current() async =>
-      const Located(latitude: 15.5, longitude: 73.8, accuracyM: 12);
+  Future<LocationAccess> access() async => state;
+
+  @override
+  Future<LocationAccess> request() async {
+    requests++;
+    return state = grant ? LocationAccess.granted : LocationAccess.refused;
+  }
+
+  @override
+  Future<Located?> current() async => state == LocationAccess.granted
+      ? const Located(latitude: 15.5, longitude: 73.8, accuracyM: 12)
+      : null;
 }
 
 FakeApi tripApi(String bookingStatus, [Map<String, Handler>? more]) =>
@@ -46,6 +64,7 @@ Future<void> openTripAt(
   WidgetTester tester,
   FakeApi api, {
   KeyValueStore? store,
+  FakeLocation? location,
 }) async {
   usePhoneScreen(tester);
   await pumpApp(
@@ -55,7 +74,7 @@ Future<void> openTripAt(
     store: store,
     extra: [
       clockProvider.overrideWithValue(() => now),
-      locationReaderProvider.overrideWithValue(FakeLocation()),
+      locationReaderProvider.overrideWithValue(location ?? FakeLocation()),
     ],
   );
   await tester.tap(find.text('My trips'));
@@ -104,6 +123,59 @@ void main() {
     });
     // Kept for when there's no signal.
     expect(await store.readJson('attendance.pass.b1'), isNotNull);
+  });
+
+  testWidgets('explains before asking for location, and takes "Not now"', (
+    tester,
+  ) async {
+    final api = tripApi('confirmed', {
+      'POST /api/v1/bookings/b1/attendance/pass/': (_) => ok(passJson()),
+    });
+    final location = FakeLocation(state: LocationAccess.notAsked);
+    final store = MemoryKeyValueStore();
+    await openTripAt(tester, api, store: store, location: location);
+    await tapButton(tester, 'Show check-in pass');
+    await pumpFrames(tester);
+
+    expect(find.text('Share where you are for check-in?'), findsOneWidget);
+    expect(find.textContaining('never in the background'), findsOneWidget);
+    await tester.tap(find.text('Not now'));
+    await pumpFrames(tester);
+    expect(location.requests, 0); // no system prompt
+    final sent = api.requests.last.data as Map<String, Object?>;
+    expect(sent['location'], isNull);
+    expect(find.text('832 515'), findsOneWidget); // the pass works anyway
+    expect(await store.readJson('attendance.location_asked.b1'), {
+      'asked': true,
+      'shared': false,
+    });
+  });
+
+  testWidgets('asks the system only after the talent agrees', (tester) async {
+    final api = tripApi('confirmed', {
+      'POST /api/v1/bookings/b1/attendance/pass/': (_) => ok(passJson()),
+    });
+    final location = FakeLocation(state: LocationAccess.notAsked);
+    await openTripAt(tester, api, location: location);
+    await tapButton(tester, 'Show check-in pass');
+    await pumpFrames(tester);
+    await tester.tap(find.text('Share location'));
+    await pumpFrames(tester);
+    expect(location.requests, 1);
+    final sent = api.requests.last.data as Map<String, Object?>;
+    expect(sent['location'], isNotNull);
+  });
+
+  testWidgets('a refused permission is never asked for again', (tester) async {
+    final api = tripApi('confirmed', {
+      'POST /api/v1/bookings/b1/attendance/pass/': (_) => ok(passJson()),
+    });
+    final location = FakeLocation(state: LocationAccess.refused);
+    await openTripAt(tester, api, location: location);
+    await tapButton(tester, 'Show check-in pass');
+    await pumpFrames(tester);
+    expect(find.text('Share where you are for check-in?'), findsNothing);
+    expect(location.requests, 0);
   });
 
   testWidgets('shows the saved pass when offline', (tester) async {
