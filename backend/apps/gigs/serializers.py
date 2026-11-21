@@ -1,6 +1,7 @@
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from apps.common.serializers import bounded_slugs
 from apps.gigs.constants import (
     MAX_DELIVERABLES,
     MAX_SCREENING_QUESTIONS,
@@ -9,7 +10,7 @@ from apps.gigs.constants import (
     GigStatus,
 )
 from apps.gigs.models import Gig
-from apps.profiles.constants import LANGUAGES
+from apps.profiles.constants import LANGUAGES, MAX_LANGUAGES, MAX_SKILLS
 from apps.profiles.models import Skill
 from apps.properties.models import Property
 
@@ -24,15 +25,17 @@ class GigSerializer(serializers.ModelSerializer):
     property = serializers.PrimaryKeyRelatedField(queryset=Property.objects.none())
     deliverables = DeliverableSerializer(many=True, required=False, max_length=MAX_DELIVERABLES)
     languages = serializers.ListField(
-        child=serializers.ChoiceField(choices=sorted(LANGUAGES.items())), required=False
+        child=serializers.ChoiceField(choices=sorted(LANGUAGES.items())),
+        max_length=MAX_LANGUAGES,
+        required=False,
     )
     screening_questions = serializers.ListField(
         child=serializers.CharField(max_length=300),
         max_length=MAX_SCREENING_QUESTIONS,
         required=False,
     )
-    skills = serializers.SlugRelatedField(
-        many=True,
+    skills = bounded_slugs(
+        MAX_SKILLS,
         slug_field="slug",
         queryset=Skill.objects.filter(is_active=True),
         required=False,

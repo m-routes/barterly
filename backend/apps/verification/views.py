@@ -9,7 +9,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.common.permissions import IsAdminRole, IsTalent, IsVendor
+from apps.common.permissions import IsStaffWith, IsTalent, IsVendor
 from apps.common.serializers import ErrorSerializer
 from apps.verification.constants import CHECKS, BadgeKind, CaseStatus, CheckType
 from apps.verification.models import Badge, VerificationCase, VerificationDocument
@@ -295,7 +295,7 @@ class KycWebhookView(APIView):
 
 
 class AdminCaseListView(ListAPIView):
-    permission_classes = [IsAdminRole]
+    permission_classes = [IsStaffWith("verification.view_verificationcase")]
     serializer_class = AdminCaseSerializer
 
     def get_queryset(self):
@@ -334,7 +334,7 @@ class AdminCaseListView(ListAPIView):
 
 
 class AdminCaseDetailView(RetrieveAPIView):
-    permission_classes = [IsAdminRole]
+    permission_classes = [IsStaffWith("verification.view_verificationcase")]
     serializer_class = AdminCaseSerializer
     lookup_url_kwarg = "case_id"
 
@@ -357,7 +357,7 @@ class AdminCaseDetailView(RetrieveAPIView):
 
 
 class AdminDecisionView(APIView):
-    permission_classes = [IsAdminRole]
+    permission_classes = [IsStaffWith("backoffice.review_verification")]
 
     @extend_schema(
         operation_id="verification_admin_case_decide",

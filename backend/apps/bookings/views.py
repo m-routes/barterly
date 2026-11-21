@@ -23,7 +23,7 @@ from apps.bookings.serializers import (
     UnlockedSerializer,
 )
 from apps.bookings.services import BookingRefused, accept_offer, actor_for, transition
-from apps.common.permissions import IsTalent
+from apps.common.permissions import IsTalent, staff_can
 from apps.common.serializers import ErrorSerializer
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class Refused(exceptions.APIException):
 
 def bookings_for(user):
     qs = Booking.objects.select_related("gig", "cancellation").prefetch_related("events")
-    if getattr(user, "is_admin_role", False):
+    if staff_can(user, "bookings.view_booking"):
         return qs
     return qs.filter(Q(talent=user) | Q(vendor=user))
 

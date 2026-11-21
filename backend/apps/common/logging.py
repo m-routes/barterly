@@ -8,6 +8,7 @@ import json
 import logging
 from datetime import UTC, datetime
 
+from apps.common.redaction import redact, redact_text
 from apps.common.request_context import get_request_id
 
 # Attributes every LogRecord has; anything else came from `extra=` and is emitted.
@@ -25,6 +26,27 @@ class RequestIDFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         request = getattr(record, "request", None)
         record.request_id = getattr(request, "request_id", None) or get_request_id() or "-"
+        return True
+
+
+class RedactPIIFilter(logging.Filter):
+    """Mask phone numbers, emails, tokens and other PII in every record.
+
+    Rewrites the message (args merged in) and any `extra=` values in place, so every
+    handler and formatter downstream sees only the redacted record.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        try:
+            message = record.getMessage()
+        except Exception:
+            message = str(record.msg)
+        record.msg = redact_text(message)
+        record.args = None
+        for key, value in list(vars(record).items()):
+            if key in _STANDARD_ATTRS or key.startswith("_") or key == "request":
+                continue
+            setattr(record, key, redact({key: value})[key])
         return True
 
 
@@ -47,7 +69,7 @@ class JsonFormatter(logging.Formatter):
                 continue
             payload[key] = value
         if record.exc_info:
-            payload["exception"] = self.formatException(record.exc_info)
+            payload["exception"] = redact_text(self.formatException(record.exc_info))
         if record.stack_info:
             payload["stack"] = self.formatStack(record.stack_info)
         return json.dumps(payload, default=str, ensure_ascii=False)
@@ -60,7 +82,10 @@ def logging_config(*, fmt: str = "json", level: str = "INFO") -> dict:
     return {
         "version": 1,
         "disable_existing_loggers": False,
-        "filters": {"request_id": {"()": "apps.common.logging.RequestIDFilter"}},
+        "filters": {
+            "request_id": {"()": "apps.common.logging.RequestIDFilter"},
+            "redact_pii": {"()": "apps.common.logging.RedactPIIFilter"},
+        },
         "formatters": {
             "json": {"()": "apps.common.logging.JsonFormatter"},
             "plain": {"format": "%(asctime)s %(levelname)s [%(request_id)s] %(name)s %(message)s"},
@@ -69,7 +94,7 @@ def logging_config(*, fmt: str = "json", level: str = "INFO") -> dict:
             "console": {
                 "class": "logging.StreamHandler",
                 "formatter": fmt,
-                "filters": ["request_id"],
+                "filters": ["request_id", "redact_pii"],
             },
         },
         "root": {"handlers": ["console"], "level": level},

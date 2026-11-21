@@ -56,7 +56,7 @@ def test_vendor_creates_submits_and_admin_approves():
     submitted = vendor.post(f"{BASE}/{gig_id}/status/", {"status": "in_review"}, format="json")
     assert submitted.status_code == 200 and submitted.json()["status"] == "in_review"
 
-    admin = client_for(AdminUserFactory())
+    admin = client_for(AdminUserFactory(roles=["ops"]))
     queue = admin.get(f"{BASE}/admin/").json()["results"]
     assert [g["id"] for g in queue] == [gig_id]
     sent_back = admin.post(f"{BASE}/{gig_id}/status/", {"status": "draft"}, format="json")
@@ -118,7 +118,7 @@ def test_access():
     assert client_for(TalentFactory()).post(f"{BASE}/", {}, format="json").status_code == 403
     assert client_for(gig.vendor).get(f"{BASE}/").status_code == 403  # discovery is for talent
     assert APIClient().get(f"{BASE}/mine/").status_code == 401
-    admin = client_for(AdminUserFactory())
+    admin = client_for(AdminUserFactory(roles=["ops"]))
     assert admin.get(f"{BASE}/{gig.pk}/").status_code == 200
     assert admin.patch(f"{BASE}/{gig.pk}/", {"title": "x"}, format="json").status_code == 403
     assert client_for(gig.vendor).get(f"{BASE}/admin/").status_code == 403
@@ -185,5 +185,8 @@ class TestPublicListing:
         gig = GigFactory(status=GigStatus.LIVE)
         assert client_for(VendorFactory()).get(f"/api/v1/gigs/{gig.pk}/public/").status_code == 403
         assert (
-            client_for(AdminUserFactory()).get(f"/api/v1/gigs/{gig.pk}/public/").status_code == 200
+            client_for(AdminUserFactory(roles=["ops"]))
+            .get(f"/api/v1/gigs/{gig.pk}/public/")
+            .status_code
+            == 200
         )

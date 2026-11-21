@@ -53,7 +53,7 @@ export function formatPoint({ latitude, longitude }: LatLng): string {
 /** Parse a typed coordinate; null when it isn't a number in range. */
 export function parseCoordinate(text: string, kind: "latitude" | "longitude"): number | null {
   const trimmed = text.trim();
-  if (!/^-?\d{1,3}(\.\d+)?$/.test(trimmed)) return null;
+  if (!/^-?\d{1,3}$|^-?\d{1,3}\.\d{1,15}$/.test(trimmed)) return null;
   const value = Number(trimmed);
   const limit = kind === "latitude" ? 90 : 180;
   return Math.abs(value) <= limit ? value : null;

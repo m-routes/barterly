@@ -108,7 +108,9 @@ class TermsSerializer(serializers.Serializer):
     stipend_period = serializers.ChoiceField(
         choices=StipendPeriod.choices, allow_blank=True, required=False, default=""
     )
-    deliverables = TermsDeliverableSerializer(many=True, required=False, default=list)
+    deliverables = TermsDeliverableSerializer(
+        many=True, required=False, default=list, max_length=MAX_DELIVERABLES
+    )
     usage_rights = UsageRightsSerializer(
         allow_null=True,
         required=False,

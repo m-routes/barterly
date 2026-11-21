@@ -78,7 +78,7 @@ class UpdatePreferencesSerializer(serializers.Serializer):
     quiet_hours_enabled = serializers.BooleanField(required=False)
     quiet_start = serializers.TimeField(required=False)
     quiet_end = serializers.TimeField(required=False)
-    changes = PreferenceChangeSerializer(many=True, required=False)
+    changes = PreferenceChangeSerializer(many=True, required=False, max_length=100)
 
 
 class DeviceSerializer(serializers.Serializer):

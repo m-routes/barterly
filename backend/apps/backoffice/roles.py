@@ -28,6 +28,7 @@ LOOKUP = [
     "properties.view_propertyphoto",
     "gigs.view_gig",
     "applications.view_application",
+    "bookings.view_booking",
 ]
 VERIFICATION_READ = [
     "verification.view_verificationcase",
@@ -43,6 +44,7 @@ PERMISSIONS: dict[str, list[str]] = {
         *LOOKUP,
         "backoffice.review_gigs",
         "backoffice.view_audit_log",
+        "bookings.change_booking",
         "attendance.view_checkin",
         "attendance.review_checkin",
     ],
@@ -54,6 +56,8 @@ PERMISSIONS: dict[str, list[str]] = {
         "verification.view_kycwebhookevent",
         "backoffice.review_verification",
         "backoffice.view_audit_log",
+        "bookings.change_booking",
+        "media.view_mediafile",
         "reviews.view_review",
         "reviews.view_reviewreport",
         "reviews.moderate_review",
@@ -64,6 +68,7 @@ PERMISSIONS: dict[str, list[str]] = {
         "accounts.view_user",
         "gigs.view_gig",
         "applications.view_application",
+        "bookings.view_booking",
         "backoffice.view_audit_log",
         "money.view_account",
         "money.view_ledgertransaction",

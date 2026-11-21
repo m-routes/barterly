@@ -1,0 +1,56 @@
+name: security
+
+# Repository-wide checks: leaked secrets, and vulnerable or newly added dependencies in
+# every ecosystem (Python, npm, Dart). Per-stack scans live in backend.yml (bandit,
+# semgrep, pip-audit, trivy) and web.yml (eslint security rules, npm audit, trivy).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 3 * * 1" # Mondays: new advisories against unchanged lockfiles
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # scan history, not just the tip
+      - name: gitleaks
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.21.2 \
+            detect --source /repo --config /repo/.gitleaks.toml --redact --verbose
+
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependencies added or changed by this PR (pip, npm, pub)
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+          comment-summary-in-pr: on-failure
+
+  osv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: OSV-Scanner on every lockfile (Dart, npm, Python)
+        run: |
+          docker run --rm -v "$PWD:/src" ghcr.io/google/osv-scanner:v1.9.2 \
+            --lockfile=/src/mobile/pubspec.lock \
+            --lockfile=/src/web/package-lock.json \
+            --lockfile=/src/backend/uv.lock

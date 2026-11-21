@@ -29,3 +29,13 @@ store() {
 
 store "django-secret-key-${ENVIRONMENT}" 64
 store "attendance-signing-key-${ENVIRONMENT}" 32
+
+# Field-encryption keys are "id:base64key" (apps.common.encryption); the first one.
+FIELD_KEYS="field-encryption-keys-${ENVIRONMENT}"
+if gcloud secrets versions list "$FIELD_KEYS" --project "$PROJECT_ID" --filter="state=ENABLED" --format="value(name)" | grep -q .; then
+  echo "${FIELD_KEYS} already has a version; rotate with infra/scripts/rotate-secrets.sh" >&2
+else
+  printf 'k%s:%s' "$(date -u +%Y%m%d%H%M)" "$(openssl rand -base64 32 | tr -d '\n')" |
+    gcloud secrets versions add "$FIELD_KEYS" --project "$PROJECT_ID" --data-file=-
+  echo "Added the first version of ${FIELD_KEYS}"
+fi

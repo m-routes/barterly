@@ -17,9 +17,16 @@ locals {
     razorpayx_account_number = "razorpayx-account-number-${local.env}"
     # Signs check-in passes (apps.attendance): 32 random bytes, base64.
     attendance_signing_key = "attendance-signing-key-${local.env}"
+    # Field-level encryption keys (apps.common.encryption): "id:base64(32 bytes)", comma
+    # separated, newest first. Rotation: infra/scripts/rotate-secrets.sh.
+    field_encryption_keys = "field-encryption-keys-${local.env}"
     # Post stats (apps.deliverables): a YouTube Data API key; the Instagram Graph token
     # is added after Meta app review.
-    youtube_api_key       = "youtube-api-key-${local.env}"
+    youtube_api_key = "youtube-api-key-${local.env}"
+    # Optional integrations, each wired only when its *_enabled variable is set.
+    sentry_dsn            = "sentry-dsn-${local.env}"
+    email_host_password   = "email-host-password-${local.env}"
+    kyc_webhook_secret    = "kyc-webhook-secret-${local.env}"
     instagram_graph_token = "instagram-graph-token-${local.env}"
   }
 
@@ -36,8 +43,13 @@ locals {
     api_razorpayx_acct   = { secret = "razorpayx_account_number", member = google_service_account.api.member }
     api_attendance_key   = { secret = "attendance_signing_key", member = google_service_account.api.member }
     migrate_attendance   = { secret = "attendance_signing_key", member = google_service_account.migrate.member }
+    api_field_keys       = { secret = "field_encryption_keys", member = google_service_account.api.member }
+    migrate_field_keys   = { secret = "field_encryption_keys", member = google_service_account.migrate.member }
     api_youtube_key      = { secret = "youtube_api_key", member = google_service_account.api.member }
     api_instagram_token  = { secret = "instagram_graph_token", member = google_service_account.api.member }
+    api_sentry_dsn       = { secret = "sentry_dsn", member = google_service_account.api.member }
+    api_email_password   = { secret = "email_host_password", member = google_service_account.api.member }
+    api_kyc_webhook      = { secret = "kyc_webhook_secret", member = google_service_account.api.member }
   }
 }
 

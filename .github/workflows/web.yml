@@ -72,3 +72,17 @@ jobs:
           docker run -d --name web -p 8080:8080 barterly-web:ci
           for _ in $(seq 1 20); do curl -fsS localhost:8080/ >/dev/null && break; sleep 1; done
           curl -fsS localhost:8080/ | grep -q "Find talent for your stay"
+      - name: Security headers are served
+        run: |
+          headers="$(curl -fsSI localhost:8080/)"
+          echo "$headers" | grep -qi "^content-security-policy:.*frame-ancestors 'none'"
+          echo "$headers" | grep -qi "^x-frame-options: DENY"
+          echo "$headers" | grep -qi "^x-content-type-options: nosniff"
+          echo "$headers" | grep -qi "^strict-transport-security: max-age=31536000"
+      - name: Image scan (trivy; fails on fixable high or critical)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: barterly-web:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"

@@ -51,7 +51,7 @@ class ExchangeResponseSerializer(TokenPairSerializer):
 
 
 class RefreshRequestSerializer(serializers.Serializer):
-    refresh = serializers.CharField()
+    refresh = serializers.CharField(max_length=4096)
 
 
 class ChooseRoleSerializer(serializers.Serializer):

@@ -218,7 +218,7 @@ class TestPublicView:
 
     def test_owner_and_admin_see_the_exact_location(self):
         prop = PropertyFactory()
-        for viewer in (prop.vendor, AdminUserFactory()):
+        for viewer in (prop.vendor, AdminUserFactory(roles=["support"])):
             exact = client_for(viewer).get(f"{BASE}/{prop.pk}/public/").json()["exact_location"]
             assert exact["address"] == prop.address and exact["latitude"] == PIN["latitude"]
 
