@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "apps.money",
     "apps.attendance",
     "apps.deliverables",
+    "apps.reviews",
     "apps.backoffice.apps.BackofficeConfig",
 ]
 
@@ -188,6 +189,9 @@ SPECTACULAR_SETTINGS = {
         "DeliverablePlatformEnum": "apps.deliverables.models.Platform",
         "DeliverableStatusEnum": "apps.deliverables.models.Status",
         "PostStatsSourceEnum": "apps.deliverables.models.StatsSource",
+        "ReviewSideEnum": "apps.reviews.models.Side",
+        "ReviewStatusEnum": "apps.reviews.models.ReviewStatus",
+        "ReportReasonEnum": "apps.reviews.models.ReportReason",
         "CancellationReasonEnum": "apps.bookings.models.CancellationReason",
         "CancellationEffectEnum": "apps.bookings.models.CancellationEffect",
         "CancelledByEnum": "apps.bookings.models.CancelledBy",
@@ -330,6 +334,51 @@ YOUTUBE_API_KEY = env_str("YOUTUBE_API_KEY", "")
 INSTAGRAM_STATS_ENABLED = env_bool("INSTAGRAM_STATS_ENABLED", False)
 INSTAGRAM_GRAPH_TOKEN = env_str("INSTAGRAM_GRAPH_TOKEN", "")
 INSTAGRAM_BUSINESS_ACCOUNT_ID = env_str("INSTAGRAM_BUSINESS_ACCOUNT_ID", "")
+
+# Reviews and reputation (apps.reviews).
+REVIEW_WINDOW_DAYS = env_int("REVIEW_WINDOW_DAYS", 14)
+REVIEW_MIN_LENGTH = env_int("REVIEW_MIN_LENGTH", 20)
+# Words that hold a review or reply for a moderator: accusations to check, and moves
+# off the platform. Phone numbers, emails and links are held as well (moderation.py).
+REVIEW_FLAGGED_WORDS = env_list(
+    "REVIEW_FLAGGED_WORDS", "scam,fraud,cheat,harass,whatsapp,telegram,gpay,paytm,phonepe"
+)
+# Badges, as data (apps.reviews.badges checks them at startup). Each condition is a
+# metric with a min and/or max; every condition must hold.
+TRUSTED_MEMBER_CLEAN_GIGS = env_int("TRUSTED_MEMBER_CLEAN_GIGS", 5)
+REPUTATION_BADGES = [
+    {
+        "key": "verified_creator",
+        "label": "Verified Creator",
+        "side": "talent",
+        "all": [
+            {"metric": "id_verified", "min": 1},
+            {"metric": "instagram_linked", "min": 1},
+            {"metric": "completed_content_gigs", "min": 1},
+            {"metric": "rating_average", "min": 4.0},
+        ],
+    },
+    {
+        "key": "top_volunteer",
+        "label": "Top Volunteer",
+        "side": "talent",
+        "all": [
+            {"metric": "completed_volunteer_gigs", "min": 3},
+            {"metric": "rating_average", "min": 4.5},
+            {"metric": "no_shows", "max": 0},
+        ],
+    },
+    {
+        "key": "trusted_member",
+        "label": "Trusted member",
+        "side": "any",
+        "all": [
+            {"metric": "clean_gigs", "min": TRUSTED_MEMBER_CLEAN_GIGS},
+            {"metric": "no_shows", "max": 0},
+            {"metric": "late_cancellations", "max": 0},
+        ],
+    },
+]
 
 # Discovery (apps.discovery). Fit-score weights: they needn't add to 100 (they are
 # scaled), but keeping them at 100 makes each one read as "points".

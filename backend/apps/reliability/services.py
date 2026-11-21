@@ -8,7 +8,9 @@ What counts, for one person on one side (docs/reliability.md):
   answers the talent's counters. Offers that lapse earn nothing;
 - late / last-minute cancellations: bookings they cancelled once confirmed, inside the
   agreement's notice period (apps.bookings.cancellation.effect_for);
-- no-shows: their bookings as talent marked no-show (and not overturned on dispute).
+- no-shows: their bookings as talent marked no-show (and not overturned on dispute);
+- good / poor reviews: published reviews of them on that side with 4-5 / 1-2 stars
+  (apps.reviews). Removed reviews don't count.
 """
 
 from apps.bookings.lifecycle import BookingStatus
@@ -33,6 +35,8 @@ RECOMPUTE_ON = (
     "application.declined",
     "offer.countered",
     "offer.counter_declined",
+    "reviews.published",
+    "reviews.removed",
 )
 
 
@@ -54,7 +58,17 @@ def inputs_for(user_id, side: str) -> Inputs:
         by=side,
         effect__in=(CancellationEffect.LATE, CancellationEffect.LAST_MINUTE),
     )
+    from apps.reviews.models import Review, ReviewStatus
+    from apps.reviews.models import Side as ReviewSide
+
+    reviews = Review.objects.filter(
+        subject_id=user_id,
+        subject_side=ReviewSide.TALENT if side == Side.TALENT else ReviewSide.HOST,
+        status=ReviewStatus.PUBLISHED,
+    )
     return Inputs(
+        good_reviews=reviews.filter(rating__gte=4).count(),
+        poor_reviews=reviews.filter(rating__lte=2).count(),
         completed=bookings.filter(status__in=COMPLETED).count(),
         on_time_replies=replies.count(),
         late_cancellations=cancellations.filter(effect=CancellationEffect.LATE).count(),

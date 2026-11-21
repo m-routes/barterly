@@ -9,7 +9,7 @@ const LEVELS: Record<Reliability["level"], { label: string; tone: ChipTone }> = 
   poor: { label: "Poor", tone: "danger" },
 };
 
-/** Reliability v1: a score out of 100 and its level (docs/reliability.md). */
+/** Reliability: a score out of 100 and its level (docs/reliability.md). */
 export function ReliabilityBadge({ reliability }: { reliability: Reliability }) {
   const { label, tone } = LEVELS[reliability.level];
   return (

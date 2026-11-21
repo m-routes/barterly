@@ -180,6 +180,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/admin/reviews/{review_id}/moderate/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Allow or remove a review (admin)
+     * @description Removing hides it and stops it counting. Audited, with the note.
+     */
+    post: operations["reviews_admin_moderate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/reviews/queue/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Reviews waiting for moderation (admin)
+     * @description Held for flagged words or contact details, or reported. Oldest first.
+     */
+    get: operations["reviews_admin_queue"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/agreement-versions/{version_id}/decline/": {
     parameters: {
       query?: never;
@@ -1283,6 +1323,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/bookings/{booking_id}/reviews/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * This stay's reviews, as you see them
+     * @description Double-blind: the other side's review appears only once both are in (or the 14-day window has closed) and it's published.
+     */
+    get: operations["reviews_for_booking"];
+    put?: never;
+    /**
+     * Review the other side of a completed stay
+     * @description Once per side, within 14 days of completion. It stays hidden until the other side reviews too (or the window closes). It can't be edited after.
+     */
+    post: operations["reviews_submit"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/bookings/{booking_id}/transition/": {
     parameters: {
       query?: never;
@@ -1867,7 +1931,7 @@ export interface paths {
     put?: never;
     /**
      * Run a scheduled job (Cloud Scheduler only)
-     * @description Jobs: billing_dunning, billing_invoices, close_expired_gigs, deliverable_reminders, deliverable_stats, dispatch_notifications, escrow_auto_release, escrow_reconcile, expire_offers, expire_verifications, flag_stale_interviews, payout_run, payout_validations, render_agreements, run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
+     * @description Jobs: billing_dunning, billing_invoices, close_expired_gigs, deliverable_reminders, deliverable_stats, dispatch_notifications, escrow_auto_release, escrow_reconcile, expire_offers, expire_verifications, flag_stale_interviews, payout_run, payout_validations, render_agreements, reputation_recompute, reviews_close_windows, run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
      */
     post: operations["jobs_run"];
     delete?: never;
@@ -2448,6 +2512,43 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/reviews/{review_id}/reply/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Answer a review of you (once) */
+    post: operations["reviews_reply"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/reviews/{review_id}/report/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Report a review
+     * @description A moderator looks at it. One report per person per review.
+     */
+    post: operations["reviews_report"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/tasks/{name}/": {
     parameters: {
       query?: never;
@@ -2462,6 +2563,46 @@ export interface paths {
      * @description Needs a Google-signed OIDC token for the tasks service account. The body is the task's payload. 503 asks Cloud Tasks to retry.
      */
     post: operations["tasks_run"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/users/{user_id}/reputation/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Someone's reputation
+     * @description As talent and as a host: rating, completion rate, response time, badges.
+     */
+    get: operations["reviews_reputation"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/users/{user_id}/reviews/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Published reviews of someone
+     * @description Newest first, with their reply if they gave one.
+     */
+    get: operations["reviews_of_user"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -2999,8 +3140,10 @@ export interface components {
       instagram_followers: number | null;
       /** @description Active badge kinds. */
       badges: string[];
-      /** @description Their reliability as talent (v1). */
+      /** @description Their reliability as talent. */
       reliability: components["schemas"]["Reliability"];
+      /** @description As talent: rating, completion rate, response time, badges. */
+      reputation: components["schemas"]["Reputation"];
     };
     /**
      * @description What the applicant (and the vendor) sees. Never the vendor's notes or tags:
@@ -3311,6 +3454,29 @@ export interface components {
       readonly cancellation: components["schemas"]["Cancellation"] | null;
     };
     /**
+     * @description What one side of a booking sees: their own review, and the other's once both are
+     *     published (double-blind).
+     */
+    BookingReviews: {
+      /**
+       * @description Who you review.
+       *
+       *     * `talent` - talent
+       *     * `host` - host
+       */
+      reviewing: components["schemas"]["ReviewingEnum"];
+      can_review: boolean;
+      /** Format: date-time */
+      window_closes_at: string | null;
+      category_labels: {
+        [key: string]: string;
+      };
+      mine: components["schemas"]["StayReview"] | null;
+      /** @description Only once published. */
+      theirs: components["schemas"]["StayReview"] | null;
+      they_have_reviewed: boolean;
+    };
+    /**
      * @description * `signing` - Awaiting signatures
      *     * `confirmed` - Confirmed
      *     * `checked_in` - Checked in
@@ -3497,6 +3663,12 @@ export interface components {
       /** Format: date-time */
       readonly expires_at: string | null;
       readonly documents: components["schemas"]["Document"][];
+    };
+    CategoryScore: {
+      key: string;
+      /** @description Depends on who was reviewed. */
+      label: string;
+      score: number;
     };
     CertificateItem: {
       /**
@@ -4010,6 +4182,7 @@ export interface components {
      *     * `gigs.search_alert` - gigs.search_alert
      *     * `reminder` - reminder
      *     * `billing` - billing
+     *     * `reviews` - reviews
      *     * `deliverables` - deliverables
      *     * `payouts` - payouts
      *     * `other` - other
@@ -4027,6 +4200,7 @@ export interface components {
       | "gigs.search_alert"
       | "reminder"
       | "billing"
+      | "reviews"
       | "deliverables"
       | "payouts"
       | "other";
@@ -4716,6 +4890,16 @@ export interface components {
      * @enum {string}
      */
     MethodEnum: "otp" | "none";
+    Moderation: {
+      decision: components["schemas"]["ModerationDecisionEnum"];
+      note: string;
+    };
+    /**
+     * @description * `allow` - allow
+     *     * `remove` - remove
+     * @enum {string}
+     */
+    ModerationDecisionEnum: "allow" | "remove";
     MyVerification: {
       checks: components["schemas"]["CheckSummary"][];
       /** @description Active badges. */
@@ -5034,6 +5218,36 @@ export interface components {
        */
       previous?: string | null;
       results: components["schemas"]["Property"][];
+    };
+    PaginatedQueueItemList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["QueueItem"][];
+    };
+    PaginatedStayReviewList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["StayReview"][];
     };
     PaginatedTrackedDeliverableList: {
       /** @example 123 */
@@ -5664,6 +5878,27 @@ export interface components {
       readonly exact_location: components["schemas"]["ExactLocation"] | null;
       readonly photos: components["schemas"]["PublicPhoto"][];
     };
+    QueueItem: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly booking_id: string;
+      readonly subject_side: components["schemas"]["ReviewSideEnum"];
+      readonly rating: number;
+      readonly categories: components["schemas"]["CategoryScore"][];
+      readonly text: string;
+      readonly status: components["schemas"]["ReviewStatusEnum"];
+      readonly author_name: string;
+      /** Format: date-time */
+      readonly submitted_at: string;
+      /** Format: date-time */
+      readonly published_at: string | null;
+      readonly reply: components["schemas"]["Reply"] | null;
+      readonly flags: string[];
+      readonly reports: {
+        [key: string]: unknown;
+      }[];
+    };
     Read: {
       /** @description A message cursor; everything up to it is read. */
       up_to: string;
@@ -5737,14 +5972,50 @@ export interface components {
      * @enum {string}
      */
     ReliabilitySideEnum: "talent" | "vendor";
+    Reply: {
+      readonly text: string;
+      /** Format: date-time */
+      readonly created_at: string;
+    };
+    ReplyRequest: {
+      text: string;
+    };
     Report: {
       reason: components["schemas"]["ChatReportReasonEnum"];
       note?: string;
+    };
+    /**
+     * @description * `abusive` - Abusive or hateful
+     *     * `false` - Not true / about something else
+     *     * `private` - Shares private information
+     *     * `spam` - Spam or advertising
+     *     * `other` - Something else
+     * @enum {string}
+     */
+    ReportReasonEnum: "abusive" | "false" | "private" | "spam" | "other";
+    ReportRequest: {
+      reason: components["schemas"]["ReportReasonEnum"];
+      /** @default  */
+      note: string;
     };
     ReportResult: {
       /** Format: uuid */
       id: string;
       status: string;
+    };
+    Reputation: {
+      /** Format: decimal */
+      rating_average: string | null;
+      review_count: number;
+      /** @description Percent. */
+      completion_rate: number | null;
+      /** @description Median chat reply time, last 90 days. */
+      response_minutes: number | null;
+      badges: components["schemas"]["ReputationBadge"][];
+    };
+    ReputationBadge: {
+      key: string;
+      label: string;
     };
     /**
      * @description * `none` - No verification needed
@@ -5769,6 +6040,26 @@ export interface components {
       /** @description Why the money wasn't released just now (it will be retried), or empty. */
       release_held_back: string;
     };
+    /**
+     * @description * `talent` - Talent
+     *     * `host` - Host
+     * @enum {string}
+     */
+    ReviewSideEnum: "talent" | "host";
+    /**
+     * @description * `submitted` - Waiting for the other review
+     *     * `held` - Held for moderation
+     *     * `published` - Published
+     *     * `removed` - Removed by Barterly
+     * @enum {string}
+     */
+    ReviewStatusEnum: "submitted" | "held" | "published" | "removed";
+    /**
+     * @description * `talent` - talent
+     *     * `host` - host
+     * @enum {string}
+     */
+    ReviewingEnum: "talent" | "host";
     /**
      * @description * `volunteer` - Volunteer
      *     * `content_creator` - Content creator
@@ -5993,6 +6284,23 @@ export interface components {
       status: components["schemas"]["GigStatusEnum"];
       /** @description Required when an admin sends a gig back. Shown to the vendor. */
       reason?: string;
+    };
+    StayReview: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly booking_id: string;
+      readonly subject_side: components["schemas"]["ReviewSideEnum"];
+      readonly rating: number;
+      readonly categories: components["schemas"]["CategoryScore"][];
+      readonly text: string;
+      readonly status: components["schemas"]["ReviewStatusEnum"];
+      readonly author_name: string;
+      /** Format: date-time */
+      readonly submitted_at: string;
+      /** Format: date-time */
+      readonly published_at: string | null;
+      readonly reply: components["schemas"]["Reply"] | null;
     };
     /**
      * @description * `none` - No stay
@@ -6359,6 +6667,10 @@ export interface components {
       /** Format: date-time */
       readonly created_at: string;
     };
+    UserReputation: {
+      talent: components["schemas"]["Reputation"];
+      host: components["schemas"]["Reputation"];
+    };
     /**
      * @description * `vendor` - Vendor
      *     * `talent` - Talent
@@ -6581,6 +6893,16 @@ export interface components {
     };
     Withdraw: {
       reason?: string;
+    };
+    WriteReview: {
+      rating: number;
+      communication: number;
+      /** @description Reviewing a host: accuracy of the listing. A talent: work quality. */
+      accuracy: number;
+      safety: number;
+      /** @description Reviewing a host: payment as agreed. A talent: punctuality. */
+      reliability: number;
+      text: string;
     };
   };
   responses: never;
@@ -7101,6 +7423,97 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  reviews_admin_moderate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        review_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Moderation"];
+        "application/x-www-form-urlencoded": components["schemas"]["Moderation"];
+        "multipart/form-data": components["schemas"]["Moderation"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StayReview"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  reviews_admin_queue: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedQueueItemList"];
         };
       };
     };
@@ -10304,6 +10717,118 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["HoursCheck"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  reviews_for_booking: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BookingReviews"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  reviews_submit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["WriteReview"];
+        "application/x-www-form-urlencoded": components["schemas"]["WriteReview"];
+        "multipart/form-data": components["schemas"]["WriteReview"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StayReview"];
         };
       };
       400: {
@@ -13967,6 +14492,131 @@ export interface operations {
       };
     };
   };
+  reviews_reply: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        review_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReplyRequest"];
+        "application/x-www-form-urlencoded": components["schemas"]["ReplyRequest"];
+        "multipart/form-data": components["schemas"]["ReplyRequest"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Reply"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  reviews_report: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        review_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReportRequest"];
+        "application/x-www-form-urlencoded": components["schemas"]["ReportRequest"];
+        "multipart/form-data": components["schemas"]["ReportRequest"];
+      };
+    };
+    responses: {
+      /** @description No response body */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
   tasks_run: {
     parameters: {
       query?: never;
@@ -14021,6 +14671,62 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  reviews_reputation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        user_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["UserReputation"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  reviews_of_user: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+        side?: "host" | "talent";
+      };
+      header?: never;
+      path: {
+        user_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedStayReviewList"];
         };
       };
     };

@@ -1,6 +1,7 @@
 "use client";
 
 import { ReliabilityBadge } from "@/components/reliability/ReliabilityBadge";
+import { ReputationSummary } from "@/components/reviews/ReputationSummary";
 import { Chip } from "@/components/ui/StatusChip";
 import type { Application } from "@/lib/api/types";
 import { formatDate } from "@/lib/format";
@@ -73,6 +74,7 @@ export function ApplicantProfile({ application: a }: { application: Application 
           ))}
         </div>
         {person.badges.length ? null : <p className="field__hint">No verification badges yet.</p>}
+        <ReputationSummary reputation={person.reputation} />
         {person.bio ? <p>{person.bio}</p> : null}
         <dl className="summary">
           <div>

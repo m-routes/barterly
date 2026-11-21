@@ -210,6 +210,30 @@ TEMPLATES: dict[str, Template] = {
             "{gig_title} के लिए {deliverable} {due} तक देना था। जमा करें या होस्ट से बात करें।",
         ),
     },
+    "reviews.published": {
+        "en": (
+            "Your review is up",
+            "{gig_title}: the reviews of this stay are published. See yours and reply.",
+        ),
+        "hi": ("आपकी समीक्षा प्रकाशित", "{gig_title}: इस प्रवास की समीक्षाएँ प्रकाशित हुईं। देखें और जवाब दें।"),
+    },
+    "reviews.awaiting_yours": {
+        "en": (
+            "You've been reviewed",
+            "{gig_title}: leave your review to see theirs. Both publish together.",
+        ),
+        "hi": (
+            "आपकी समीक्षा हुई",
+            "{gig_title}: उनकी समीक्षा देखने के लिए अपनी लिखें। दोनों साथ प्रकाशित होंगी।",
+        ),
+    },
+    "reviews.window_closing": {
+        "en": (
+            "Two days left to review",
+            "{gig_title}: review your stay before the window closes.",
+        ),
+        "hi": ("समीक्षा के दो दिन बाक़ी", "{gig_title}: समय ख़त्म होने से पहले अपनी समीक्षा लिखें।"),
+    },
     catalog.OTHER: {
         "en": ("{label}", "{gig_title}"),
         "hi": ("{label}", "{gig_title}"),
@@ -250,6 +274,9 @@ VARIABLES: dict[str, tuple[str, ...]] = {
     "deliverables.due_in_two_days": ("deliverable", "gig_title", "due"),
     "deliverables.due_today": ("deliverable", "gig_title"),
     "deliverables.due_overdue": ("deliverable", "gig_title", "due"),
+    "reviews.published": ("gig_title",),
+    "reviews.awaiting_yours": ("gig_title",),
+    "reviews.window_closing": ("gig_title",),
     catalog.OTHER: ("label", "gig_title"),
 }
 

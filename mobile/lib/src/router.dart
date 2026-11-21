@@ -14,6 +14,7 @@ import 'package:barterly/src/discover/discover_screen.dart';
 import 'package:barterly/src/discover/gig_detail_screen.dart';
 import 'package:barterly/src/notifications/notifications_screen.dart';
 import 'package:barterly/src/profile/profile_setup_screen.dart';
+import 'package:barterly/src/reviews/review_screens.dart';
 import 'package:barterly/src/shell/app_shell.dart';
 import 'package:barterly/src/shell/tabs.dart';
 import 'package:barterly/src/trips/trip_screen.dart';
@@ -48,6 +49,8 @@ abstract final class Routes {
   static String hours(String bookingId) => '/trips/hours/$bookingId';
   static String deliverables(String bookingId) =>
       '/trips/deliverables/$bookingId';
+  static String review(String bookingId) => '/trips/review/$bookingId';
+  static const myReviews = '/profile/reviews';
 
   /// Screens that only make sense before the person is fully in.
   static const Set<String> gates = {splash, login, join, wrongApp, setup};
@@ -152,6 +155,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                     ),
                   ),
                   GoRoute(
+                    path: 'review/:id',
+                    builder: (_, state) => StayReviewScreen(
+                      bookingId: state.pathParameters['id']!,
+                    ),
+                  ),
+                  GoRoute(
                     path: 'deliverables/:id',
                     builder: (_, state) => DeliverablesScreen(
                       bookingId: state.pathParameters['id']!,
@@ -183,6 +192,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'edit',
                     builder: (_, _) => const ProfileSetupScreen(editing: true),
+                  ),
+                  GoRoute(
+                    path: 'reviews',
+                    builder: (_, _) => const MyReviewsScreen(),
                   ),
                   GoRoute(
                     path: 'verification',

@@ -509,6 +509,103 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/admin/reviews/{review_id}/moderate/:
+    post:
+      operationId: reviews_admin_moderate
+      description: Removing hides it and stops it counting. Audited, with the note.
+      summary: Allow or remove a review (admin)
+      parameters:
+      - in: path
+        name: review_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - reviews
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Moderation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Moderation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Moderation'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StayReview'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/admin/reviews/queue/:
+    get:
+      operationId: reviews_admin_queue
+      description: Held for flagged words or contact details, or reported. Oldest
+        first.
+      summary: Reviews waiting for moderation (admin)
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - reviews
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedQueueItemList'
+          description: ''
   /api/v1/agreement-versions/{version_id}/decline/:
     post:
       operationId: agreements_decline_change
@@ -3667,6 +3764,115 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/bookings/{booking_id}/reviews/:
+    get:
+      operationId: reviews_for_booking
+      description: 'Double-blind: the other side''s review appears only once both
+        are in (or the 14-day window has closed) and it''s published.'
+      summary: This stay's reviews, as you see them
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - reviews
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingReviews'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    post:
+      operationId: reviews_submit
+      description: Once per side, within 14 days of completion. It stays hidden until
+        the other side reviews too (or the window closes). It can't be edited after.
+      summary: Review the other side of a completed stay
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - reviews
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WriteReview'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WriteReview'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WriteReview'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StayReview'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/bookings/{booking_id}/transition/:
     post:
       operationId: bookings_transition
@@ -5696,9 +5902,10 @@ paths:
       description: 'Jobs: billing_dunning, billing_invoices, close_expired_gigs, deliverable_reminders,
         deliverable_stats, dispatch_notifications, escrow_auto_release, escrow_reconcile,
         expire_offers, expire_verifications, flag_stale_interviews, payout_run, payout_validations,
-        render_agreements, run_search_alerts, send_interview_reminders, send_reminders,
-        sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service
-        account. Idempotent; overlapping runs of one job are skipped.'
+        render_agreements, reputation_recompute, reviews_close_windows, run_search_alerts,
+        send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed
+        OIDC token for the scheduler service account. Idempotent; overlapping runs
+        of one job are skipped.'
       summary: Run a scheduled job (Cloud Scheduler only)
       parameters:
       - in: path
@@ -7333,6 +7540,127 @@ paths:
                 items:
                   $ref: '#/components/schemas/ReliabilityDetail'
           description: ''
+  /api/v1/reviews/{review_id}/reply/:
+    post:
+      operationId: reviews_reply
+      summary: Answer a review of you (once)
+      parameters:
+      - in: path
+        name: review_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - reviews
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReplyRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReplyRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reply'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/reviews/{review_id}/report/:
+    post:
+      operationId: reviews_report
+      description: A moderator looks at it. One report per person per review.
+      summary: Report a review
+      parameters:
+      - in: path
+        name: review_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - reviews
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReportRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReportRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          description: No response body
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/tasks/{name}/:
     post:
       operationId: tasks_run
@@ -7381,6 +7709,80 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/users/{user_id}/reputation/:
+    get:
+      operationId: reviews_reputation
+      description: 'As talent and as a host: rating, completion rate, response time,
+        badges.'
+      summary: Someone's reputation
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - reviews
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserReputation'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/users/{user_id}/reviews/:
+    get:
+      operationId: reviews_of_user
+      description: Newest first, with their reply if they gave one.
+      summary: Published reviews of someone
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: side
+        schema:
+          type: string
+          enum:
+          - host
+          - talent
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - reviews
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStayReviewList'
           description: ''
   /api/v1/verification/admin/cases/:
     get:
@@ -8734,7 +9136,11 @@ components:
         reliability:
           allOf:
           - $ref: '#/components/schemas/Reliability'
-          description: Their reliability as talent (v1).
+          description: Their reliability as talent.
+        reputation:
+          allOf:
+          - $ref: '#/components/schemas/Reputation'
+          description: 'As talent: rating, completion rate, response time, badges.'
       required:
       - badges
       - bio
@@ -8743,6 +9149,7 @@ components:
       - instagram_followers
       - languages
       - reliability
+      - reputation
       - skills
       - talent_type
       - user_id
@@ -9443,6 +9850,49 @@ components:
       - status_reason
       - talent
       - vendor
+    BookingReviews:
+      type: object
+      description: |-
+        What one side of a booking sees: their own review, and the other's once both are
+        published (double-blind).
+      properties:
+        reviewing:
+          allOf:
+          - $ref: '#/components/schemas/ReviewingEnum'
+          description: |-
+            Who you review.
+
+            * `talent` - talent
+            * `host` - host
+        can_review:
+          type: boolean
+        window_closes_at:
+          type: string
+          format: date-time
+          nullable: true
+        category_labels:
+          type: object
+          additionalProperties:
+            type: string
+        mine:
+          allOf:
+          - $ref: '#/components/schemas/StayReview'
+          nullable: true
+        theirs:
+          allOf:
+          - $ref: '#/components/schemas/StayReview'
+          nullable: true
+          description: Only once published.
+        they_have_reviewed:
+          type: boolean
+      required:
+      - can_review
+      - category_labels
+      - mine
+      - reviewing
+      - theirs
+      - they_have_reviewed
+      - window_closes_at
     BookingStatusEnum:
       enum:
       - signing
@@ -9788,6 +10238,20 @@ components:
       - status
       - subject_type
       - submitted_at
+    CategoryScore:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+          description: Depends on who was reviewed.
+        score:
+          type: integer
+      required:
+      - key
+      - label
+      - score
     CertificateItem:
       type: object
       properties:
@@ -10864,6 +11328,7 @@ components:
       - gigs.search_alert
       - reminder
       - billing
+      - reviews
       - deliverables
       - payouts
       - other
@@ -10880,6 +11345,7 @@ components:
         * `gigs.search_alert` - gigs.search_alert
         * `reminder` - reminder
         * `billing` - billing
+        * `reviews` - reviews
         * `deliverables` - deliverables
         * `payouts` - payouts
         * `other` - other
@@ -12478,6 +12944,25 @@ components:
       description: |-
         * `otp` - Re-confirm your phone by OTP
         * `none` - Consent only (tests)
+    Moderation:
+      type: object
+      properties:
+        decision:
+          $ref: '#/components/schemas/ModerationDecisionEnum'
+        note:
+          type: string
+          maxLength: 300
+      required:
+      - decision
+      - note
+    ModerationDecisionEnum:
+      enum:
+      - allow
+      - remove
+      type: string
+      description: |-
+        * `allow` - allow
+        * `remove` - remove
     MyVerification:
       type: object
       properties:
@@ -13062,6 +13547,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Property'
+    PaginatedQueueItemList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/QueueItem'
+    PaginatedStayReviewList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StayReview'
     PaginatedTrackedDeliverableList:
       type: object
       required:
@@ -14503,6 +15034,78 @@ components:
       - state
       - verified
       - women_friendly
+    QueueItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        booking_id:
+          type: string
+          format: uuid
+          readOnly: true
+        subject_side:
+          allOf:
+          - $ref: '#/components/schemas/ReviewSideEnum'
+          readOnly: true
+        rating:
+          type: integer
+          readOnly: true
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryScore'
+          readOnly: true
+        text:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReviewStatusEnum'
+          readOnly: true
+        author_name:
+          type: string
+          readOnly: true
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        published_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        reply:
+          allOf:
+          - $ref: '#/components/schemas/Reply'
+          nullable: true
+          readOnly: true
+        flags:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        reports:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+      required:
+      - author_name
+      - booking_id
+      - categories
+      - flags
+      - id
+      - published_at
+      - rating
+      - reply
+      - reports
+      - status
+      - subject_side
+      - submitted_at
+      - text
     Read:
       type: object
       properties:
@@ -14659,6 +15262,27 @@ components:
       description: |-
         * `talent` - As talent
         * `vendor` - As a host
+    Reply:
+      type: object
+      properties:
+        text:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - text
+    ReplyRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          maxLength: 1000
+      required:
+      - text
     Report:
       type: object
       properties:
@@ -14666,6 +15290,31 @@ components:
           $ref: '#/components/schemas/ChatReportReasonEnum'
         note:
           type: string
+          maxLength: 500
+      required:
+      - reason
+    ReportReasonEnum:
+      enum:
+      - abusive
+      - 'false'
+      - private
+      - spam
+      - other
+      type: string
+      description: |-
+        * `abusive` - Abusive or hateful
+        * `false` - Not true / about something else
+        * `private` - Shares private information
+        * `spam` - Spam or advertising
+        * `other` - Something else
+    ReportRequest:
+      type: object
+      properties:
+        reason:
+          $ref: '#/components/schemas/ReportReasonEnum'
+        note:
+          type: string
+          default: ''
           maxLength: 500
       required:
       - reason
@@ -14680,6 +15329,44 @@ components:
       required:
       - id
       - status
+    Reputation:
+      type: object
+      properties:
+        rating_average:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,2})?$
+          nullable: true
+        review_count:
+          type: integer
+        completion_rate:
+          type: integer
+          nullable: true
+          description: Percent.
+        response_minutes:
+          type: integer
+          nullable: true
+          description: Median chat reply time, last 90 days.
+        badges:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReputationBadge'
+      required:
+      - badges
+      - completion_rate
+      - rating_average
+      - response_minutes
+      - review_count
+    ReputationBadge:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+      required:
+      - key
+      - label
     RequiredVerificationEnum:
       enum:
       - none
@@ -14729,6 +15416,34 @@ components:
       - escrow
       - release_held_back
       - submission
+    ReviewSideEnum:
+      enum:
+      - talent
+      - host
+      type: string
+      description: |-
+        * `talent` - Talent
+        * `host` - Host
+    ReviewStatusEnum:
+      enum:
+      - submitted
+      - held
+      - published
+      - removed
+      type: string
+      description: |-
+        * `submitted` - Waiting for the other review
+        * `held` - Held for moderation
+        * `published` - Published
+        * `removed` - Removed by Barterly
+    ReviewingEnum:
+      enum:
+      - talent
+      - host
+      type: string
+      description: |-
+        * `talent` - talent
+        * `host` - host
     RoleTemplateEnum:
       enum:
       - volunteer
@@ -15129,6 +15844,65 @@ components:
           maxLength: 500
       required:
       - status
+    StayReview:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        booking_id:
+          type: string
+          format: uuid
+          readOnly: true
+        subject_side:
+          allOf:
+          - $ref: '#/components/schemas/ReviewSideEnum'
+          readOnly: true
+        rating:
+          type: integer
+          readOnly: true
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryScore'
+          readOnly: true
+        text:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReviewStatusEnum'
+          readOnly: true
+        author_name:
+          type: string
+          readOnly: true
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        published_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        reply:
+          allOf:
+          - $ref: '#/components/schemas/Reply'
+          nullable: true
+          readOnly: true
+      required:
+      - author_name
+      - booking_id
+      - categories
+      - id
+      - published_at
+      - rating
+      - reply
+      - status
+      - subject_side
+      - submitted_at
+      - text
     StayTypeEnum:
       enum:
       - none
@@ -15979,6 +16753,16 @@ components:
       - phone
       - profile_complete
       - role
+    UserReputation:
+      type: object
+      properties:
+        talent:
+          $ref: '#/components/schemas/Reputation'
+        host:
+          $ref: '#/components/schemas/Reputation'
+      required:
+      - host
+      - talent
     UserRoleEnum:
       enum:
       - vendor
@@ -16456,6 +17240,42 @@ components:
         reason:
           type: string
           maxLength: 500
+    WriteReview:
+      type: object
+      properties:
+        rating:
+          type: integer
+          maximum: 5
+          minimum: 1
+        communication:
+          type: integer
+          maximum: 5
+          minimum: 1
+        accuracy:
+          type: integer
+          maximum: 5
+          minimum: 1
+          description: 'Reviewing a host: accuracy of the listing. A talent: work
+            quality.'
+        safety:
+          type: integer
+          maximum: 5
+          minimum: 1
+        reliability:
+          type: integer
+          maximum: 5
+          minimum: 1
+          description: 'Reviewing a host: payment as agreed. A talent: punctuality.'
+        text:
+          type: string
+          maxLength: 2000
+      required:
+      - accuracy
+      - communication
+      - rating
+      - reliability
+      - safety
+      - text
   securitySchemes:
     cookieAuth:
       type: apiKey

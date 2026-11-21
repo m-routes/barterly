@@ -77,6 +77,7 @@ Surfaces: the vendor console (web), the talent app (mobile) and the admin consol
 | `money` | Double-entry ledger (append-only, integer paise), escrow for paid and hybrid bookings, deliverables, payout accounts, payout runs, the talent wallet, statements and TDS records, webhooks, reconciliation and the kill switch ([money.md](money.md)) |
 | `attendance` | Signed check-in passes (Ed25519 QR + six-digit code), offline check-in sync, the soft geofence, check-out, no-show grace, volunteer hour logs ([attendance.md](attendance.md)) |
 | `deliverables` | Barter and hybrid deliverables: one per unit of the agreement, submissions with the collaboration-label check, two rounds of changes, post stats (YouTube/Instagram APIs or self-reported), usage rights, the host's content library, reminders, and escrow's 72-hour window ([deliverables.md](deliverables.md)) |
+| `reviews` | Double-blind reviews of completed stays with category scores, moderation (flagged words, contact details, reports), one reply, reputation (rating, completion rate, response time) and configurable badges ([reviews.md](reviews.md)) |
 | `reliability` | The reliability score v1 (a pure function, [reliability.md](reliability.md)) and each person's stored score per side |
 | `verification` | Verification cases per check, evidence (provider references and masked numbers only), badges, the KYC provider interface and webhook, re-verification on profile edits, the review API |
 
@@ -296,6 +297,8 @@ A confirmed booking gives its slot back. The place is then offered on: offers he
 | `billing_dunning` | Daily at 10:00 | Payment-failed reminders before the grace period ends; paid features lock after it |
 | `billing_invoices` | Every 30 minutes | GST invoices left unrendered or unsent are finished |
 | `escrow_auto_release` | Hourly at :15 | Release escrow 72 hours after the latest unanswered submission, or after an approval that couldn't release then |
+| `reviews_close_windows` | Hourly at :20 | Publish reviews whose 14-day window closed; remind those yet to review |
+| `reputation_recompute` | Daily at 03:00 | Ratings, completion, response times, badges and reliability for everyone recent |
 | `deliverable_reminders` | Daily at 09:00 | Deliverables due in two days, today, or overdue |
 | `deliverable_stats` | Daily at 06:00 | Views, likes and comments for handed-in posts |
 | `payout_run` | Every 20 minutes | Pay what releases owe talent; retry failed payouts after their back-off; resend stuck ones |
@@ -476,6 +479,10 @@ Talent show a signed QR pass (or read a six-digit code); the console's Arrivals 
 
 For barter and hybrid gigs, each item the agreement lists becomes a deliverable per unit at check-in, due on the last day unless the host moves it. Talent hand in a post link or files; public posts need the collaboration label, which the talent confirms and the platform's caption is checked for. Hosts approve or ask for changes (twice at most). Post stats come from YouTube and, after Meta app review, Instagram, or are self-reported with a screenshot. Approved content shows its usage rights and appears in the host's library. For hybrid gigs, the last submission starts escrow's 72-hour window. See [deliverables.md](deliverables.md).
 
+### Reviews (`apps/reviews`)
+
+After a completed stay each side reviews the other once (overall stars, four category scores, text), double-blind: both publish together when both are in, or when the 14-day window closes. Flagged words and contact details hold a review for moderation, as do reports; published reviews can't be edited (a database trigger enforces it) and get one reply. Reputation (rating, completion rate, response time, badges from rules in settings) and reliability v2 follow. See [reviews.md](reviews.md).
+
 ### Audit log
 
 Money and status changes write an `AuditLog` entry through `apps.common.services.audit.log_action()`, in the same transaction as the change. Each entry records the actor, a dotted action (`user.role_changed`), the target's type and id, JSON before/after, the client IP and the request id. Entries are append-only: updates and deletes raise, and the admin is read-only. Users with audit history can't be hard-deleted (`PROTECT`); deactivate them. Role and `is_active` changes go through `apps.accounts.services.users` (and the admin's save hook), which audit them.
@@ -486,7 +493,7 @@ Staff work in the Django admin at `/admin/`, served by `BarterlyAdminSite`, whic
 
 - **Roles.** `super_admin`, `ops`, `trust`, `finance` and `support` are auth groups whose permissions are exactly the lists in `apps/backoffice/roles.py`. They are re-synced after every migrate, so hand edits to a group don't stick. Give or take a role with `manage.py grant_admin_role <phone> <role> [--remove]`; it makes the account a staff admin and is audited. Vendor and talent accounts can't be given a role. Changing someone's groups in the user admin is audited as `user.admin_roles_changed`.
   - ops: approves gigs, reads accounts, gigs, properties and applications, reads the audit log, and reviews check-ins flagged as far from the property.
-  - trust: decides verification cases, reads verification records and KYC events, and reads the audit log.
+  - trust: decides verification cases, reads verification records and KYC events, moderates held and reported reviews, and reads the audit log.
   - finance: reads users, gigs, applications, the audit log and everything in money; decides held escrows, runs the escrow kill switch, and starts payout runs and retries.
   - support: read-only lookups, including verification records; no actions and no audit log.
   - super_admin: everything above, plus user and role management.

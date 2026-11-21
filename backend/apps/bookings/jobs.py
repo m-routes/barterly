@@ -34,6 +34,8 @@ from apps.money.escrow import auto_release
 from apps.notifications.reminders import send_reminders as send_booking_reminders
 from apps.notifications.services import dispatch_due
 from apps.offers.models import Offer, OfferStatus
+from apps.reviews import reputation as reputations
+from apps.reviews import services as reviews
 from apps.verification.services.cases import expire_due_cases
 from apps.verification.services.kyc import sync_pending
 
@@ -140,6 +142,8 @@ JOBS: dict[str, Callable[..., dict]] = {
     "billing_dunning": lambda now: billing_dunning(now),
     "billing_invoices": lambda now: finish_invoices(now),
     "escrow_auto_release": lambda now: auto_release(now),
+    "reviews_close_windows": lambda now: reviews.close_windows(now),
+    "reputation_recompute": lambda now: reputations.recompute_all(now),
     "deliverable_reminders": lambda now: deliverables.send_reminders(now),
     "deliverable_stats": lambda now: deliverables.refresh_all(now),
     "payout_run": lambda now: payouts.scheduled(now),

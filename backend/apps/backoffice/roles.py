@@ -46,13 +46,17 @@ PERMISSIONS: dict[str, list[str]] = {
         "attendance.view_checkin",
         "attendance.review_checkin",
     ],
-    # Verification and fraud: decides cases, sees badges and provider events.
+    # Verification, fraud and reviews: decides cases, sees badges and provider events,
+    # moderates held and reported reviews.
     AdminRole.TRUST: [
         *LOOKUP,
         *VERIFICATION_READ,
         "verification.view_kycwebhookevent",
         "backoffice.review_verification",
         "backoffice.view_audit_log",
+        "reviews.view_review",
+        "reviews.view_reviewreport",
+        "reviews.moderate_review",
     ],
     # Money: reads gigs (stipends), the ledger and escrows, and the audit trail of money
     # changes; decides held escrows and runs the kill switch.

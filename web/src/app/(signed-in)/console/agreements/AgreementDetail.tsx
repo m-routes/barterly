@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BookingReviews } from "@/components/reviews/BookingReviews";
 import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
@@ -23,6 +24,8 @@ import { formatDate } from "@/lib/format";
 import { useLoad } from "@/lib/hooks/useLoad";
 
 import { BookingPanel } from "./BookingPanel";
+
+const REVIEWABLE: ReadonlyArray<string> = ["completed", "reviewed"];
 import { useSession } from "@/lib/session/session";
 import { MEALS_LABELS, STAY_TYPE_LABELS, options } from "@/lib/vendor/labels";
 
@@ -96,6 +99,9 @@ export function AgreementDetail({ config, phoneSignIn }: Props) {
 
       <div className="stack">
         <BookingPanel agreement={agreement} onChange={() => void reload()} />
+        {REVIEWABLE.includes(agreement.booking_status) ? (
+          <BookingReviews bookingId={agreement.booking} />
+        ) : null}
         {agreement.versions.map((version) => (
           <VersionCard
             key={version.id}
