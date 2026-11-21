@@ -15,6 +15,7 @@ from apps.bookings import lifecycle
 from apps.bookings.lifecycle import HOLDS_SLOT, Actor, BookingStatus
 from apps.bookings.models import Booking, BookingEvent
 from apps.common.events import DomainEvent, publish
+from apps.common.permissions import staff_can
 from apps.common.services.audit import log_action, snapshot
 from apps.gigs.models import Gig
 from apps.gigs.services import on_confirmed_bookings_changed
@@ -37,7 +38,7 @@ def actor_for(user, booking: Booking) -> str | None:
         return Actor.TALENT
     if booking.vendor_id == user.pk:
         return Actor.VENDOR
-    if getattr(user, "is_admin_role", False):
+    if staff_can(user, "bookings.change_booking"):
         return Actor.ADMIN
     return None
 

@@ -19,6 +19,8 @@ CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
 # Check-in passes must be signed with the real key, never one derived from SECRET_KEY.
 ATTENDANCE_SIGNING_KEY = env_str("ATTENDANCE_SIGNING_KEY")
+# Field encryption keys must be real ones, never derived from SECRET_KEY.
+FIELD_ENCRYPTION_KEYS = env_str("FIELD_ENCRYPTION_KEYS")
 
 DATABASES = {"default": database_config(ssl_require=True, pool=True)}
 

@@ -4,6 +4,7 @@ import 'package:barterly/src/api/api_error.dart';
 import 'package:barterly/src/attendance/attendance_models.dart';
 import 'package:barterly/src/attendance/location.dart';
 import 'package:barterly/src/attendance/totp.dart';
+import 'package:barterly/src/platform/device_security.dart';
 import 'package:barterly/src/providers.dart';
 import 'package:barterly/src/theme/tokens.dart';
 import 'package:barterly/src/widgets/feedback.dart';
@@ -106,24 +107,26 @@ class _CheckInPassScreenState extends ConsumerState<CheckInPassScreen> {
   Widget build(BuildContext context) {
     final now = ref.watch(clockProvider)();
     final pass = _pass;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Check-in pass')),
-      body: switch ((pass, _loading, _error)) {
-        (_, true, _) => const LoadingView(label: 'Getting your pass…'),
-        (null, _, final String error) ||
-        (_, _, final String error) => ErrorView(
-          title: "We couldn't get your pass",
-          message: error,
-          onRetry: () => _load(refresh: true),
-        ),
-        (final CheckInPass p, _, _) => _PassBody(
-          pass: p,
-          now: now,
-          offline: _offline,
-          onRefresh: () => _load(refresh: true),
-        ),
-        _ => const SizedBox.shrink(),
-      },
+    return SecureScreen(
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Check-in pass')),
+        body: switch ((pass, _loading, _error)) {
+          (_, true, _) => const LoadingView(label: 'Getting your pass…'),
+          (null, _, final String error) ||
+          (_, _, final String error) => ErrorView(
+            title: "We couldn't get your pass",
+            message: error,
+            onRetry: () => _load(refresh: true),
+          ),
+          (final CheckInPass p, _, _) => _PassBody(
+            pass: p,
+            now: now,
+            offline: _offline,
+            onRefresh: () => _load(refresh: true),
+          ),
+          _ => const SizedBox.shrink(),
+        },
+      ),
     );
   }
 }

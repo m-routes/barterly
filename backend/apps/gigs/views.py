@@ -4,7 +4,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.common.permissions import IsAdminRole, IsTalent, IsVendor
+from apps.common.permissions import IsStaffWith, IsTalent, IsVendor, staff_can
 from apps.common.serializers import ErrorSerializer
 from apps.discovery.services import live_gigs
 from apps.discovery.views import DISCOVER_SCHEMA, discover
@@ -112,13 +112,13 @@ class MyGigsView(generics.ListAPIView):
     ),
 )
 class GigDetailView(generics.RetrieveUpdateAPIView):
-    permission_classes = [IsVendor | IsAdminRole]
+    permission_classes = [IsVendor | IsStaffWith("gigs.view_gig")]
     serializer_class = GigSerializer
     lookup_url_kwarg = "gig_id"
     http_method_names = ["get", "patch", "options"]
 
     def get_queryset(self):
-        if self.request.user.is_admin_role:
+        if staff_can(self.request.user, "gigs.view_gig"):
             return _gigs()
         return _gigs().filter(vendor=self.request.user)
 
@@ -148,7 +148,7 @@ class GigDetailView(generics.RetrieveUpdateAPIView):
     )
 )
 class GigPublicView(generics.RetrieveAPIView):
-    permission_classes = [IsTalent | IsAdminRole]
+    permission_classes = [IsTalent | IsStaffWith("gigs.view_gig")]
     serializer_class = GigListingSerializer
     lookup_url_kwarg = "gig_id"
 
@@ -157,7 +157,7 @@ class GigPublicView(generics.RetrieveAPIView):
 
 
 class GigStatusView(APIView):
-    permission_classes = [IsVendor | IsAdminRole]
+    permission_classes = [IsVendor | IsStaffWith("backoffice.review_gigs")]
 
     @extend_schema(
         operation_id="gigs_status_change",
@@ -198,7 +198,7 @@ class GigStatusView(APIView):
 
 
 class AdminGigListView(generics.ListAPIView):
-    permission_classes = [IsAdminRole]
+    permission_classes = [IsStaffWith("gigs.view_gig")]
     serializer_class = GigSerializer
 
     def get_queryset(self):

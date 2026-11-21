@@ -139,7 +139,7 @@ export function wholeNumber(value: string): number | null {
 export function rupees(value: string): number | null {
   const trimmed = value.replace(/[,\s₹]/g, "");
   if (trimmed === "") return null;
-  return /^\d+(\.\d{1,2})?$/.test(trimmed) ? Number(trimmed) : Number.NaN;
+  return /^\d{1,12}$|^\d{1,12}\.\d{1,2}$/.test(trimmed) ? Number(trimmed) : Number.NaN;
 }
 
 const orNull = (value: string) => (value.trim() === "" ? null : value);

@@ -6,8 +6,10 @@ from rest_framework import serializers
 
 from apps.applications.serializers import ApplicationListItemSerializer, ApplicationSerializer
 from apps.discovery.serializers import FitSerializer
+from apps.hiring.autoreject import MAX_RULES
 from apps.hiring.models import MAX_SLOTS, MAX_TAGS, ApplicationNote, SavedApplicantFilter
 from apps.hiring.templates import MAX_MESSAGE, TEMPLATES, VENDOR_REASONS
+from apps.profiles.constants import MAX_LANGUAGES, MAX_SKILLS
 from apps.verification.constants import BadgeKind
 
 
@@ -104,7 +106,9 @@ class TagsSerializer(serializers.Serializer):
 
 
 class FilterParamsSerializer(serializers.Serializer):
-    status = serializers.CharField(required=False, allow_blank=True, help_text="Comma list.")
+    status = serializers.CharField(
+        required=False, allow_blank=True, max_length=200, help_text="Comma list."
+    )
     min_score = serializers.IntegerField(required=False, min_value=0, max_value=100)
     sort = serializers.ChoiceField(choices=["fit", "newest", "oldest"], required=False)
     tag = serializers.CharField(required=False, max_length=30)
@@ -128,13 +132,17 @@ class SavedFilterSerializer(serializers.ModelSerializer):
 
 class RuleSerializer(serializers.Serializer):
     type = serializers.ChoiceField(choices=["language", "skill", "min_followers", "min_stay_days"])
-    languages = serializers.ListField(child=serializers.CharField(), required=False)
-    skills = serializers.ListField(child=serializers.CharField(), required=False)
+    languages = serializers.ListField(
+        child=serializers.CharField(max_length=10), max_length=MAX_LANGUAGES, required=False
+    )
+    skills = serializers.ListField(
+        child=serializers.CharField(max_length=60), max_length=MAX_SKILLS, required=False
+    )
     value = serializers.IntegerField(required=False)
 
 
 class RulesSerializer(serializers.Serializer):
-    rules = RuleSerializer(many=True)
+    rules = RuleSerializer(many=True, max_length=MAX_RULES)
 
 
 class ProposeInterviewSerializer(serializers.Serializer):

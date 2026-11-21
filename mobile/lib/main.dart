@@ -5,6 +5,7 @@ import 'package:barterly/src/auth/phone_auth.dart';
 import 'package:barterly/src/config/env.dart';
 import 'package:barterly/src/crash/crash_reporter.dart';
 import 'package:barterly/src/notifications/push.dart';
+import 'package:barterly/src/platform/device_security.dart';
 import 'package:barterly/src/providers.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -45,6 +46,9 @@ Future<void> main() async {
         await crash.report(error, stack, context: 'firebase_init');
       }
     }
+
+    // A signal in error reports, never a block (docs/security.md).
+    unawaited(reportDeviceIntegrity(DeviceSecurity.instance, crash));
 
     runApp(
       ProviderScope(

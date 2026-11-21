@@ -178,7 +178,7 @@ class TestTalentChecks:
 
 class TestReview:
     def test_queue_detail_and_decisions(self):
-        admin = AdminUserFactory()
+        admin = AdminUserFactory(roles=["trust"])
         oldest = CaseFactory(check_type=CheckType.BUSINESS)
         CaseFactory(check_type=CheckType.REFERENCE, status=CaseStatus.APPROVED)
         client = client_for(admin)
@@ -213,7 +213,9 @@ class TestReview:
         assert missing.status_code == 404
 
     def test_bad_user_filter_is_400(self):
-        response = client_for(AdminUserFactory()).get(f"{BASE}/admin/cases/", {"user": "nope"})
+        response = client_for(AdminUserFactory(roles=["trust"])).get(
+            f"{BASE}/admin/cases/", {"user": "nope"}
+        )
         assert response.status_code == 400
 
     def test_only_admins(self):

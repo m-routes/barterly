@@ -49,6 +49,7 @@ AUTH_USER_MODEL = "accounts.User"
 MIDDLEWARE = [
     "apps.common.middleware.RequestIDMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "apps.common.middleware.SecurityHeadersMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -93,6 +94,20 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+
+# --- Request limits (ASVS 13.1 / 12.1): reject oversized bodies before parsing.
+# JSON bodies are small; files go straight to Cloud Storage via signed URLs.
+DATA_UPLOAD_MAX_MEMORY_SIZE = env_int("DATA_UPLOAD_MAX_MEMORY_SIZE", 1024 * 1024)
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 500
+DATA_UPLOAD_MAX_NUMBER_FILES = 5
+FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
+# Cross-Origin-Opener-Policy (Django's default, stated for the record).
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+# The API is called same-origin by the web BFF and natively by the app: no CORS.
+# Origins allowed to show admin images (e.g. the media bucket), for the admin CSP.
+CSP_MEDIA_ORIGINS = ["https://storage.googleapis.com"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
@@ -100,7 +115,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_SCHEMA_CLASS": "apps.common.schema.BarterlyAutoSchema",
     # Apps send the JWT from /api/v1/auth/exchange/; the session is for the Django admin.
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -147,7 +162,7 @@ SIMPLE_JWT = {
 
 # Sign-in token verifier (see apps.accounts.auth.verifiers). Set in code, not from the
 # environment, so a deployed service can't be pointed at the test fake.
-AUTH_TOKEN_VERIFIER = "apps.accounts.auth.verifiers.FirebaseTokenVerifier"  # noqa: S105 (class path)
+AUTH_TOKEN_VERIFIER = "apps.accounts.auth.verifiers.FirebaseTokenVerifier"  # nosec B105  # noqa: S105 (class path)
 FIREBASE_PROJECT_ID = env_str("FIREBASE_PROJECT_ID", "")
 FIREBASE_CHECK_REVOKED = env_bool("FIREBASE_CHECK_REVOKED", False)
 
@@ -233,6 +248,16 @@ MEDIA_READ_URL_SECONDS = env_int("MEDIA_READ_URL_SECONDS", 300)
 MEDIA_MAX_PENDING_UPLOADS = env_int("MEDIA_MAX_PENDING_UPLOADS", 20)
 # Serve only files a virus scanner passed. Off until a real scanner is wired up.
 MEDIA_REQUIRE_SCAN = env_bool("MEDIA_REQUIRE_SCAN", False)
+# ClamAV (apps.media.scanning.ClamdVirusScanner). Setting CLAMAV_HOST (the sidecar is
+# localhost) switches scanning on and, unless overridden, requires it.
+CLAMAV_HOST = env_str("CLAMAV_HOST", "")
+CLAMAV_PORT = env_int("CLAMAV_PORT", 3310)
+CLAMAV_TIMEOUT_SECONDS = env_int("CLAMAV_TIMEOUT_SECONDS", 60)
+if CLAMAV_HOST:
+    MEDIA_VIRUS_SCANNER = "apps.media.scanning.ClamdVirusScanner"
+    MEDIA_REQUIRE_SCAN = env_bool("MEDIA_REQUIRE_SCAN", True)
+# Signed links stay short-lived (ASVS 12.5); test_signed_url_lifetimes holds the cap.
+MEDIA_MAX_SIGNED_URL_SECONDS = 900
 
 # Verification (apps.verification). The KYC provider is a code setting like the token
 # verifier: deployed services use the real provider (a stub until one is chosen, which
@@ -312,6 +337,9 @@ PAYOUT_ON_DEMAND_EVERY_MINUTES = env_int("PAYOUT_ON_DEMAND_EVERY_MINUTES", 10)
 # environments; local runs derive one from SECRET_KEY). Rotate by moving the old public
 # key into ATTENDANCE_PREVIOUS_PUBLIC_KEYS for a day.
 ATTENDANCE_SIGNING_KEY = env_str("ATTENDANCE_SIGNING_KEY", "")
+# Field-level encryption (apps.common.encryption): "id:base64(32 bytes)" pairs, comma
+# separated, newest first. Secret Manager when deployed; local runs derive a key.
+FIELD_ENCRYPTION_KEYS = env_str("FIELD_ENCRYPTION_KEYS", "")
 ATTENDANCE_PREVIOUS_PUBLIC_KEYS = env_list("ATTENDANCE_PREVIOUS_PUBLIC_KEYS", "")
 ATTENDANCE_PASS_HOURS = env_int("ATTENDANCE_PASS_HOURS", 48)
 ATTENDANCE_GEOFENCE_FLAG_METERS = env_int("ATTENDANCE_GEOFENCE_FLAG_METERS", 1000)
@@ -396,7 +424,7 @@ DISCOVERY_MAX_CANDIDATES = env_int("DISCOVERY_MAX_CANDIDATES", 1000)
 
 # Scheduled jobs: Cloud Scheduler calls POST /api/v1/jobs/<name>/ with an OIDC token for
 # the scheduler service account (apps/bookings/scheduler.py). Terraform sets both values.
-SCHEDULER_TOKEN_VERIFIER = "apps.bookings.scheduler.GoogleOidcVerifier"  # noqa: S105 (a class path)
+SCHEDULER_TOKEN_VERIFIER = "apps.bookings.scheduler.GoogleOidcVerifier"  # nosec B105  # noqa: S105 (a class path)
 SCHEDULER_AUDIENCE = env_str("SCHEDULER_AUDIENCE", "")
 SCHEDULER_INVOKER_EMAIL = env_str("SCHEDULER_INVOKER_EMAIL", "")
 

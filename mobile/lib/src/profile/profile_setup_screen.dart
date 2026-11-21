@@ -1,5 +1,6 @@
 import 'package:barterly/src/api/api_error.dart';
 import 'package:barterly/src/auth/session.dart';
+import 'package:barterly/src/platform/device_security.dart';
 import 'package:barterly/src/profile/talent_profile.dart';
 import 'package:barterly/src/profile/validators.dart';
 import 'package:barterly/src/providers.dart';
@@ -33,26 +34,28 @@ class ProfileSetupScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final data = ref.watch(setupDataProvider);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(editing ? 'Edit profile' : 'Set up your profile'),
-      ),
-      body: SafeArea(
-        child: switch (data) {
-          AsyncData(:final value) => TalentProfileForm(
-            initial: value.profile,
-            skills: value.skills,
-            editing: editing,
-          ),
-          AsyncError(:final error) => ErrorView(
-            title: "We couldn't load your profile",
-            message: error is ApiError
-                ? error.userMessage
-                : 'Something went wrong. Try again.',
-            onRetry: () => ref.invalidate(setupDataProvider),
-          ),
-          _ => const LoadingView(label: 'Loading your profile…'),
-        },
+    return SecureScreen(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(editing ? 'Edit profile' : 'Set up your profile'),
+        ),
+        body: SafeArea(
+          child: switch (data) {
+            AsyncData(:final value) => TalentProfileForm(
+              initial: value.profile,
+              skills: value.skills,
+              editing: editing,
+            ),
+            AsyncError(:final error) => ErrorView(
+              title: "We couldn't load your profile",
+              message: error is ApiError
+                  ? error.userMessage
+                  : 'Something went wrong. Try again.',
+              onRetry: () => ref.invalidate(setupDataProvider),
+            ),
+            _ => const LoadingView(label: 'Loading your profile…'),
+          },
+        ),
       ),
     );
   }

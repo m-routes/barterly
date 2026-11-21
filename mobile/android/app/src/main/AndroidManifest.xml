@@ -8,7 +8,13 @@
     <!-- Check-in pass: where the talent is, for the host's records (optional). -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <!-- No backups (Android 11 and below: allowBackup; 12+: dataExtractionRules), and
+         HTTPS only. -->
     <application
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:usesCleartextTraffic="false"
         android:label="barterly"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">

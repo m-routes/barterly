@@ -36,7 +36,7 @@ export const propertySchema = z.object({
   pincode: z
     .string()
     .trim()
-    .regex(/^([1-9][0-9]{5})?$/, "A PIN code is 6 digits and doesn't start with 0."),
+    .regex(/^$|^[1-9][0-9]{5}$/, "A PIN code is 6 digits and doesn't start with 0."),
   amenities: z.array(z.enum(AMENITIES)),
   house_rules: z
     .string()

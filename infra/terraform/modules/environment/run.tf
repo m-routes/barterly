@@ -74,7 +74,7 @@ resource "google_cloud_run_v2_service" "api" {
           GS_SA_EMAIL      = google_service_account.api.email
           WEB_CONCURRENCY  = tostring(var.api_workers)
           DB_POOL_MAX_SIZE = tostring(var.db_pool_max_size)
-        })
+        }, var.clamav_enabled ? { CLAMAV_HOST = "localhost" } : {})
         content {
           name  = env.key
           value = env.value
@@ -171,6 +171,16 @@ resource "google_cloud_run_v2_service" "api" {
         }
       }
 
+      env {
+        name = "FIELD_ENCRYPTION_KEYS"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.this["field_encryption_keys"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
       # Post stats. Each is wired only once its secret has a value (a secret with no
       # version would stop the revision starting): set the variables after adding them.
       dynamic "env" {
@@ -199,6 +209,34 @@ resource "google_cloud_run_v2_service" "api" {
         }
       }
 
+      # Optional integrations (secrets.tf), wired once the secret has a value.
+      dynamic "env" {
+        for_each = {
+          for name, secret in {
+            SENTRY_DSN          = var.sentry_enabled ? "sentry_dsn" : ""
+            EMAIL_HOST_PASSWORD = var.email_enabled ? "email_host_password" : ""
+            KYC_WEBHOOK_SECRET  = var.kyc_webhook_enabled ? "kyc_webhook_secret" : ""
+          } : name => secret if secret != ""
+        }
+        content {
+          name = env.key
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.this[env.value].secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.sentry_enabled ? ["1"] : []
+        content {
+          name  = "SENTRY_ENABLED"
+          value = env.value
+        }
+      }
+
       # TCP only: an HTTP probe would hit the database and fail during a Cloud SQL restart.
       volume_mounts {
         name       = "cloudsql"
@@ -212,6 +250,31 @@ resource "google_cloud_run_v2_service" "api" {
         period_seconds    = 2
         failure_threshold = 30
         timeout_seconds   = 1
+      }
+    }
+
+    # Optional ClamAV sidecar (apps.media.scanning.ClamdVirusScanner). The API reaches
+    # it on localhost:3310. clamd holds its signatures in memory, so it needs ~2 GiB.
+    dynamic "containers" {
+      for_each = var.clamav_enabled ? [1] : []
+      content {
+        name  = "clamav"
+        image = var.clamav_image
+        resources {
+          limits = {
+            cpu    = "1"
+            memory = "2Gi"
+          }
+          cpu_idle = true
+        }
+        startup_probe {
+          tcp_socket {
+            port = 3310
+          }
+          initial_delay_seconds = 10
+          period_seconds        = 10
+          failure_threshold     = 30
+        }
       }
     }
   }
@@ -384,6 +447,17 @@ resource "google_cloud_run_v2_job" "migrate" {
           value_source {
             secret_key_ref {
               secret  = google_secret_manager_secret.this["attendance_signing_key"].secret_id
+              version = "latest"
+            }
+          }
+        }
+
+        # The migration's reverse step and reencrypt_fields need the keys.
+        env {
+          name = "FIELD_ENCRYPTION_KEYS"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.this["field_encryption_keys"].secret_id
               version = "latest"
             }
           }

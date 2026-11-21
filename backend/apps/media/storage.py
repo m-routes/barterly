@@ -18,6 +18,17 @@ from django.utils import timezone
 from django.utils.module_loading import import_string
 
 
+def check_link_lifetime(expires) -> None:
+    """Signed links are short-lived (MEDIA_MAX_SIGNED_URL_SECONDS); longer is a bug."""
+    from django.conf import settings
+
+    if expires.total_seconds() > settings.MEDIA_MAX_SIGNED_URL_SECONDS:
+        raise ValueError(
+            f"Signed links last at most {settings.MEDIA_MAX_SIGNED_URL_SECONDS}s, "
+            f"not {int(expires.total_seconds())}s."
+        )
+
+
 class StorageNotConfigured(Exception):
     pass
 
@@ -118,6 +129,7 @@ class GCSMediaStorage:
         return {"service_account_email": email, "access_token": self._credentials.token}
 
     def signed_upload(self, key, *, content_type, max_bytes, md5_b64, expires):
+        check_link_lifetime(expires)
         headers = upload_headers(content_type, max_bytes, md5_b64)
         url = self._bucket.blob(key).generate_signed_url(
             version="v4",
@@ -131,6 +143,7 @@ class GCSMediaStorage:
         return SignedUpload(url=url, expires_at=timezone.now() + expires, headers=headers)
 
     def signed_read_url(self, key, *, expires, download_name=None, attachment=False):
+        check_link_lifetime(expires)
         how = "attachment" if attachment else "inline"
         disposition = f'{how}; filename="{download_name}"' if download_name else None
         return self._bucket.blob(key).generate_signed_url(

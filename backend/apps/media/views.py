@@ -5,6 +5,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.common.permissions import staff_can
 from apps.common.serializers import ErrorSerializer
 from apps.media.models import MediaFile
 from apps.media.serializers import (
@@ -50,7 +51,9 @@ class StorageUnavailable(exceptions.APIException):
 
 def _own_media(request: Request, media_id) -> MediaFile:
     media = MediaFile.objects.filter(pk=media_id).first()
-    if media is None or not (media.owner_id == request.user.pk or request.user.is_admin_role):
+    if media is None or not (
+        media.owner_id == request.user.pk or staff_can(request.user, "media.view_mediafile")
+    ):
         raise exceptions.NotFound("No such file.")
     return media
 

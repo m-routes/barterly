@@ -45,3 +45,71 @@ def _tag_sentry(request_id: str) -> None:
     import sentry_sdk
 
     sentry_sdk.set_tag("request_id", request_id)
+
+
+class SecurityHeadersMiddleware:
+    """Content-Security-Policy, Permissions-Policy and Cross-Origin-Resource-Policy.
+
+    The API only returns JSON and files, so it gets the strictest policy: nothing may
+    load, nothing may frame it. The Django admin (the back office) and, outside
+    production, the Swagger docs get a policy that allows exactly what they load.
+    Django's SecurityMiddleware already sets HSTS, nosniff, Referrer-Policy and COOP;
+    XFrameOptionsMiddleware sets X-Frame-Options: DENY.
+    """
+
+    API_POLICY = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+    PERMISSIONS_POLICY = (
+        "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), "
+        "microphone=(), payment=(), usb=(), interest-cohort=()"
+    )
+
+    def __init__(self, get_response):
+        from django.conf import settings
+
+        self.get_response = get_response
+        static = _origin(settings.STATIC_URL)
+        media = " ".join(getattr(settings, "CSP_MEDIA_ORIGINS", []))
+        self.admin_policy = "; ".join(
+            [
+                "default-src 'self'",
+                f"script-src 'self' {static}".strip(),
+                # The admin's templates use a few style attributes.
+                f"style-src 'self' 'unsafe-inline' {static}".strip(),
+                f"img-src 'self' data: {static} {media}".strip(),
+                f"font-src 'self' {static}".strip(),
+                "object-src 'none'",
+                "frame-ancestors 'none'",
+                "base-uri 'self'",
+                "form-action 'self'",
+            ]
+        )
+        # drf-spectacular's Swagger UI loads from jsDelivr and starts with an inline
+        # script. Only reachable where API_DOCS_ENABLED (never production).
+        self.docs_policy = (
+            "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "img-src 'self' data: https://cdn.jsdelivr.net; frame-ancestors 'none'; "
+            "object-src 'none'; base-uri 'self'"
+        )
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        path = request.path
+        if path.startswith("/admin/"):
+            policy = self.admin_policy
+        elif path.startswith("/api/docs/"):
+            policy = self.docs_policy
+        else:
+            policy = self.API_POLICY
+        response.headers.setdefault("Content-Security-Policy", policy)
+        response.headers.setdefault("Permissions-Policy", self.PERMISSIONS_POLICY)
+        response.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
+        return response
+
+
+def _origin(url: str) -> str:
+    """'https://host/path/' → 'https://host'; relative URLs → ''."""
+    if "://" not in url:
+        return ""
+    scheme, rest = url.split("://", 1)
+    return f"{scheme}://{rest.split('/', 1)[0]}"

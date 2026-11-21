@@ -16,6 +16,7 @@ from django.utils import timezone
 
 from apps.accounts.models import Role
 from apps.accounts.services.phone import normalize_phone
+from apps.common.encryption import EncryptedTextField
 from apps.common.models import SoftDeleteModel, TimeStampedModel
 from apps.profiles.constants import (
     LANGUAGES,
@@ -145,8 +146,9 @@ class TalentProfile(BaseProfile):
         help_text='ISO 639 codes, e.g. ["en", "hi"]',
     )
     home_city = models.CharField(max_length=80, blank=True)
-    emergency_contact_name = models.CharField(max_length=80, blank=True)
-    emergency_contact_phone = models.CharField(
+    # Encrypted at rest: shared with no one until an SOS (docs/threat-model.md).
+    emergency_contact_name = EncryptedTextField(max_length=80, blank=True)
+    emergency_contact_phone = EncryptedTextField(
         max_length=16, blank=True, validators=[validate_phone], help_text="E.164"
     )
     date_of_birth = models.DateField(null=True, blank=True, validators=[validate_adult])

@@ -68,6 +68,7 @@ class PropertySerializer(serializers.ModelSerializer):
 
     amenities = serializers.ListField(
         child=serializers.ChoiceField(choices=sorted(AMENITIES.items())),
+        max_length=len(AMENITIES),
         required=False,
         help_text="Amenity codes.",
     )

@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from apps.gigs.constants import MAX_DELIVERABLES
 from apps.offers import terms as offer_terms
 from apps.offers.models import Offer, OfferStatus, Party
 from apps.offers.terms import (
@@ -101,7 +102,9 @@ class CounterChangesSerializer(serializers.Serializer):
     stipend_amount = serializers.DecimalField(
         max_digits=10, decimal_places=2, required=False, allow_null=True
     )
-    deliverables = TermsDeliverableSerializer(many=True, required=False)
+    deliverables = TermsDeliverableSerializer(
+        many=True, required=False, max_length=MAX_DELIVERABLES
+    )
     usage_rights = UsageRightsSerializer(required=False, allow_null=True)
 
 
