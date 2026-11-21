@@ -12,3 +12,4 @@
 # this one stays in git history: restrict it to the iOS bundle id in Google Cloud
 # (APIs & Services → Credentials) or rotate it. See docs/security.md.
 c723362cec82075588bf092e5e45359cce4713bb:mobile/env/local.json:gcp-api-key:6
+17d3101c123fee7f14cc1ec1a842c67d47537852:mobile/env/local.json:gcp-api-key:6
