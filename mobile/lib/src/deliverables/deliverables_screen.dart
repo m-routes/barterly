@@ -111,15 +111,29 @@ class _DeliverableCard extends StatelessWidget {
               Tag(label: item.status.label),
             ],
           ),
-          Text('Due ${DateFormat('EEE d MMM').format(item.dueDate)}'),
-          if (item.notes.isNotEmpty)
-            Text(item.notes, style: Theme.of(context).textTheme.bodySmall),
+          _Brief(item: item),
           if (item.status == DeliverableStatus.changesRequested &&
               latest != null &&
               latest.reviewNote.isNotEmpty)
-            Text(
-              'Your host: ${latest.reviewNote}',
-              style: const TextStyle(color: BarterlyColors.danger),
+            SurfaceCard(
+              color: BarterlyColors.dangerSoft,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Changes asked for',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  Text('Your host: ${latest.reviewNote}'),
+                  Text(
+                    item.changeRoundsLeft > 0
+                        ? 'Your host can ask for changes '
+                              '${item.changeRoundsLeft} more time(s).'
+                        : 'This is the last round of changes.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
             ),
           for (final s in item.stats)
             Text(
@@ -167,6 +181,46 @@ class _DeliverableCard extends StatelessWidget {
   }
 }
 
+const _platforms = {
+  'instagram': 'Instagram',
+  'youtube': 'YouTube',
+  'google': 'Google Maps',
+};
+
+/// What the host asked for: the deliverable, where it goes, when, and notes.
+class _Brief extends StatelessWidget {
+  const new({required this.item});
+
+  final Deliverable item;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final where = _platforms[item.platform];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 2,
+      children: [
+        Text('Brief', style: theme.textTheme.titleSmall),
+        Text(
+          [
+            if (where != null) 'Post on $where',
+            'due ${DateFormat('EEE d MMM').format(item.dueDate)}',
+          ].join(', '),
+        ),
+        if (item.notes.isNotEmpty) Text('“${item.notes}”'),
+        if (item.disclosureRequired)
+          Text(
+            item.platform == 'google'
+                ? 'Say in the review that you stayed for free.'
+                : 'Add #collab or #ad, or the paid partnership tag.',
+            style: theme.textTheme.bodySmall,
+          ),
+      ],
+    );
+  }
+}
+
 class _SubmitSheet extends ConsumerStatefulWidget {
   const new({required this.item});
 
@@ -183,6 +237,8 @@ class _SubmitSheetState extends ConsumerState<_SubmitSheet> {
   final _note = TextEditingController();
   final _files = <String>[];
   bool _labelled = false;
+  bool _matchesBrief = false;
+  bool _isPublic = false;
   bool _busy = false;
   String? _error;
 
@@ -247,8 +303,13 @@ class _SubmitSheetState extends ConsumerState<_SubmitSheet> {
   Widget build(BuildContext context) {
     final item = widget.item;
     final hasSomething = _link.text.trim().isNotEmpty || _files.isNotEmpty;
+    final hasLink = _link.text.trim().isNotEmpty;
     final ready =
-        hasSomething && (!item.disclosureRequired || _labelled) && !_busy;
+        hasSomething &&
+        _matchesBrief &&
+        (!hasLink || _isPublic) &&
+        (!item.disclosureRequired || _labelled) &&
+        !_busy;
     return Padding(
       padding: EdgeInsets.fromLTRB(
         20,
@@ -295,6 +356,24 @@ class _SubmitSheetState extends ConsumerState<_SubmitSheet> {
                 labelText: 'Note for your host (optional)',
               ),
             ),
+            Text(
+              'Before you hand it in',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _matchesBrief,
+              onChanged: (v) => setState(() => _matchesBrief = v ?? false),
+              title: const Text('It matches the brief'),
+              subtitle: item.notes.isEmpty ? null : Text('“${item.notes}”'),
+            ),
+            if (hasLink)
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _isPublic,
+                onChanged: (v) => setState(() => _isPublic = v ?? false),
+                title: const Text('The post is public and the link opens'),
+              ),
             if (item.disclosureRequired)
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,

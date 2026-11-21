@@ -96,8 +96,15 @@ void main() {
     await openDeliverables(tester, api);
 
     expect(find.byType(DeliverablesScreen), findsOneWidget);
-    expect(find.text('Changes asked for'), findsOneWidget);
+    expect(find.text('Changes asked for'), findsWidgets);
     expect(find.text('Your host: Brighter colours please'), findsOneWidget);
+    expect(
+      find.text('Your host can ask for changes 1 more time(s).'),
+      findsOneWidget,
+    );
+    // The brief: where, when, and the host's notes.
+    expect(find.text('Post on Instagram, due Sun 20 Dec'), findsOneWidget);
+    expect(find.text('“Show the rooftop”'), findsOneWidget);
     await tester.tap(find.text('Hand in again'));
     await tester.pumpAndSettle();
     await tester.enterText(
@@ -107,8 +114,22 @@ void main() {
     await tester.pumpAndSettle();
     final handIn = find.widgetWithText(FilledButton, 'Hand in');
     expect(tester.widget<FilledButton>(handIn).onPressed, isNull);
-    await tester.tap(find.byType(CheckboxListTile));
-    await tester.pumpAndSettle();
+    // The checklist: every box, before it can go.
+    for (final item in [
+      'It matches the brief',
+      'The post is public and the link opens',
+      'The post has the collaboration label',
+    ]) {
+      final box = find.ancestor(
+        of: find.textContaining(item),
+        matching: find.byType(CheckboxListTile),
+      );
+      await tester.ensureVisible(box);
+      expect(tester.widget<FilledButton>(handIn).onPressed, isNull);
+      await tester.tap(box);
+      await tester.pumpAndSettle();
+    }
+    await tester.ensureVisible(handIn);
     await tester.tap(handIn);
     await tester.pumpAndSettle();
     expect(sent, {

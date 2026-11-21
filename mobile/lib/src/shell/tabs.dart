@@ -3,6 +3,7 @@ import 'package:barterly/src/profile/talent_profile.dart';
 import 'package:barterly/src/providers.dart';
 import 'package:barterly/src/router.dart';
 import 'package:barterly/src/theme/tokens.dart';
+import 'package:barterly/src/wallet/wallet_screen.dart';
 import 'package:barterly/src/widgets/states.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,14 +16,7 @@ class WalletTab extends StatelessWidget {
   const new({super.key});
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Wallet')),
-    body: const EmptyState(
-      icon: Icons.account_balance_wallet_outlined,
-      title: 'Nothing here yet',
-      message: 'Stipends and payments for paid gigs will be tracked here.',
-    ),
-  );
+  Widget build(BuildContext context) => const WalletScreen();
 }
 
 final FutureProvider<TalentProfile?> myProfileProvider =

@@ -558,6 +558,24 @@ Flutter 3.47 with Riverpod 3, go_router 18 and Dio. Material comes from the stan
 - The repositories use one Dio client.
 - Tests override the providers, or swap in a fake HTTP adapter, so no screen needs a network.
 
+**Money and work screens.**
+- **Wallet tab:**
+  - Balances: held in escrow (with the estimated net), available, on its way, paid out, and TDS this financial year.
+  - Why payouts are on hold, and "Pay out now".
+  - The masked payout account with its verification status and any 24-hour change hold. Linking a UPI id or bank account is validated on the phone the same way the server validates it; full details go to the payout provider and are never shown again.
+  - History of releases and payouts, filterable and paged.
+- **Trip screens:**
+  - The check-in pass: a QR and live code that work offline.
+  - The hour log.
+  - Deliverables, each with its brief (where, when, the host's notes) and a hand-in checklist: matches the brief, the post is public, the collaboration label.
+  - Reviews.
+
+**Location permission.**
+- Location is asked for only when needed: on opening the check-in pass, after a screen explains why, with "Not now".
+- It's asked once per booking, and never again once refused.
+- It's always "while in use". Check-in never needs background location.
+- Background location is used only while a live location share is active (trust and safety).
+
 **Sign-in.**
 1. Firebase phone OTP proves the number. Android may read the SMS itself.
 2. The Firebase ID token is exchanged once at `/api/v1/auth/exchange/`, and the Firebase session is dropped.

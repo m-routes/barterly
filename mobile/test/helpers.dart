@@ -48,6 +48,24 @@ final Map<String, Handler> talentDefaults = {
   'GET /api/v1/applications/mine/': (_) => ok(<Object?>[]),
   'GET /api/v1/gigs/saved-searches/': (_) => ok(<Object?>[]),
   'GET /api/v1/notifications/unread-count/': (_) => ok({'unread': 0}),
+  'GET /api/v1/wallet/': (_) => ok(emptyWallet),
+  'GET /api/v1/wallet/history/': (_) =>
+      ok({'count': 0, 'next': null, 'previous': null, 'results': <Object?>[]}),
+};
+
+/// A new talent's wallet: nothing held, nothing owed, no payout account.
+const Map<String, Object?> emptyWallet = {
+  'pending_paise': 0,
+  'pending_net_estimate_paise': 0,
+  'available_paise': 0,
+  'in_transit_paise': 0,
+  'paid_out_paise': 0,
+  'tds_this_year_paise': 0,
+  'financial_year': '2026-27',
+  'payout_account': null,
+  'on_hold_reason': 'no_verified_account',
+  'on_hold_message': 'Add a payout account and wait for it to be verified.',
+  'can_request_payout': false,
 };
 
 const Map<String, List<Object?>?> emptyPage = {

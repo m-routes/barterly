@@ -25,6 +25,7 @@ import 'package:barterly/src/profile/profile_repository.dart';
 import 'package:barterly/src/reviews/reviews_repository.dart';
 import 'package:barterly/src/trips/trip_models.dart';
 import 'package:barterly/src/verification/verification_repository.dart';
+import 'package:barterly/src/wallet/wallet_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_map/flutter_map.dart' show TileProvider;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -125,6 +126,10 @@ final attendanceRepositoryProvider = Provider<AttendanceRepository>(
     ref.watch(dioProvider),
     ref.watch(keyValueStoreProvider),
   ),
+);
+
+final walletRepositoryProvider = Provider<WalletRepository>(
+  (ref) => WalletRepository(ref.watch(dioProvider)),
 );
 
 final reviewsRepositoryProvider = Provider<ReviewsRepository>(

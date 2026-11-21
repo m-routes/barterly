@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:barterly/src/api/api_error.dart';
 import 'package:barterly/src/attendance/attendance_models.dart';
+import 'package:barterly/src/attendance/location.dart';
 import 'package:barterly/src/attendance/totp.dart';
 import 'package:barterly/src/providers.dart';
 import 'package:barterly/src/theme/tokens.dart';
@@ -60,7 +61,7 @@ class _CheckInPassScreenState extends ConsumerState<CheckInPassScreen> {
       if (!cached.staleAt(now)) return;
     }
     try {
-      final location = await ref.read(locationReaderProvider).current();
+      final location = await _location();
       final fresh = await repo.fetchPass(widget.bookingId, location: location);
       if (!mounted) return;
       setState(() {
@@ -78,6 +79,27 @@ class _CheckInPassScreenState extends ConsumerState<CheckInPassScreen> {
         _error = _pass != null && _offline ? null : e.userMessage;
       });
     }
+  }
+
+  /// The talent's location, if they allow it. Explains why before the system
+  /// prompt, asks only once per booking, and accepts "Not now".
+  Future<Located?> _location() async {
+    final reader = ref.read(locationReaderProvider);
+    var access = await reader.access();
+    if (access == LocationAccess.notAsked && mounted) {
+      final store = ref.read(keyValueStoreProvider);
+      final key = 'attendance.location_asked.${widget.bookingId}';
+      if (await store.readJson(key) == null && mounted) {
+        final share = await showModalBottomSheet<bool>(
+          context: context,
+          isScrollControlled: true,
+          builder: (_) => const _LocationExplainer(),
+        );
+        await store.writeJson(key, {'asked': true, 'shared': share ?? false});
+        if (share ?? false) access = await reader.request();
+      }
+    }
+    return access == LocationAccess.granted ? await reader.current() : null;
   }
 
   @override
@@ -213,4 +235,41 @@ class _PassBody extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Why the pass asks for location, before the system prompt does.
+class _LocationExplainer extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: BarterlySpace.sm,
+        children: [
+          const Icon(Icons.location_on_outlined, size: 32),
+          Text(
+            'Share where you are for check-in?',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const Text(
+            'Your host sees how far you are from the property when they check '
+            'you in. We read your location once, now, and never in the '
+            "background. It's optional: check-in works without it.",
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Share location'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Not now'),
+          ),
+        ],
+      ),
+    ),
+  );
 }
