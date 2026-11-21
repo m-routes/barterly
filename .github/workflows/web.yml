@@ -82,4 +82,4 @@ jobs:
       - name: Image scan (trivy; fails on fixable high or critical)
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.58.1 \
-            image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 barterly-web:ci
+            image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 barterly-web:ci

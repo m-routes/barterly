@@ -18,7 +18,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DJANGO_SETTINGS_MODULE=config.settings.production \
     PORT=8080
 # Pango, HarfBuzz and a font for WeasyPrint (agreement PDFs, apps.agreements.pdf).
+# Security updates first: the base image can lag Debian's fixes (zlib, for one).
 RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
     && apt-get install -y --no-install-recommends \
         libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
