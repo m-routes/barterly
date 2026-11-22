@@ -51,3 +51,17 @@ describe("safeNextPath", () => {
     },
   );
 });
+
+describe("consent", () => {
+  it("sends anyone with a role whose terms changed to the consent page first", () => {
+    const user = { role: "vendor" as const, profile_complete: true, needs_consent: true };
+    expect(homeFor(user)).toBe("/onboarding/consent");
+    expect(accessFor(user, "vendor")).toEqual({ kind: "redirect", to: "/onboarding/consent" });
+  });
+
+  it("lets the role page handle consent for new users", () => {
+    expect(homeFor({ role: "", profile_complete: false, needs_consent: true })).toBe(
+      "/onboarding/role",
+    );
+  });
+});

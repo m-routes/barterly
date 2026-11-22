@@ -62,5 +62,6 @@ def _format(exc: exceptions.APIException) -> dict:
     details = {}
     if isinstance(exc, exceptions.Throttled) and exc.wait is not None:
         details["retry_after_seconds"] = int(exc.wait)
+    details.update(getattr(exc, "extra_details", None) or {})
     message = exc.detail if isinstance(exc.detail, str) else str(exc.default_detail)
     return error_body(code, str(message), details)

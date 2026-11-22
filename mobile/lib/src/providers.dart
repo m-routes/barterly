@@ -21,6 +21,7 @@ import 'package:barterly/src/platform/key_value_store.dart';
 import 'package:barterly/src/platform/media_picker.dart';
 import 'package:barterly/src/platform/network_status.dart';
 import 'package:barterly/src/platform/url_opener.dart';
+import 'package:barterly/src/privacy/privacy_repository.dart';
 import 'package:barterly/src/profile/profile_repository.dart';
 import 'package:barterly/src/reviews/reviews_repository.dart';
 import 'package:barterly/src/trips/trip_models.dart';
@@ -125,6 +126,10 @@ final attendanceRepositoryProvider = Provider<AttendanceRepository>(
     ref.watch(dioProvider),
     ref.watch(keyValueStoreProvider),
   ),
+);
+
+final privacyRepositoryProvider = Provider<PrivacyRepository>(
+  (ref) => PrivacyRepository(ref.watch(dioProvider)),
 );
 
 final reviewsRepositoryProvider = Provider<ReviewsRepository>(

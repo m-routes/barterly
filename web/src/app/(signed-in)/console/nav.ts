@@ -99,6 +99,14 @@ export const CONSOLE_SECTIONS: readonly ConsoleSection[] = [
     },
   },
   {
+    href: "/console/privacy",
+    label: "Privacy",
+    empty: {
+      title: "Your privacy settings",
+      description: "Consents, a copy of your data, corrections and deleting your account.",
+    },
+  },
+  {
     href: "/console/analytics",
     label: "Analytics",
     empty: {

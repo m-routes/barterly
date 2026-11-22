@@ -95,3 +95,13 @@ export type StayReview = Schemas["StayReview"];
 export type BookingReviews = Schemas["BookingReviews"];
 export type Reputation = Schemas["Reputation"];
 export type ReportReason = Schemas["ReportReasonEnum"];
+
+export type ConsentState = Schemas["ConsentState"];
+export type ConsentPurpose = Schemas["ConsentPurposeEnum"];
+export type ConsentRecord = Schemas["ConsentRecord"];
+export type PolicyDocument = Schemas["PolicyDocument"];
+export type DataExport = Schemas["DataExport"];
+export type DeletionStatus = Schemas["DeletionStatus"];
+export type DeletionBlocker = Schemas["Blocker"];
+export type CorrectionRequest = Schemas["CorrectionRequest"];
+export type GrievanceOfficer = Schemas["GrievanceOfficer"];

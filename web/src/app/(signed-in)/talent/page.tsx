@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { RequireRole } from "@/components/auth/RequireRole";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
@@ -14,6 +15,10 @@ function TalentWelcome() {
       <p className="auth-card__lead">
         Your account is set up for talent. Find gigs, apply and chat with hosts in the Barterly app
         on your phone, signed in with this same number.
+      </p>
+      <p>
+        <Link href="/account/privacy">Privacy and your data</Link>: consents, a copy of your data,
+        corrections and deleting your account.
       </p>
       <Button variant="secondary" onClick={() => void signOut()}>
         Sign out

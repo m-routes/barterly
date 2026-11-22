@@ -866,3 +866,151 @@ a {
     padding-top: var(--space-8);
   }
 }
+
+/* ---------- Legal pages, agreements and privacy settings ---------- */
+
+.agreement {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.agreement input {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.125rem;
+  accent-color: var(--color-accent);
+}
+
+.legal {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.legal__main {
+  flex: 1;
+  width: 100%;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-4) var(--space-7);
+}
+
+.legal__draft {
+  margin: 0 0 var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  border: 2px solid #8a5a00;
+  border-radius: var(--radius-sm);
+  background: #fff4d6;
+  color: #4a3200;
+}
+
+.legal__title {
+  font-size: var(--text-2xl);
+}
+
+.legal__version {
+  margin-top: var(--space-1);
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+
+.legal__body h2,
+.legal__main h2 {
+  margin-top: var(--space-6);
+  font-size: var(--text-lg);
+}
+
+.legal__body p,
+.legal__body ul,
+.legal__main > p,
+.legal__main > ul {
+  margin-top: var(--space-3);
+  line-height: 1.6;
+}
+
+.legal__body ul,
+.legal__main > ul {
+  padding-left: var(--space-5);
+}
+
+.legal__card {
+  margin-top: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.legal__contact {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-2) var(--space-4);
+  margin: var(--space-3) 0;
+}
+
+.legal__contact dt {
+  font-weight: 600;
+}
+
+.legal__contact dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.legal-footer {
+  padding: var(--space-5) var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.legal-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2) var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.privacy-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.privacy-row:last-child {
+  border-bottom: 0;
+}
+
+.privacy-row__text {
+  flex: 1 1 18rem;
+}
+
+.privacy-row__meta {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+
+.privacy-danger {
+  border-color: var(--color-danger);
+}
+
+.privacy-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.privacy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}

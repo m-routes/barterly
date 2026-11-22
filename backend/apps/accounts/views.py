@@ -1,5 +1,6 @@
 import logging
 
+from django.db import transaction
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import exceptions, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -22,6 +23,9 @@ from apps.accounts.serializers import (
 from apps.accounts.services.auth import AccountDisabled, RoleAlreadySet, choose_role, sign_in
 from apps.accounts.throttles import ExchangeIPThrottle, ExchangePhoneThrottle
 from apps.common.serializers import ErrorSerializer
+from apps.common.services.audit import log_action
+from apps.privacy.errors import consent_error
+from apps.privacy.services import consents
 from apps.profiles.services import is_profile_complete
 
 logger = logging.getLogger(__name__)
@@ -180,7 +184,10 @@ class MeRoleView(APIView):
         summary="Choose vendor or talent (once)",
         description=(
             "Sets the role of a user who signed up by OTP. Allowed once; admin roles are "
-            "granted only in the Django admin."
+            "granted only in the Django admin. The person must declare they are 18 or "
+            "older (`confirm_adult`) and accept the current terms and privacy policy, "
+            "each recorded as a separate consent with its version. A stale version is "
+            "409 `document_changed`."
         ),
         request=ChooseRoleSerializer,
         responses={
@@ -194,8 +201,26 @@ class MeRoleView(APIView):
     def post(self, request: Request) -> Response:
         serializer = ChooseRoleSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
         try:
-            user = choose_role(request.user, serializer.validated_data["role"], request=request)
+            with transaction.atomic():
+                user = choose_role(request.user, data["role"], request=request)
+                log_action(
+                    actor=user,
+                    action="user.declared_adult",
+                    obj=user,
+                    after={"confirm_adult": True},
+                    request=request,
+                )
+                consents.record_sign_up(
+                    user,
+                    terms_version=data["terms_version"],
+                    privacy_version=data["privacy_version"],
+                    source=data["source"],
+                    request=request,
+                )
         except RoleAlreadySet as exc:
             raise RoleAlreadySetError from exc
+        except consents.ConsentError as exc:
+            raise consent_error(exc) from exc
         return Response(UserSerializer(user).data)

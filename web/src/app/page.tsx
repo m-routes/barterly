@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { LegalFooter } from "@/components/legal/LegalFooter";
 import { Logo } from "@/components/Logo";
 import { PAY_MODELS, type PayModel } from "@/lib/payModels";
 
@@ -86,6 +87,7 @@ export default function Home() {
       <footer className="landing__footer">
         <p>© Barterly. Made for travel and hospitality in India.</p>
       </footer>
+      <LegalFooter />
     </div>
   );
 }

@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "apps.attendance",
     "apps.deliverables",
     "apps.reviews",
+    "apps.privacy",
     "apps.backoffice.apps.BackofficeConfig",
 ]
 
@@ -161,6 +162,8 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     # Stable names where two apps use the same field name (status, kind, ...).
     "ENUM_NAME_OVERRIDES": {
+        "ConsentPurposeEnum": "apps.privacy.models.Purpose",
+        "ConsentSourceEnum": "apps.privacy.models.CLIENT_SOURCES",
         "VerificationStatusEnum": "apps.verification.constants.CaseStatus",
         "VerificationDocumentStatusEnum": "apps.verification.constants.DocumentStatus",
         "VerificationDocumentTypeEnum": "apps.verification.constants.DocumentType",
@@ -442,3 +445,45 @@ BOOKING_WHEN_FULL = env_str("BOOKING_WHEN_FULL", "hold")
 # When a confirmed booking is cancelled and nobody is in line, offer the place to the
 # next shortlisted applicant on the same terms.
 STEP_IN_OFFERS = env_bool("STEP_IN_OFFERS", True)
+
+# Privacy (apps.privacy, docs/privacy.md). LEGAL REVIEW NEEDED: every value below.
+# The version of each document people consent to. Bump one when its text changes; people
+# are asked again, and the consent record says which version they agreed to.
+PRIVACY_DOCUMENT_VERSIONS = {
+    "terms": env_str("PRIVACY_TERMS_VERSION", "2026-11-draft-1"),
+    "privacy": env_str("PRIVACY_POLICY_VERSION", "2026-11-draft-1"),
+    "location": env_str("PRIVACY_LOCATION_VERSION", "2026-11-draft-1"),
+    "social": env_str("PRIVACY_SOCIAL_VERSION", "2026-11-draft-1"),
+    "marketing": env_str("PRIVACY_MARKETING_VERSION", "2026-11-draft-1"),
+}
+# How long each kind of data is kept, in days (apps.privacy.retention, run daily by the
+# privacy_retention job). Each purge writes an audit entry.
+PRIVACY_RETENTION_DAYS = {
+    "notifications": env_int("RETAIN_NOTIFICATIONS_DAYS", 180),
+    "push_devices": env_int("RETAIN_PUSH_DEVICES_DAYS", 270),
+    "chat_leakage_bodies": env_int("RETAIN_CHAT_LEAKAGE_DAYS", 90),
+    "gateway_payloads": env_int("RETAIN_GATEWAY_PAYLOADS_DAYS", 180),
+    "attendance_locations": env_int("RETAIN_ATTENDANCE_LOCATIONS_DAYS", 30),
+    "verification_references": env_int("RETAIN_VERIFICATION_REFERENCES_DAYS", 365),
+    "job_runs": env_int("RETAIN_JOB_RUNS_DAYS", 90),
+}
+# Exports: the file is kept this long, and each download link lasts this many seconds.
+PRIVACY_EXPORT_KEEP_HOURS = env_int("PRIVACY_EXPORT_KEEP_HOURS", 24)
+PRIVACY_EXPORT_URL_SECONDS = env_int("PRIVACY_EXPORT_URL_SECONDS", 300)
+PRIVACY_EXPORTS_PER_DAY = env_int("PRIVACY_EXPORTS_PER_DAY", 3)
+# A deletion request waits this long (it can be cancelled) before the account is
+# anonymised by the privacy_deletions job.
+PRIVACY_DELETION_GRACE_DAYS = env_int("PRIVACY_DELETION_GRACE_DAYS", 7)
+# The Grievance Officer (IT Rules 2021, rule 3(2); DPDP Act s.8(10)). Shown on the public
+# grievance page. LEGAL REVIEW NEEDED: name and contact before launch.
+GRIEVANCE_OFFICER = {
+    "name": env_str("GRIEVANCE_OFFICER_NAME", "[Grievance Officer name]"),
+    "email": env_str("GRIEVANCE_OFFICER_EMAIL", "grievance@barterly.in"),
+    "phone": env_str("GRIEVANCE_OFFICER_PHONE", ""),
+    "address": env_str("GRIEVANCE_OFFICER_ADDRESS", "[Registered office address]"),
+    "hours": env_str("GRIEVANCE_OFFICER_HOURS", "Monday to Friday, 10:00 to 18:00 IST"),
+    "acknowledge_hours": env_int("GRIEVANCE_ACKNOWLEDGE_HOURS", 24),
+    "resolve_days": env_int("GRIEVANCE_RESOLVE_DAYS", 15),
+}
+# Who hears about an account that turns out to belong to a minor.
+TRUST_TEAM_EMAILS = env_list("TRUST_TEAM_EMAILS", "")

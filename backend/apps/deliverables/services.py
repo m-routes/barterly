@@ -15,7 +15,7 @@ import contextlib
 from datetime import date, timedelta
 
 from django.db import transaction
-from django.db.models import Exists, Max, OuterRef
+from django.db.models import Exists, Max, OuterRef, Q, Subquery
 from django.utils import timezone
 
 from apps.bookings.lifecycle import BookingStatus
@@ -35,6 +35,7 @@ from apps.deliverables.models import (
 from apps.deliverables.stats.base import get_provider, has_disclosure
 from apps.gigs.constants import DELIVERABLE_MODELS, DeliverableType
 from apps.media.models import MediaFile, MediaStatus
+from apps.privacy.models import ConsentRecord, Purpose
 
 B = BookingStatus
 OPEN_FOR_WORK = (B.CHECKED_IN, B.DELIVERING, B.COMPLETED)
@@ -409,15 +410,22 @@ def refresh_stats(deliverable_id, *, submission_id=None, now=None) -> PostStats 
 
 
 def refresh_all(now) -> dict[str, int]:
-    """Job: fresh numbers for posts handed in, at most once every 20 hours each."""
+    """Job: fresh numbers for posts handed in, at most once every 20 hours each, unless
+    the talent withdrew social-account consent."""
     recent = now - timedelta(hours=20)
     fresh = PostStats.objects.filter(
         deliverable=OuterRef("pk"),
         captured_at__gt=recent,
         source__in=(StatsSource.INSTAGRAM, StatsSource.YOUTUBE),
     )
+    # Talent who withdrew social-account consent: no more fetching their posts' numbers.
+    social = ConsentRecord.objects.filter(
+        user=OuterRef("booking__talent"), purpose=Purpose.SOCIAL
+    ).order_by("-recorded_at", "-id")
     rows = (
         Deliverable.objects.filter(status__in=(Status.SUBMITTED, Status.APPROVED))
+        .annotate(social_consent=Subquery(social.values("granted")[:1]))
+        .filter(Q(social_consent__isnull=True) | Q(social_consent=True))
         .exclude(Exists(fresh))
         .filter(submissions__post_url__gt="")
         .distinct()
