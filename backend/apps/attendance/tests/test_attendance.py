@@ -19,6 +19,7 @@ from apps.bookings.lifecycle import Actor, BookingStatus
 from apps.bookings.services import transition
 from apps.bookings.tests.helpers import booked
 from apps.common.models import AuditLog
+from apps.privacy.services import consents
 from apps.reliability.models import ReliabilityScore
 from apps.verification.tests.factories import client_for
 
@@ -355,6 +356,7 @@ class TestCheckOutAndNoShow:
 class TestApi:
     def test_the_talent_gets_a_pass(self):
         booking = booked()
+        consents.record(booking.talent, "location", granted=True)
         url = reverse("attendance:pass", args=[booking.pk])
         body = (
             client_for(booking.talent)
@@ -369,6 +371,15 @@ class TestApi:
         assert body["code_period_seconds"] == 300 and len(body["code_secret"]) >= 16
         assert client_for(booking.vendor).post(url, {}, format="json").status_code == 403
         assert AttendancePass.objects.get().located_at is not None
+
+    def test_a_location_without_consent_is_not_kept(self):
+        booking = booked()
+        url = reverse("attendance:pass", args=[booking.pk])
+        location = {"latitude": "15.5", "longitude": "73.8", "accuracy_m": 20}
+        response = client_for(booking.talent).post(url, {"location": location}, format="json")
+        assert response.status_code == 200
+        stored = AttendancePass.objects.get()
+        assert stored.latitude is None and stored.located_at is None
 
     def test_the_host_gets_arrivals_and_checks_in_offline(self):
         booking = booked()

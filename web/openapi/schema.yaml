@@ -3109,7 +3109,8 @@ paths:
       description: A signed token to show as a QR code, and the secret for the six-digit
         fallback code. Valid offline until `valid_until`; ask again for a fresh one.
         Send your location to record your distance from the property at check-in (it
-        never blocks check-in).
+        never blocks check-in). The location is kept only if you have given location
+        consent (POST /api/v1/privacy/consents/); otherwise it is ignored.
       summary: Your check-in pass
       parameters:
       - in: path
@@ -5902,10 +5903,10 @@ paths:
       description: 'Jobs: billing_dunning, billing_invoices, close_expired_gigs, deliverable_reminders,
         deliverable_stats, dispatch_notifications, escrow_auto_release, escrow_reconcile,
         expire_offers, expire_verifications, flag_stale_interviews, payout_run, payout_validations,
-        render_agreements, reputation_recompute, reviews_close_windows, run_search_alerts,
-        send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed
-        OIDC token for the scheduler service account. Idempotent; overlapping runs
-        of one job are skipped.'
+        privacy_deletions, privacy_retention, render_agreements, reputation_recompute,
+        reviews_close_windows, run_search_alerts, send_interview_reminders, send_reminders,
+        sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service
+        account. Idempotent; overlapping runs of one job are skipped.'
       summary: Run a scheduled job (Cloud Scheduler only)
       parameters:
       - in: path
@@ -5980,7 +5981,10 @@ paths:
     post:
       operationId: accounts_me_role
       description: Sets the role of a user who signed up by OTP. Allowed once; admin
-        roles are granted only in the Django admin.
+        roles are granted only in the Django admin. The person must declare they are
+        18 or older (`confirm_adult`) and accept the current terms and privacy policy,
+        each recorded as a separate consent with its version. A stale version is 409
+        `document_changed`.
       summary: Choose vendor or talent (once)
       tags:
       - accounts
@@ -6891,6 +6895,492 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/privacy/consents/:
+    get:
+      operationId: privacy_consents
+      summary: My consents, one per purpose
+      tags:
+      - privacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConsentState'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    post:
+      operationId: privacy_consents_change
+      description: '`granted: true` with the version shown gives consent; `granted:
+        false` withdraws it, effective at once. Terms and privacy policy can''t be
+        withdrawn on their own (409 `consent_required`): delete the account instead.
+        Every change is audit-logged. Returns all consents.'
+      summary: Give or withdraw one consent
+      tags:
+      - privacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentChange'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConsentChange'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConsentChange'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConsentState'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/privacy/consents/history/:
+    get:
+      operationId: privacy_consents_history
+      summary: Every consent I gave or withdrew, newest first
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - privacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedConsentRecordList'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/privacy/corrections/:
+    get:
+      operationId: privacy_corrections
+      summary: My correction requests
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - privacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCorrectionRequestList'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    post:
+      operationId: privacy_corrections_create
+      description: 'Your profile is edited directly (PATCH /api/v1/profiles/.../me/).
+        Use this for the rest: your phone number, a name on a signed agreement, a
+        verification result. The team replies within the grievance timelines.'
+      summary: Ask us to correct something you can't edit yourself
+      tags:
+      - privacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CorrectionCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CorrectionCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CorrectionCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CorrectionRequest'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/privacy/deletion/:
+    get:
+      operationId: privacy_deletion
+      summary: Whether my account is scheduled for deletion, and what blocks it
+      tags:
+      - privacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletionStatus'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    post:
+      operationId: privacy_deletion_request
+      description: Schedules deletion after a grace period (cancel any time before).
+        Then every personal field is erased; records the law makes us keep (payments,
+        agreements, disputes, the audit log) stay, anonymised. 409 `deletion_blocked`
+        lists what to finish first in `details.blockers`.
+      summary: Delete my account
+      tags:
+      - privacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeletionCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DeletionCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DeletionCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletionStatus'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    delete:
+      operationId: privacy_deletion_cancel
+      summary: Cancel my scheduled deletion
+      tags:
+      - privacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletionRequest'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/privacy/documents/:
+    get:
+      operationId: privacy_documents
+      summary: Current versions of the documents people consent to
+      tags:
+      - privacy
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PolicyDocument'
+          description: ''
+  /api/v1/privacy/exports/:
+    get:
+      operationId: privacy_exports
+      summary: My data exports
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - privacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDataExportList'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    post:
+      operationId: privacy_exports_create
+      description: Builds one machine-readable JSON file of everything Barterly holds
+        about you and keeps it for a day. Fetch it with the export's link endpoint,
+        which returns a signed URL valid for a few minutes. A few exports a day at
+        most.
+      summary: Export my data as JSON
+      tags:
+      - privacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataExport'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/privacy/exports/{export_id}/link/:
+    post:
+      operationId: privacy_exports_link
+      summary: A short-lived download link for one of my exports
+      parameters:
+      - in: path
+        name: export_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - privacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportLink'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '410':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/privacy/grievance-officer/:
+    get:
+      operationId: privacy_grievance_officer
+      summary: How to reach the Grievance Officer
+      tags:
+      - privacy
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrievanceOfficer'
           description: ''
   /api/v1/profiles/skills/:
     get:
@@ -9617,6 +10107,19 @@ components:
       required:
       - details
       - message
+    Blocker:
+      type: object
+      properties:
+        code:
+          type: string
+        count:
+          type: integer
+        message:
+          type: string
+      required:
+      - code
+      - count
+      - message
     Booking:
       type: object
       properties:
@@ -10610,11 +11113,31 @@ components:
         * `reference` - Reference
     ChooseRole:
       type: object
+      description: 'Sign-up''s last step: the role, the 18+ declaration and the two
+        required consents.'
       properties:
         role:
           $ref: '#/components/schemas/ChooseRoleRoleEnum'
+        confirm_adult:
+          type: boolean
+          description: The person declares they are 18 or older. Must be true.
+        terms_version:
+          type: string
+          description: Version of the terms shown (GET /api/v1/privacy/documents/).
+          maxLength: 40
+        privacy_version:
+          type: string
+          description: Version of the privacy policy shown.
+          maxLength: 40
+        source:
+          allOf:
+          - $ref: '#/components/schemas/ConsentSourceEnum'
+          default: api
       required:
+      - confirm_adult
+      - privacy_version
       - role
+      - terms_version
     ChooseRoleRoleEnum:
       enum:
       - vendor
@@ -10668,6 +11191,127 @@ components:
           format: uuid
       required:
       - media_id
+    ConsentChange:
+      type: object
+      properties:
+        purpose:
+          $ref: '#/components/schemas/ConsentPurposeEnum'
+        granted:
+          type: boolean
+          description: true to give, false to withdraw.
+        version:
+          type: string
+          description: The document version shown. Required when giving consent.
+          maxLength: 40
+        source:
+          allOf:
+          - $ref: '#/components/schemas/ConsentSourceEnum'
+          default: api
+      required:
+      - granted
+      - purpose
+    ConsentPurposeEnum:
+      enum:
+      - terms
+      - privacy
+      - location
+      - social
+      - marketing
+      type: string
+      description: |-
+        * `terms` - Terms of service
+        * `privacy` - Privacy policy
+        * `location` - Location use
+        * `social` - Social account access
+        * `marketing` - Marketing messages
+    ConsentRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        purpose:
+          allOf:
+          - $ref: '#/components/schemas/ConsentPurposeEnum'
+          readOnly: true
+        granted:
+          type: boolean
+          readOnly: true
+          description: True when given, False when withdrawn.
+        version:
+          type: string
+          readOnly: true
+          description: The document version shown.
+        source:
+          allOf:
+          - $ref: '#/components/schemas/ConsentRecordSourceEnum'
+          readOnly: true
+        recorded_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - granted
+      - id
+      - purpose
+      - recorded_at
+      - source
+      - version
+    ConsentRecordSourceEnum:
+      enum:
+      - web
+      - mobile
+      - api
+      - system
+      type: string
+      description: |-
+        * `web` - Web
+        * `mobile` - Mobile app
+        * `api` - API
+        * `system` - System
+    ConsentSourceEnum:
+      enum:
+      - web
+      - mobile
+      - api
+      type: string
+      description: |-
+        * `web` - Web
+        * `mobile` - Mobile app
+        * `api` - API
+    ConsentState:
+      type: object
+      properties:
+        purpose:
+          $ref: '#/components/schemas/ConsentPurposeEnum'
+        label:
+          type: string
+        required:
+          type: boolean
+          description: Needed to use Barterly at all.
+        granted:
+          type: boolean
+        version:
+          type: string
+          description: The version agreed to; "" if never asked.
+        current_version:
+          type: string
+        needs_renewal:
+          type: boolean
+          description: Given for an older version.
+        recorded_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - current_version
+      - granted
+      - label
+      - needs_renewal
+      - purpose
+      - recorded_at
+      - required
+      - version
     Contact:
       type: object
       properties:
@@ -10801,6 +11445,72 @@ components:
       - opened_at
       - other
       - unread
+    CorrectionCreate:
+      type: object
+      properties:
+        field:
+          type: string
+          maxLength: 60
+        correct_value:
+          type: string
+          maxLength: 500
+        note:
+          type: string
+          maxLength: 1000
+      required:
+      - correct_value
+      - field
+    CorrectionRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        field:
+          type: string
+          description: What is wrong, e.g. 'phone'.
+          maxLength: 60
+        correct_value:
+          type: string
+          maxLength: 500
+        note:
+          type: string
+          maxLength: 1000
+        status:
+          allOf:
+          - $ref: '#/components/schemas/CorrectionRequestStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        resolved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        resolution_note:
+          type: string
+          readOnly: true
+      required:
+      - correct_value
+      - created_at
+      - field
+      - id
+      - resolution_note
+      - resolved_at
+      - status
+    CorrectionRequestStatusEnum:
+      enum:
+      - open
+      - done
+      - rejected
+      type: string
+      description: |-
+        * `open` - Open
+        * `done` - Corrected
+        * `rejected` - Not changed
     Counter:
       type: object
       properties:
@@ -10838,6 +11548,42 @@ components:
           allOf:
           - $ref: '#/components/schemas/UsageRights'
           nullable: true
+    DataExport:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DataExportStatusEnum'
+          readOnly: true
+        size_bytes:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - expires_at
+      - id
+      - size_bytes
+      - status
+    DataExportStatusEnum:
+      enum:
+      - ready
+      - expired
+      type: string
+      description: |-
+        * `ready` - Ready to download
+        * `expired` - Expired and deleted
     DatabaseEnum:
       enum:
       - ok
@@ -10904,6 +11650,80 @@ components:
       - address
       - name
       - tan
+    DeletionCreate:
+      type: object
+      properties:
+        confirm:
+          type: boolean
+          description: Must be true.
+        reason:
+          type: string
+          maxLength: 500
+      required:
+      - confirm
+    DeletionRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DeletionRequestStatusEnum'
+          readOnly: true
+        requested_at:
+          type: string
+          format: date-time
+          readOnly: true
+        scheduled_for:
+          type: string
+          format: date-time
+          readOnly: true
+        cancelled_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - cancelled_at
+      - completed_at
+      - id
+      - requested_at
+      - scheduled_for
+      - status
+    DeletionRequestStatusEnum:
+      enum:
+      - scheduled
+      - cancelled
+      - completed
+      type: string
+      description: |-
+        * `scheduled` - Scheduled
+        * `cancelled` - Cancelled
+        * `completed` - Completed
+    DeletionStatus:
+      type: object
+      properties:
+        request:
+          allOf:
+          - $ref: '#/components/schemas/DeletionRequest'
+          nullable: true
+        blockers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Blocker'
+        grace_days:
+          type: integer
+      required:
+      - blockers
+      - grace_days
+      - request
     Deliverable:
       type: object
       properties:
@@ -11425,6 +12245,18 @@ components:
       - profile_complete
       - refresh
       - user
+    ExportLink:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Signed; works once fetched, for a few minutes.
+        expires_in_seconds:
+          type: integer
+      required:
+      - expires_in_seconds
+      - url
     FileLink:
       type: object
       properties:
@@ -12070,6 +12902,32 @@ components:
         * `filled` - Filled
         * `closed` - Closed
         * `archived` - Archived
+    GrievanceOfficer:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        address:
+          type: string
+        hours:
+          type: string
+        acknowledge_hours:
+          type: integer
+        resolve_days:
+          type: integer
+      required:
+      - acknowledge_hours
+      - address
+      - email
+      - hours
+      - name
+      - phone
+      - resolve_days
     Health:
       type: object
       properties:
@@ -13340,6 +14198,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CheckIn'
+    PaginatedConsentRecordList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsentRecord'
     PaginatedConversationList:
       type: object
       required:
@@ -13363,6 +14244,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Conversation'
+    PaginatedCorrectionRequestList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CorrectionRequest'
+    PaginatedDataExportList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataExport'
     PaginatedGigList:
       type: object
       required:
@@ -14688,6 +15615,26 @@ components:
       - max_live_gigs
       - name
       - price_paise
+    PolicyDocument:
+      type: object
+      properties:
+        purpose:
+          $ref: '#/components/schemas/ConsentPurposeEnum'
+        label:
+          type: string
+        version:
+          type: string
+        required:
+          type: boolean
+        web_path:
+          type: string
+          description: Where to read it on the web app.
+      required:
+      - label
+      - purpose
+      - required
+      - version
+      - web_path
     PostStats:
       type: object
       properties:
@@ -16741,6 +17688,12 @@ components:
           type: boolean
           readOnly: true
           description: True once the user has a role and the matching profile.
+        needs_consent:
+          type: boolean
+          readOnly: true
+          description: True when the terms or the privacy policy were never accepted,
+            or changed since. Ask again (POST /api/v1/privacy/consents/) before going
+            on.
         created_at:
           type: string
           format: date-time
@@ -16750,6 +17703,7 @@ components:
       - email
       - id
       - is_active
+      - needs_consent
       - phone
       - profile_complete
       - role

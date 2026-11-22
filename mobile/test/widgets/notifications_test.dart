@@ -222,7 +222,14 @@ void main() {
     await start(tester, api, push);
     await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
+    // The profile list builds lazily: scroll down to the button first.
+    await tester.scrollUntilVisible(
+      find.text('Sign out'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.ensureVisible(find.text('Sign out'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Sign out'));
     // The device is removed before anything on screen changes.
     for (var i = 0; i < 5; i++) {

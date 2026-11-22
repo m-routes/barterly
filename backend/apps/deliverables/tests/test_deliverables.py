@@ -263,6 +263,16 @@ class TestStats:
         assert services.refresh_all(now + timedelta(hours=21)) == {"updated": 1}
         assert PostStats.objects.filter(deliverable=reel).first().views == 400
 
+    def test_no_numbers_once_social_consent_is_withdrawn(self):
+        from apps.privacy.services import consents
+
+        booking = barter_stay()
+        reel = items(booking)[0]
+        hand_in(reel)
+        FakeProvider.answers[REEL] = Stats("instagram", 100, 10, 1)
+        consents.record(booking.talent, "social", granted=False)
+        assert services.refresh_all(timezone.now()) == {"updated": 0}
+
 
 class TestReminders:
     def test_two_days_before_on_the_day_and_after(self):

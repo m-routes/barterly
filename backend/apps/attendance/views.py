@@ -35,6 +35,8 @@ from apps.attendance.serializers import (
 from apps.bookings.models import Booking
 from apps.common.permissions import IsAdminRole, IsTalent, IsVendor
 from apps.common.serializers import ErrorSerializer
+from apps.privacy.models import Purpose
+from apps.privacy.services import consents
 
 TAG = ["attendance"]
 ERRORS = {401: ErrorSerializer, 403: ErrorSerializer, 404: ErrorSerializer}
@@ -84,7 +86,8 @@ class PassView(APIView):
             "A signed token to show as a QR code, and the secret for the six-digit "
             "fallback code. Valid offline until `valid_until`; ask again for a fresh one. "
             "Send your location to record your distance from the property at check-in "
-            "(it never blocks check-in)."
+            "(it never blocks check-in). The location is kept only if you have given "
+            "location consent (POST /api/v1/privacy/consents/); otherwise it is ignored."
         ),
         request=PassRequestSerializer,
         responses={200: PassSerializer, 409: ErrorSerializer, **ERRORS},
@@ -93,9 +96,12 @@ class PassView(APIView):
     def post(self, request: Request, booking_id) -> Response:
         body = PassRequestSerializer(data=request.data)
         body.is_valid(raise_exception=True)
+        location = body.validated_data["location"]
+        if location and not consents.has_consent(request.user, Purpose.LOCATION):
+            location = None  # no consent: we don't keep where they are
         try:
             attendance_pass = services.talent_pass(
-                booking_id, talent=request.user, location=body.validated_data["location"]
+                booking_id, talent=request.user, location=location
             )
         except Booking.DoesNotExist as exc:
             raise exceptions.NotFound("No such booking.") from exc

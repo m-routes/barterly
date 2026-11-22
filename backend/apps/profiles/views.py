@@ -10,6 +10,8 @@ from rest_framework.views import APIView
 from apps.accounts.models import User
 from apps.common.permissions import IsTalent, IsVendor
 from apps.common.serializers import ErrorSerializer
+from apps.privacy.models import MinorSource
+from apps.privacy.services import minors
 from apps.profiles.models import Skill, TalentProfile, VendorProfile
 from apps.profiles.serializers import (
     SkillSerializer,
@@ -124,7 +126,31 @@ class MyTalentProfileView(_MyProfileView):
 
     @_talent["patch"]
     def patch(self, request: Request) -> Response:
-        return super().patch(request)
+        try:
+            return super().patch(request)
+        except exceptions.ValidationError as exc:
+            if _underage(exc):
+                # They told us they were 18+ at sign-up; this date says otherwise.
+                minors.flag(
+                    request.user,
+                    source=MinorSource.PROFILE_DOB,
+                    note="Date of birth entered on the profile is under 18.",
+                )
+                raise Underage from exc
+            raise
+
+
+def _underage(exc: exceptions.ValidationError) -> bool:
+    detail = exc.detail if isinstance(exc.detail, dict) else {}
+    return any(getattr(e, "code", "") == "underage" for e in detail.get("date_of_birth", []))
+
+
+class Underage(exceptions.PermissionDenied):
+    default_detail = (
+        "You must be at least 18 to use Barterly. Your account is paused while our team "
+        "checks. If the date was a mistake, contact the grievance officer."
+    )
+    default_code = "underage"
 
 
 class SkillListView(ListAPIView):

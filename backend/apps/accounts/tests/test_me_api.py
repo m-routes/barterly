@@ -29,6 +29,7 @@ def test_signed_in_user_sees_themselves(client):
         "role": "vendor",
         "is_active": True,
         "profile_complete": False,
+        "needs_consent": True,
         "created_at": response.json()["created_at"],
     }
     assert response["X-Request-ID"]

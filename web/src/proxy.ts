@@ -9,7 +9,7 @@ import { REFRESH_COOKIE } from "@/lib/server/session-cookies";
  * so this is a convenience, not the security boundary.
  */
 
-const PROTECTED_PREFIXES = ["/console", "/onboarding", "/start", "/talent"];
+const PROTECTED_PREFIXES = ["/console", "/onboarding", "/start", "/talent", "/account"];
 
 function isProtected(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
@@ -31,5 +31,12 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/login", "/start", "/talent/:path*", "/console/:path*", "/onboarding/:path*"],
+  matcher: [
+    "/login",
+    "/start",
+    "/talent/:path*",
+    "/console/:path*",
+    "/onboarding/:path*",
+    "/account/:path*",
+  ],
 };

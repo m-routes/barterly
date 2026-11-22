@@ -13,6 +13,8 @@ import 'package:barterly/src/deliverables/deliverables_screen.dart';
 import 'package:barterly/src/discover/discover_screen.dart';
 import 'package:barterly/src/discover/gig_detail_screen.dart';
 import 'package:barterly/src/notifications/notifications_screen.dart';
+import 'package:barterly/src/privacy/consent_screen.dart';
+import 'package:barterly/src/privacy/privacy_screen.dart';
 import 'package:barterly/src/profile/profile_setup_screen.dart';
 import 'package:barterly/src/reviews/review_screens.dart';
 import 'package:barterly/src/shell/app_shell.dart';
@@ -29,6 +31,8 @@ abstract final class Routes {
   static const join = '/join';
   static const wrongApp = '/wrong-app';
   static const setup = '/setup';
+  static const consent = '/consent';
+  static const privacy = '/profile/privacy';
   static const discover = '/discover';
   static const trips = '/trips';
   static const wallet = '/wallet';
@@ -53,7 +57,14 @@ abstract final class Routes {
   static const myReviews = '/profile/reviews';
 
   /// Screens that only make sense before the person is fully in.
-  static const Set<String> gates = {splash, login, join, wrongApp, setup};
+  static const Set<String> gates = {
+    splash,
+    login,
+    join,
+    wrongApp,
+    setup,
+    consent,
+  };
 }
 
 /// Where the person should be, given the session, or null to stay put.
@@ -68,6 +79,7 @@ String? redirectFor(SessionState session, String location) {
     SignedIn(:final user) => switch (user.role) {
       UserRole.none => goTo(Routes.join),
       UserRole.vendor || UserRole.admin => goTo(Routes.wrongApp),
+      UserRole.talent when user.needsConsent => goTo(Routes.consent),
       UserRole.talent when !user.profileComplete => goTo(Routes.setup),
       UserRole.talent =>
         Routes.gates.contains(location) ? Routes.discover : null,
@@ -92,6 +104,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: Routes.login, builder: (_, _) => const LoginScreen()),
       GoRoute(path: Routes.join, builder: (_, _) => const JoinAsTalentScreen()),
       GoRoute(path: Routes.wrongApp, builder: (_, _) => const WrongAppScreen()),
+      GoRoute(path: Routes.consent, builder: (_, _) => const ConsentScreen()),
       GoRoute(
         path: Routes.setup,
         builder: (_, _) => const ProfileSetupScreen(),
@@ -200,6 +213,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'verification',
                     builder: (_, _) => const VerificationScreen(),
+                  ),
+                  GoRoute(
+                    path: 'privacy',
+                    builder: (_, _) => const PrivacyScreen(),
                   ),
                   GoRoute(
                     path: 'notifications',

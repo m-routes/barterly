@@ -31,6 +31,8 @@ locals {
     payout_run               = { schedule = "*/20 * * * *", description = "Pay talent what releases owe them; retry failed payouts after their back-off." }
     payout_validations       = { schedule = "*/10 * * * *", description = "Ask the payout provider about account validations still pending." }
     escrow_reconcile         = { schedule = "30 2 * * *", description = "Compare yesterday's ledger totals with the gateway's; alert on a mismatch." }
+    privacy_retention        = { schedule = "0 4 * * *", description = "Purge data past its retention period (PRIVACY_RETENTION_DAYS); audit each purge." }
+    privacy_deletions        = { schedule = "30 4 * * *", description = "Anonymise accounts whose deletion grace period has ended." }
   }
 }
 

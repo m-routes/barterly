@@ -75,7 +75,7 @@ test.describe("on a phone", () => {
     const menu = page.getByRole("button", { name: "Close menu" });
     await expect(menu).toHaveAttribute("aria-expanded", "true");
     const links = page.getByRole("navigation", { name: "Console" }).getByRole("link");
-    await expect(links).toHaveCount(12);
+    await expect(links).toHaveCount(13);
     for (const box of await Promise.all((await links.all()).map((l) => l.boundingBox()))) {
       expect(box!.height).toBeGreaterThanOrEqual(44);
     }

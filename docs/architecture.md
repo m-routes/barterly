@@ -483,9 +483,13 @@ For barter and hybrid gigs, each item the agreement lists becomes a deliverable 
 
 After a completed stay each side reviews the other once (overall stars, four category scores, text), double-blind: both publish together when both are in, or when the 14-day window closes. Flagged words and contact details hold a review for moderation, as do reports; published reviews can't be edited (a database trigger enforces it) and get one reply. Reputation (rating, completion rate, response time, badges from rules in settings) and reliability v2 follow. See [reviews.md](reviews.md).
 
+### Privacy (`apps/privacy`)
+
+Consent per purpose (terms, privacy policy, location, social accounts, marketing), each tied to a document version and recorded append-only; withdrawal is the same call as giving. The 18+ declaration and the two required consents are taken at the role step. People export their data (JSON, short-lived signed link), ask for corrections, and delete their account (a grace period, then anonymisation that keeps payments, agreements, disputes and the audit log with personal fields replaced). A daily job purges data past its retention period, auditing each purge. Suspected minors are suspended and go to the trust team. See [privacy.md](privacy.md) and [breach-runbook.md](breach-runbook.md).
+
 ### Audit log
 
-Money and status changes write an `AuditLog` entry through `apps.common.services.audit.log_action()`, in the same transaction as the change. Each entry records the actor, a dotted action (`user.role_changed`), the target's type and id, JSON before/after, the client IP and the request id. Entries are append-only: updates and deletes raise, and the admin is read-only. Users with audit history can't be hard-deleted (`PROTECT`); deactivate them. Role and `is_active` changes go through `apps.accounts.services.users` (and the admin's save hook), which audit them.
+Money and status changes write an `AuditLog` entry through `apps.common.services.audit.log_action()`, in the same transaction as the change. Each entry records the actor, a dotted action (`user.role_changed`), the target's type and id, JSON before/after, the client IP and the request id. Entries are append-only: updates and deletes raise, and the admin is read-only. The one sanctioned rewrite is account anonymisation, which replaces personal values inside an entry's before/after (and is itself audited). Users with audit history can't be hard-deleted (`PROTECT`); deactivate them. Role and `is_active` changes go through `apps.accounts.services.users` (and the admin's save hook), which audit them.
 
 ### Back office (`apps/backoffice`)
 
