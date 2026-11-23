@@ -5,6 +5,7 @@ from apps.agreements import pdf
 from apps.agreements.models import Agreement, AgreementVersion, Signature, VersionStatus
 from apps.agreements.services import party_of
 from apps.bookings.lifecycle import BookingStatus
+from apps.gigs.constants import MAX_DELIVERABLES
 from apps.offers.models import Party
 from apps.offers.terms import (
     CancellationPolicy,
@@ -205,6 +206,7 @@ class SignSerializer(serializers.Serializer):
     )
     otp_token = serializers.CharField(
         required=False,
+        max_length=4096,
         allow_blank=True,
         default="",
         help_text="A fresh ID token from re-running phone OTP (method otp).",
@@ -218,13 +220,15 @@ class ChangesSerializer(serializers.Serializer):
     end_date = serializers.DateField(required=False)
     hours_per_day = serializers.IntegerField(required=False)
     days_per_week = serializers.IntegerField(required=False)
-    stay_type = serializers.CharField(required=False)
-    meals = serializers.CharField(required=False)
+    stay_type = serializers.CharField(required=False, max_length=20)
+    meals = serializers.CharField(required=False, max_length=20)
     stipend_amount = serializers.DecimalField(
         max_digits=10, decimal_places=2, required=False, allow_null=True
     )
-    stipend_period = serializers.CharField(required=False, allow_blank=True)
-    deliverables = TermsDeliverableSerializer(many=True, required=False)
+    stipend_period = serializers.CharField(required=False, allow_blank=True, max_length=10)
+    deliverables = TermsDeliverableSerializer(
+        many=True, required=False, max_length=MAX_DELIVERABLES
+    )
     usage_rights = UsageRightsSerializer(required=False, allow_null=True)
     cancellation_policy = serializers.ChoiceField(
         choices=CancellationPolicy.choices, required=False

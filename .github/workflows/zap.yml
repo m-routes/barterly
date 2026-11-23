@@ -1,0 +1,40 @@
+name: zap
+
+# OWASP ZAP baseline (passive) scan of staging after each successful deploy, weekly, and
+# on demand. Passive only: it crawls and inspects responses, it doesn't attack.
+# Accepted findings are listed, with a reason, in .zap/rules.tsv.
+# Needs repository variables STAGING_WEB_URL and STAGING_API_URL.
+
+on:
+  workflow_run:
+    workflows: [deploy]
+    types: [completed]
+  schedule:
+    - cron: "41 4 * * 2"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write # the action files its report as an issue
+
+jobs:
+  baseline:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: web
+            path: /
+          - name: api
+            path: /api/v1/health/
+    steps:
+      - uses: actions/checkout@v4
+      - uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: ${{ matrix.name == 'web' && vars.STAGING_WEB_URL || vars.STAGING_API_URL }}${{ matrix.path }}
+          rules_file_name: .zap/rules.tsv
+          cmd_options: "-a -j"
+          issue_title: "ZAP baseline: staging ${{ matrix.name }}"
+          fail_action: true

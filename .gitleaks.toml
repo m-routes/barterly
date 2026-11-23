@@ -1,0 +1,16 @@
+# gitleaks configuration (CI: .github/workflows/security.yml).
+title = "barterly"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Example config, generated files and lockfiles"
+paths = [
+  # Placeholders only; the real Firebase files are gitignored.
+  '''web/\.env\.example''',
+  '''mobile/env/firebase-keys\.example\.json''',
+  # Generated API types and lockfiles carry hashes that look like keys.
+  '''web/src/lib/api/schema\.d\.ts''',
+  '''(^|/)(package-lock\.json|uv\.lock|pubspec\.lock)$''',
+]

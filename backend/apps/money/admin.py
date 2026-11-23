@@ -86,7 +86,7 @@ class PayoutAccountAdmin(ReadOnly):
         "pan_on_file",
     ]
     list_filter = ["method", "validation_status", "active"]
-    search_fields = ["talent__phone", "fund_account_id", "display"]
+    search_fields = ["talent__phone", "display"]  # fund_account_id is encrypted
 
 
 @admin.register(DeliverableSubmission)

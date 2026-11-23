@@ -299,7 +299,7 @@ class TestCancelling:
         from apps.accounts.tests.factories import AdminUserFactory
 
         booking = booked()
-        admin = client_for(AdminUserFactory())
+        admin = client_for(AdminUserFactory(roles=["ops"]))
         response = admin.post(
             f"/api/v1/bookings/{booking.pk}/transition/",
             {"status": "cancelled", "reason": "Fraud check"},

@@ -19,6 +19,8 @@ from django.db import models
 from django.db.models import F, Q
 from django.utils import timezone
 
+from apps.common.encryption import EncryptedTextField
+
 
 class AccountKind(models.TextChoices):
     ASSET = "asset", "Asset"
@@ -234,8 +236,9 @@ class PayoutAccount(models.Model):
     )
     method = models.CharField(max_length=4, choices=PayoutMethod.choices, blank=True)
     display = models.CharField(max_length=80, blank=True, help_text="Masked, for showing.")
-    provider_contact_id = models.CharField(max_length=60, blank=True)
-    fund_account_id = models.CharField(max_length=60, blank=True, db_index=True)
+    # The gateway's references for where money goes: encrypted at rest.
+    provider_contact_id = EncryptedTextField(max_length=60, blank=True)
+    fund_account_id = EncryptedTextField(max_length=60, blank=True)
     validation_status = models.CharField(
         max_length=10, choices=ValidationStatus.choices, default=ValidationStatus.NONE, blank=True
     )
@@ -411,7 +414,7 @@ class Payout(models.Model):
     )
     attempt = models.PositiveSmallIntegerField()
     amount_paise = models.BigIntegerField()
-    fund_account_id = models.CharField(max_length=60)
+    fund_account_id = EncryptedTextField(max_length=60)
     account_display = models.CharField(max_length=80)
     status = models.CharField(
         max_length=10, choices=PayoutAttemptStatus.choices, default=PayoutAttemptStatus.CREATING

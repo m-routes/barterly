@@ -31,7 +31,8 @@
     <div class="bo-card bo-actions">
       <h2>Decision</h2>
       {% if can_decide or can_revoke %}
-      <form method="post">{% csrf_token %}
+      <form method="post">{# nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -- csrf_token is the next line #}
+        {% csrf_token %}
         {% if form.non_field_errors %}<ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
         <label for="id_reason"><strong>Reason</strong> (required, except to start a review)</label>
         {{ form.reason.errors }}{{ form.reason }}

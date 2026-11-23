@@ -21,6 +21,10 @@ ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=8080 \
     HOSTNAME=0.0.0.0
+# The server runs with node alone: drop the npm and corepack the base image bundles
+# (they carried known vulnerabilities, and an attacker could use them).
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+    /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
 COPY --from=build --chown=node:node /app/.next/standalone ./
 COPY --from=build --chown=node:node /app/.next/static ./.next/static
 COPY --from=build --chown=node:node /app/public ./public

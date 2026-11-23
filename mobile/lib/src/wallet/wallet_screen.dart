@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:barterly/src/api/api_error.dart';
+import 'package:barterly/src/platform/device_security.dart';
 import 'package:barterly/src/providers.dart';
 import 'package:barterly/src/theme/tokens.dart';
 import 'package:barterly/src/wallet/wallet_models.dart';
@@ -94,86 +95,92 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Wallet')),
-    body: FutureBuilder<Wallet>(
-      future: _wallet,
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          final e = snapshot.error;
-          return ErrorView(
-            title: "We couldn't load your wallet",
-            message: e is ApiError ? e.userMessage : '$e',
-            onRetry: _reload,
-          );
-        }
-        final wallet = snapshot.data;
-        if (wallet == null) return const LoadingView(label: 'Loading wallet…');
-        return RefreshIndicator(
-          onRefresh: () async => _reload(),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-            children: [
-              _Balances(wallet: wallet),
-              if (wallet.holdMessage.isNotEmpty) ...[
+  Widget build(BuildContext context) => SecureScreen(
+    child: Scaffold(
+      appBar: AppBar(title: const Text('Wallet')),
+      body: FutureBuilder<Wallet>(
+        future: _wallet,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            final e = snapshot.error;
+            return ErrorView(
+              title: "We couldn't load your wallet",
+              message: e is ApiError ? e.userMessage : '$e',
+              onRetry: _reload,
+            );
+          }
+          final wallet = snapshot.data;
+          if (wallet == null) {
+            return const LoadingView(label: 'Loading wallet…');
+          }
+          return RefreshIndicator(
+            onRefresh: () async => _reload(),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+              children: [
+                _Balances(wallet: wallet),
+                if (wallet.holdMessage.isNotEmpty) ...[
+                  const SizedBox(height: BarterlySpace.sm),
+                  SurfaceCard(
+                    color: BarterlyColors.surfaceSunken,
+                    child: Row(
+                      spacing: BarterlySpace.sm,
+                      children: [
+                        const Icon(Icons.info_outline),
+                        Expanded(child: Text(wallet.holdMessage)),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: BarterlySpace.sm),
-                SurfaceCard(
-                  color: BarterlyColors.surfaceSunken,
-                  child: Row(
-                    spacing: BarterlySpace.sm,
-                    children: [
-                      const Icon(Icons.info_outline),
-                      Expanded(child: Text(wallet.holdMessage)),
-                    ],
+                FilledButton(
+                  onPressed: wallet.canRequestPayout && !_paying
+                      ? _payOut
+                      : null,
+                  child: Text(
+                    _paying
+                        ? 'Sending…'
+                        : 'Pay out ${rupees(wallet.available)} now',
                   ),
                 ),
+                const SizedBox(height: BarterlySpace.md),
+                _AccountCard(account: wallet.account, onChanged: _reload),
+                const SizedBox(height: BarterlySpace.lg),
+                Text('History', style: Theme.of(context).textTheme.titleMedium),
+                Wrap(
+                  spacing: BarterlySpace.xs,
+                  children: [
+                    for (final (kind, label) in const [
+                      ('', 'All'),
+                      ('release', 'Released'),
+                      ('payout', 'Payouts'),
+                    ])
+                      ChoiceChip(
+                        label: Text(label),
+                        selected: _kind == kind,
+                        onSelected: (_) {
+                          _kind = kind;
+                          unawaited(_loadHistory(reset: true));
+                        },
+                      ),
+                  ],
+                ),
+                if (_history.isEmpty && !_loadingHistory)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: BarterlySpace.md),
+                    child: Text('Nothing here yet.'),
+                  ),
+                for (final entry in _history) _EntryTile(entry: entry),
+                if (_hasMore)
+                  TextButton(
+                    onPressed: _loadingHistory ? null : _loadHistory,
+                    child: const Text('Show more'),
+                  ),
               ],
-              const SizedBox(height: BarterlySpace.sm),
-              FilledButton(
-                onPressed: wallet.canRequestPayout && !_paying ? _payOut : null,
-                child: Text(
-                  _paying
-                      ? 'Sending…'
-                      : 'Pay out ${rupees(wallet.available)} now',
-                ),
-              ),
-              const SizedBox(height: BarterlySpace.md),
-              _AccountCard(account: wallet.account, onChanged: _reload),
-              const SizedBox(height: BarterlySpace.lg),
-              Text('History', style: Theme.of(context).textTheme.titleMedium),
-              Wrap(
-                spacing: BarterlySpace.xs,
-                children: [
-                  for (final (kind, label) in const [
-                    ('', 'All'),
-                    ('release', 'Released'),
-                    ('payout', 'Payouts'),
-                  ])
-                    ChoiceChip(
-                      label: Text(label),
-                      selected: _kind == kind,
-                      onSelected: (_) {
-                        _kind = kind;
-                        unawaited(_loadHistory(reset: true));
-                      },
-                    ),
-                ],
-              ),
-              if (_history.isEmpty && !_loadingHistory)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: BarterlySpace.md),
-                  child: Text('Nothing here yet.'),
-                ),
-              for (final entry in _history) _EntryTile(entry: entry),
-              if (_hasMore)
-                TextButton(
-                  onPressed: _loadingHistory ? null : _loadHistory,
-                  child: const Text('Show more'),
-                ),
-            ],
-          ),
-        );
-      },
+            ),
+          );
+        },
+      ),
     ),
   );
 }
@@ -381,77 +388,79 @@ class _LinkAccountScreenState extends ConsumerState<LinkAccountScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: Text(
-        widget.replacing ? 'Change payout account' : 'Add payout account',
+  Widget build(BuildContext context) => SecureScreen(
+    child: Scaffold(
+      appBar: AppBar(
+        title: Text(
+          widget.replacing ? 'Change payout account' : 'Add payout account',
+        ),
       ),
-    ),
-    body: Form(
-      key: _form,
-      child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(value: 'upi', label: Text('UPI')),
-              ButtonSegment(value: 'bank', label: Text('Bank account')),
+      body: Form(
+        key: _form,
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(value: 'upi', label: Text('UPI')),
+                ButtonSegment(value: 'bank', label: Text('Bank account')),
+              ],
+              selected: {_method},
+              onSelectionChanged: (s) => setState(() => _method = s.first),
+            ),
+            const SizedBox(height: BarterlySpace.md),
+            if (_method == 'upi')
+              TextFormField(
+                controller: _vpa,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                decoration: const InputDecoration(
+                  labelText: 'UPI id',
+                  hintText: 'name@bank',
+                ),
+                validator: (v) => PayoutDetails.checkVpa(v ?? ''),
+              )
+            else ...[
+              TextFormField(
+                controller: _name,
+                decoration: const InputDecoration(
+                  labelText: 'Name on the account',
+                ),
+                validator: (v) => PayoutDetails.checkName(v ?? ''),
+              ),
+              TextFormField(
+                controller: _account,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Account number'),
+                validator: (v) => PayoutDetails.checkAccount(v ?? ''),
+              ),
+              TextFormField(
+                controller: _ifsc,
+                textCapitalization: TextCapitalization.characters,
+                decoration: const InputDecoration(labelText: 'IFSC code'),
+                validator: (v) => PayoutDetails.checkIfsc(v ?? ''),
+              ),
             ],
-            selected: {_method},
-            onSelectionChanged: (s) => setState(() => _method = s.first),
-          ),
-          const SizedBox(height: BarterlySpace.md),
-          if (_method == 'upi')
-            TextFormField(
-              controller: _vpa,
-              keyboardType: TextInputType.emailAddress,
-              autocorrect: false,
-              decoration: const InputDecoration(
-                labelText: 'UPI id',
-                hintText: 'name@bank',
-              ),
-              validator: (v) => PayoutDetails.checkVpa(v ?? ''),
-            )
-          else ...[
-            TextFormField(
-              controller: _name,
-              decoration: const InputDecoration(
-                labelText: 'Name on the account',
-              ),
-              validator: (v) => PayoutDetails.checkName(v ?? ''),
+            const SizedBox(height: BarterlySpace.md),
+            Text(
+              widget.replacing ? '$_checkNote $_holdNote' : _checkNote,
+              style: Theme.of(context).textTheme.bodySmall,
             ),
-            TextFormField(
-              controller: _account,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Account number'),
-              validator: (v) => PayoutDetails.checkAccount(v ?? ''),
-            ),
-            TextFormField(
-              controller: _ifsc,
-              textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(labelText: 'IFSC code'),
-              validator: (v) => PayoutDetails.checkIfsc(v ?? ''),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: BarterlySpace.sm),
+                child: Text(
+                  _error!,
+                  style: const TextStyle(color: BarterlyColors.danger),
+                ),
+              ),
+            const SizedBox(height: BarterlySpace.md),
+            FilledButton(
+              onPressed: _busy ? null : _save,
+              child: Text(_busy ? 'Checking…' : 'Save'),
             ),
           ],
-          const SizedBox(height: BarterlySpace.md),
-          Text(
-            widget.replacing ? '$_checkNote $_holdNote' : _checkNote,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: BarterlySpace.sm),
-              child: Text(
-                _error!,
-                style: const TextStyle(color: BarterlyColors.danger),
-              ),
-            ),
-          const SizedBox(height: BarterlySpace.md),
-          FilledButton(
-            onPressed: _busy ? null : _save,
-            child: Text(_busy ? 'Checking…' : 'Save'),
-          ),
-        ],
+        ),
       ),
     ),
   );

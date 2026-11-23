@@ -145,7 +145,7 @@ class TestVendorViews:
             == 403
         )
         assert (
-            client_for(AdminUserFactory())
+            client_for(AdminUserFactory(roles=["support"]))
             .get(f"/api/v1/applications/{application.pk}/")
             .status_code
             == 200

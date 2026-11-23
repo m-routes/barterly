@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
+from apps.common.permissions import staff_can
 from apps.common.services.audit import log_action, snapshot
 from apps.gigs.constants import (
     EDITABLE,
@@ -39,7 +40,7 @@ class PlanLimitReached(Exception):
 def actor_for(user, gig: Gig) -> str | None:
     if user.pk == gig.vendor_id:
         return Actor.VENDOR
-    if getattr(user, "is_admin_role", False):
+    if staff_can(user, "backoffice.review_gigs"):
         return Actor.ADMIN
     return None
 

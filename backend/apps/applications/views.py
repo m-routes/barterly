@@ -23,7 +23,7 @@ from apps.applications.services import (
 )
 from apps.chat.services import with_chat
 from apps.common.exceptions import error_body
-from apps.common.permissions import IsAdminRole, IsTalent, IsVendor
+from apps.common.permissions import IsStaffWith, IsTalent, IsVendor, staff_can
 from apps.common.serializers import ErrorSerializer
 from apps.gigs.models import Gig
 from apps.hiring import services as hiring
@@ -222,21 +222,23 @@ class MyApplicationsView(generics.ListAPIView):
 
 
 class ApplicationDetailView(generics.RetrieveAPIView):
-    permission_classes = [IsTalent | IsVendor | IsAdminRole]
+    permission_classes = [IsTalent | IsVendor | IsStaffWith("applications.view_application")]
     serializer_class = ApplicationSerializer
     lookup_url_kwarg = "application_id"
 
     def get_serializer_class(self):
         # Vendors and admins also see private notes and tags; the applicant never does.
         user = self.request.user
-        if user.is_authenticated and (user.is_vendor or user.is_admin_role):
+        if user.is_authenticated and (
+            user.is_vendor or staff_can(user, "applications.view_application")
+        ):
             return VendorApplicationSerializer
         return ApplicationSerializer
 
     def get_queryset(self):
         user = self.request.user
         qs = with_attachments(applications())
-        if user.is_admin_role:
+        if staff_can(user, "applications.view_application"):
             return qs
         if user.is_vendor:
             return qs.filter(gig__vendor=user).prefetch_related(

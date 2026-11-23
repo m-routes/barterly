@@ -110,6 +110,21 @@ jobs:
           uv export --locked --no-hashes --no-emit-project --format requirements-txt > "$RUNNER_TEMP/requirements.txt"
           uv run --locked pip-audit --strict -r "$RUNNER_TEMP/requirements.txt"
 
+  sast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: bandit (Python security lint; tests and migrations excluded)
+        run: >-
+          uv tool run --python 3.12 --from "bandit[toml]==1.8.6" bandit -r apps config
+          -x '*/tests/*,*/migrations/*' -q
+      - name: semgrep (Django and Python rule packs)
+        run: >-
+          uv tool run --python 3.12 --from "semgrep==1.99.0" --with "setuptools<81" semgrep scan
+          --config p/django --config p/python --metrics=off
+          --exclude tests --exclude migrations --error apps config
+
   docker:
     runs-on: ubuntu-latest
     steps:
@@ -128,3 +143,7 @@ jobs:
           test "$(docker run --rm --entrypoint id barterly-api:ci -u)" != "0"
           docker run --rm -e DJANGO_SETTINGS_MODULE=config.settings.local barterly-api:ci \
             gunicorn --check-config -c gunicorn.conf.py config.asgi:application
+      - name: Image scan (trivy; fails on fixable high or critical)
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.58.1 \
+            image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 barterly-api:ci

@@ -9366,6 +9366,7 @@ components:
             type: string
             maxLength: 1000
           description: One answer per screening question, in order.
+          maxItems: 5
         proposed_start:
           type: string
           format: date
@@ -9376,6 +9377,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AttachmentInput'
+          maxItems: 8
       required:
       - pitch
       - proposed_end
@@ -10272,6 +10274,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CertificateItem'
+          maxItems: 5
+          minItems: 1
       required:
       - certificates
     Challenge:
@@ -10317,8 +10321,10 @@ components:
           type: integer
         stay_type:
           type: string
+          maxLength: 20
         meals:
           type: string
+          maxLength: 20
         stipend_amount:
           type: string
           format: decimal
@@ -10326,10 +10332,12 @@ components:
           nullable: true
         stipend_period:
           type: string
+          maxLength: 10
         deliverables:
           type: array
           items:
             $ref: '#/components/schemas/TermsDeliverable'
+          maxItems: 10
         usage_rights:
           allOf:
           - $ref: '#/components/schemas/UsageRights'
@@ -10834,6 +10842,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TermsDeliverable'
+          maxItems: 10
         usage_rights:
           allOf:
           - $ref: '#/components/schemas/UsageRights'
@@ -11450,6 +11459,7 @@ components:
         status:
           type: string
           description: Comma list.
+          maxLength: 200
         min_score:
           type: integer
           maximum: 100
@@ -11608,12 +11618,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Deliverable'
+          maxItems: 10
         skills:
           type: array
           items:
             type: string
+            maxLength: 60
           description: Skill slugs (GET /api/v1/profiles/skills/). Used for the fit
             score.
+          maxItems: 15
         min_age:
           type: integer
           readOnly: true
@@ -11622,6 +11635,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LanguagesEnum'
+          maxItems: 10
         min_followers:
           type: integer
           maximum: 2147483647
@@ -11931,12 +11945,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Deliverable'
+          maxItems: 10
         skills:
           type: array
           items:
             type: string
+            maxLength: 60
           description: Skill slugs (GET /api/v1/profiles/skills/). Used for the fit
             score.
+          maxItems: 15
         min_age:
           type: integer
           readOnly: true
@@ -11945,6 +11962,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LanguagesEnum'
+          maxItems: 10
         min_followers:
           type: integer
           readOnly: true
@@ -13807,12 +13825,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Deliverable'
+          maxItems: 10
         skills:
           type: array
           items:
             type: string
+            maxLength: 60
           description: Skill slugs (GET /api/v1/profiles/skills/). Used for the fit
             score.
+          maxItems: 15
         min_age:
           type: integer
           readOnly: true
@@ -13821,6 +13842,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LanguagesEnum'
+          maxItems: 10
         min_followers:
           type: integer
           maximum: 2147483647
@@ -13931,6 +13953,7 @@ components:
           items:
             $ref: '#/components/schemas/AmenitiesEnum'
           description: Amenity codes.
+          maxItems: 15
         house_rules:
           type: array
           items:
@@ -14031,7 +14054,9 @@ components:
           type: array
           items:
             type: string
+            maxLength: 60
           description: Skill slugs from GET /api/v1/profiles/skills/.
+          maxItems: 15
         languages:
           type: array
           items:
@@ -14834,6 +14859,7 @@ components:
           items:
             $ref: '#/components/schemas/AmenitiesEnum'
           description: Amenity codes.
+          maxItems: 15
         house_rules:
           type: array
           items:
@@ -15112,6 +15138,7 @@ components:
         up_to:
           type: string
           description: A message cursor; everything up to it is read.
+          maxLength: 200
       required:
       - up_to
     ReadResult:
@@ -15192,6 +15219,7 @@ components:
       properties:
         refresh:
           type: string
+          maxLength: 4096
       required:
       - refresh
     RejectionReasonEnum:
@@ -15465,10 +15493,14 @@ components:
           type: array
           items:
             type: string
+            maxLength: 10
+          maxItems: 10
         skills:
           type: array
           items:
             type: string
+            maxLength: 60
+          maxItems: 15
         value:
           type: integer
       required:
@@ -15492,6 +15524,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Rule'
+          maxItems: 10
       required:
       - rules
     SavedFilter:
@@ -15615,6 +15648,7 @@ components:
           type: string
           default: ''
           description: A fresh ID token from re-running phone OTP (method otp).
+          maxLength: 4096
       required:
       - consent
       - document_sha256
@@ -16148,6 +16182,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CheckInRequest'
+          maxItems: 200
       required:
       - events
     SyncResponse:
@@ -16220,7 +16255,9 @@ components:
           type: array
           items:
             type: string
+            maxLength: 60
           description: Skill slugs from GET /api/v1/profiles/skills/.
+          maxItems: 15
         languages:
           type: array
           items:
@@ -16420,6 +16457,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TermsDeliverable'
+          maxItems: 10
         usage_rights:
           allOf:
           - $ref: '#/components/schemas/UsageRights'
@@ -16642,6 +16680,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PreferenceChange'
+          maxItems: 100
     UploadUrlRequest:
       type: object
       properties:

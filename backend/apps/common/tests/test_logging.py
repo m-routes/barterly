@@ -65,7 +65,7 @@ def test_json_formatter_includes_stack_info():
 def test_logging_config_selects_formatter_and_level():
     config = logging_config(fmt="plain", level="DEBUG")
     assert config["handlers"]["console"]["formatter"] == "plain"
-    assert config["handlers"]["console"]["filters"] == ["request_id"]
+    assert config["handlers"]["console"]["filters"] == ["request_id", "redact_pii"]
     assert config["root"]["level"] == "DEBUG"
     assert logging_config()["handlers"]["console"]["formatter"] == "json"
 
@@ -76,7 +76,7 @@ def test_logging_config_rejects_unknown_format():
 
 
 def test_settings_use_structured_logging(settings):
-    assert settings.LOGGING["handlers"]["console"]["filters"] == ["request_id"]
+    assert settings.LOGGING["handlers"]["console"]["filters"] == ["request_id", "redact_pii"]
 
 
 def test_filter_prefers_the_request_attached_to_the_record():

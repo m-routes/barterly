@@ -59,3 +59,31 @@ class IsOwner(BasePermission):
                 return False
         owner_pk = getattr(owner, "pk", owner)
         return owner_pk is not None and owner_pk == request.user.pk
+
+
+def staff_can(user, perm: str) -> bool:
+    """A Barterly admin whose back-office role grants `perm`.
+
+    Being staff alone opens nothing: every admin branch in a view also names the
+    permission it needs, so a staff account with no role sees what any stranger sees.
+    """
+    return bool(
+        user
+        and getattr(user, "is_authenticated", False)
+        and user.is_active
+        and getattr(user, "is_admin_role", False)
+        and user.has_perm(perm)
+    )
+
+
+def IsStaffWith(perm: str) -> type[BasePermission]:
+    """Permission class: staff_can(request.user, perm)."""
+
+    class _IsStaffWith(BasePermission):
+        message = "Your back-office role doesn't allow this."
+
+        def has_permission(self, request, view) -> bool:
+            return staff_can(request.user, perm)
+
+    _IsStaffWith.__name__ = f"IsStaffWith[{perm}]"
+    return _IsStaffWith

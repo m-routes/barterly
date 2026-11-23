@@ -4,6 +4,7 @@ from rest_framework import serializers
 from apps.applications.constants import MAX_ATTACHMENTS
 from apps.applications.models import Application, ApplicationAttachment, AttachmentKind
 from apps.discovery.serializers import FitSerializer
+from apps.gigs.constants import MAX_SCREENING_QUESTIONS
 from apps.hiring.interview_serializers import InterviewSerializer
 from apps.media.services.uploads import read_urls
 from apps.reliability import services as reliability
@@ -39,6 +40,7 @@ class ApplySerializer(serializers.Serializer):
         child=serializers.CharField(max_length=1000, allow_blank=True),
         required=False,
         default=list,
+        max_length=MAX_SCREENING_QUESTIONS,
         help_text="One answer per screening question, in order.",
     )
     proposed_start = serializers.DateField()

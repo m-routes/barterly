@@ -148,3 +148,33 @@ variable "instagram_business_account_id" {
   type        = string
   default     = ""
 }
+
+variable "sentry_enabled" {
+  description = "Send errors to Sentry (add the sentry-dsn secret's value first)."
+  type        = bool
+  default     = false
+}
+
+variable "email_enabled" {
+  description = "Wire EMAIL_HOST_PASSWORD (add the email-host-password secret's value first)."
+  type        = bool
+  default     = false
+}
+
+variable "kyc_webhook_enabled" {
+  description = "Wire KYC_WEBHOOK_SECRET (add the kyc-webhook-secret value first)."
+  type        = bool
+  default     = false
+}
+
+variable "clamav_enabled" {
+  description = "Run clamd beside the API and scan every upload before it's served."
+  type        = bool
+  default     = false
+}
+
+variable "clamav_image" {
+  description = "The clamd image (official ClamAV, pinned)."
+  type        = string
+  default     = "clamav/clamav:1.4.3"
+}
