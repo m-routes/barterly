@@ -38,7 +38,7 @@ confirm() {
 }
 run_job() {
   gcloud run jobs execute "$MIGRATE_JOB" "${GC[@]}" --region "$REGION" --wait \
-    --args="manage.py,$*"
+    --args="$*"  # the job command is already `python manage.py`
 }
 
 case "$STEP" in

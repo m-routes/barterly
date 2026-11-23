@@ -355,7 +355,28 @@ def victim_ids(world: World) -> set[str]:
     return {v for k, v in world.ids.items() if k not in VALUES and len(v) == 36}
 
 
-def test_every_endpoint_refuses_other_peoples_objects():
+@pytest.fixture
+def midday():
+    """Hold the clock at midday IST: a run that straddles midnight would otherwise see
+    date-based state (what's due, what's expired) change between snapshots."""
+    from datetime import datetime, time
+    from unittest import mock
+    from zoneinfo import ZoneInfo
+
+    from django.utils import timezone
+
+    real_now = timezone.now
+    noon = datetime.combine(
+        real_now().astimezone(ZoneInfo("Asia/Kolkata")).date(),
+        time(12),
+        tzinfo=ZoneInfo("Asia/Kolkata"),
+    )
+    start = real_now()
+    with mock.patch.object(timezone, "now", lambda: noon + (real_now() - start)):
+        yield
+
+
+def test_every_endpoint_refuses_other_peoples_objects(midday):
     world = build_world()
     components = yaml.safe_load(SCHEMA.read_text())["components"]["schemas"]
     ours = victim_ids(world)
