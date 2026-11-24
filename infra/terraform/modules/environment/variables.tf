@@ -178,3 +178,9 @@ variable "clamav_image" {
   type        = string
   default     = "clamav/clamav:1.4.3"
 }
+
+variable "qa_enabled" {
+  description = "Acceptance testing: the QA job, its admin password secret and test-number sign-in (staging only)."
+  type        = bool
+  default     = false
+}

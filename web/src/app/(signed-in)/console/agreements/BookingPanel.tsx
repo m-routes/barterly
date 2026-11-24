@@ -16,6 +16,9 @@ import type {
 } from "@/lib/api/types";
 import { useLoad } from "@/lib/hooks/useLoad";
 
+/** "1 day", "7 days". */
+const days = (n: number) => `${n} ${n === 1 ? "day" : "days"}`;
+
 export const BOOKING_STATUS: Record<BookingStatus, { label: string; tone: ChipTone }> = {
   signing: { label: "Awaiting signatures", tone: "pending" },
   confirmed: { label: "Confirmed", tone: "success" },
@@ -167,7 +170,7 @@ function CancelForm({
       >
         {EFFECT_TEXT[preview.effect]}
         {preview.notice_days != null
-          ? ` The agreement's policy is ${preview.policy}: ${preview.notice_days} days' notice; the stay starts in ${preview.days_before_start} days.`
+          ? ` The agreement's policy is ${preview.policy}: ${days(preview.notice_days)}' notice; the stay starts in ${days(preview.days_before_start)}.`
           : ""}
       </p>
       <SelectField

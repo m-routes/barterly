@@ -4,14 +4,14 @@ import { Suspense } from "react";
 
 import { Logo } from "@/components/Logo";
 import { ErrorState, LoadingState } from "@/components/ui/states";
-import { firebaseWebConfig } from "@/lib/server/env";
+import { firebaseWebConfig, testNumbersAllowed } from "@/lib/server/env";
 
 import { LoginForm } from "./LoginForm";
 
 export const metadata: Metadata = { title: "Sign in · Barterly" };
 
 /** Reads the Firebase config at request time, so one build serves every environment. */
-async function ConfiguredLoginForm() {
+async function ConfiguredLoginForm({ testNumbers }: { testNumbers: boolean }) {
   await connection();
   const config = firebaseWebConfig();
   if (!config) {
@@ -23,10 +23,23 @@ async function ConfiguredLoginForm() {
       />
     );
   }
-  return <LoginForm config={config} />;
+  return <LoginForm config={{ ...config, testNumbersOnly: testNumbersAllowed(testNumbers) }} />;
 }
 
-export default function LoginPage() {
+async function LoginFormFor({
+  searchParams,
+}: {
+  searchParams: Promise<{ test_numbers?: string }>;
+}) {
+  const { test_numbers } = await searchParams;
+  return <ConfiguredLoginForm testNumbers={test_numbers === "1"} />;
+}
+
+export default function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ test_numbers?: string }>;
+}) {
   return (
     <div className="auth-page">
       <header className="auth-page__header">
@@ -34,7 +47,7 @@ export default function LoginPage() {
       </header>
       <main id="main" className="auth-page__main">
         <Suspense fallback={<LoadingState label="Loading sign-in…" />}>
-          <ConfiguredLoginForm />
+          <LoginFormFor searchParams={searchParams} />
         </Suspense>
       </main>
     </div>

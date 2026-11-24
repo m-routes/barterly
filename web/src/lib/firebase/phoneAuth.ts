@@ -9,7 +9,38 @@ export type FirebaseWebConfig = {
   authDomain: string;
   projectId: string;
   appId: string;
+  /**
+   * Skip reCAPTCHA so Firebase's test phone numbers work from automated browsers (the
+   * acceptance suite). With it on, real numbers are refused, so it's only ever set for
+   * one page load, and never in production (see lib/server/env.ts).
+   */
+  testNumbersOnly?: boolean;
+  /**
+   * The acceptance suite's local stack (no Firebase): codes are checked here and the
+   * "ID token" is one the API's local fake verifier accepts. Only ever set by
+   * lib/server/env.ts for BARTERLY_ENV=local with LOCAL_FAKE_SIGN_IN=1.
+   */
+  localFake?: boolean;
 };
+
+/** The code the local fake sign-in accepts. */
+export const LOCAL_FAKE_CODE = "123456";
+
+function localFakeSignIn(): PhoneSignIn {
+  return {
+    async sendCode(phoneE164) {
+      return {
+        async confirm(code) {
+          if (code !== LOCAL_FAKE_CODE) {
+            throw Object.assign(new Error("bad code"), { code: "auth/invalid-verification-code" });
+          }
+          return `fake-otp:${phoneE164}@${Math.floor(Date.now() / 1000)}`;
+        },
+      };
+    },
+    async reset() {},
+  };
+}
 
 export type PendingCode = {
   /** Check the code; resolves to the Firebase ID token for the API's exchange. */
@@ -46,6 +77,7 @@ export function phoneAuthMessage(error: unknown): string {
 
 /** The real implementation. Firebase is imported on first use, not in the page bundle. */
 export function firebasePhoneSignIn(config: FirebaseWebConfig): PhoneSignIn {
+  if (config.localFake) return localFakeSignIn();
   let verifier: { clear(): void } | null = null;
 
   async function auth() {
@@ -53,9 +85,11 @@ export function firebasePhoneSignIn(config: FirebaseWebConfig): PhoneSignIn {
       import("@firebase/app"),
       import("@firebase/auth"),
     ]);
-    const app = getApps()[0] ?? initializeApp(config);
+    const { apiKey, authDomain, projectId, appId } = config;
+    const app = getApps()[0] ?? initializeApp({ apiKey, authDomain, projectId, appId });
     const instance = authModule.getAuth(app);
     instance.languageCode = "en";
+    if (config.testNumbersOnly) instance.settings.appVerificationDisabledForTesting = true;
     return { authModule, instance };
   }
 
