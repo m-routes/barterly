@@ -44,6 +44,7 @@ module "environment" {
   web_domains = var.web_domains
 
   firebase_web = var.firebase_web
+  qa_enabled   = true
 
   api_min_instances   = 0
   web_min_instances   = 0

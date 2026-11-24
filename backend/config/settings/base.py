@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "apps.attendance",
     "apps.deliverables",
     "apps.reviews",
+    "apps.qa",
     "apps.backoffice.apps.BackofficeConfig",
 ]
 
@@ -340,6 +341,12 @@ ATTENDANCE_SIGNING_KEY = env_str("ATTENDANCE_SIGNING_KEY", "")
 # Field-level encryption (apps.common.encryption): "id:base64(32 bytes)" pairs, comma
 # separated, newest first. Secret Manager when deployed; local runs derive a key.
 FIELD_ENCRYPTION_KEYS = env_str("FIELD_ENCRYPTION_KEYS", "")
+
+# Acceptance testing (apps.qa): seed_staging may run here. Off in production, always.
+ALLOW_SEED = env_bool("ALLOW_SEED", True)
+# The admin persona's back-office password, for the acceptance suite. From the
+# environment (a CI secret) only; empty leaves the account without a password.
+SEED_ADMIN_PASSWORD = env_str("SEED_ADMIN_PASSWORD", "")
 ATTENDANCE_PREVIOUS_PUBLIC_KEYS = env_list("ATTENDANCE_PREVIOUS_PUBLIC_KEYS", "")
 ATTENDANCE_PASS_HOURS = env_int("ATTENDANCE_PASS_HOURS", 48)
 ATTENDANCE_GEOFENCE_FLAG_METERS = env_int("ATTENDANCE_GEOFENCE_FLAG_METERS", 1000)

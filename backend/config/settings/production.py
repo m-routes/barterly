@@ -10,3 +10,6 @@ SECURE_HSTS_PRELOAD = True
 API_DOCS_ENABLED = False
 
 SENTRY_ACTIVE = init_sentry(environment="production")
+
+# Never seed test data into production, whatever the environment says.
+ALLOW_SEED = False

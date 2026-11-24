@@ -60,6 +60,10 @@ API_REVISION="$(deploy_candidate "$API_SERVICE" "$API_IMAGE")"
 echo "API candidate revision: ${API_REVISION}"
 
 gcloud run jobs update "$MIGRATE_JOB" "${GC[@]}" --image "$API_IMAGE"
+# The acceptance-testing job (staging only, qa.tf) runs the same image.
+if gcloud run jobs describe "barterly-qa-${ENVIRONMENT}" "${GC[@]}" >/dev/null 2>&1; then
+  gcloud run jobs update "barterly-qa-${ENVIRONMENT}" "${GC[@]}" --image "$API_IMAGE"
+fi
 gcloud run jobs execute "$MIGRATE_JOB" "${GC[@]}" --wait
 
 smoke "$(candidate_url "$API_SERVICE")/api/v1/health/"
