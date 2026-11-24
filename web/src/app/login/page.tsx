@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
+import { LegalFooter } from "@/components/legal/LegalFooter";
 import { Logo } from "@/components/Logo";
 import { ErrorState, LoadingState } from "@/components/ui/states";
 import { firebaseWebConfig, testNumbersAllowed } from "@/lib/server/env";
@@ -50,6 +51,7 @@ export default function LoginPage({
           <LoginFormFor searchParams={searchParams} />
         </Suspense>
       </main>
+      <LegalFooter />
     </div>
   );
 }

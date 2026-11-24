@@ -3,8 +3,18 @@ import 'package:barterly/src/auth/user.dart';
 import 'package:barterly/src/router.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-SignedIn signedIn(UserRole role, {bool complete = true}) => SignedIn(
-  User(id: 'u1', phone: '+919876543210', role: role, profileComplete: complete),
+SignedIn signedIn(
+  UserRole role, {
+  bool complete = true,
+  bool needsConsent = false,
+}) => SignedIn(
+  User(
+    id: 'u1',
+    phone: '+919876543210',
+    role: role,
+    profileComplete: complete,
+    needsConsent: needsConsent,
+  ),
 );
 
 void main() {
@@ -40,5 +50,12 @@ void main() {
     }
     expect(redirectFor(talent, '/wallet'), isNull);
     expect(redirectFor(talent, '/profile/edit'), isNull);
+  });
+
+  test('changed terms are accepted again before anything else', () {
+    final session = signedIn(UserRole.talent, needsConsent: true);
+    expect(redirectFor(session, '/discover'), '/consent');
+    expect(redirectFor(session, '/consent'), isNull);
+    expect(redirectFor(signedIn(UserRole.talent), '/consent'), '/discover');
   });
 }

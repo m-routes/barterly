@@ -37,6 +37,8 @@ from apps.money.escrow import auto_release
 from apps.notifications.reminders import send_reminders as send_booking_reminders
 from apps.notifications.services import dispatch_due
 from apps.offers.models import Offer, OfferStatus
+from apps.privacy.services import erasure as privacy_erasure
+from apps.privacy.services import retention as privacy_retention
 from apps.reviews import reputation as reputations
 from apps.reviews import services as reviews
 from apps.verification.services.cases import expire_due_cases
@@ -153,6 +155,8 @@ JOBS: dict[str, Callable[..., dict]] = {
     "payout_validations": lambda now: payout_accounts.sync_pending(now),
     "escrow_reconcile": lambda now: reconciliation.run_job(now),
     "ops_backlog": lambda now: backlog.report(now),
+    "privacy_retention": lambda now: privacy_retention.purge(now),
+    "privacy_deletions": lambda now: privacy_erasure.run_due(now),
 }
 
 

@@ -27,6 +27,7 @@ class AppConfig {
     this.firebase,
     this.sentryDsn = '',
     this.mapTileUrl = defaultMapTileUrl,
+    this.webBaseUrl = defaultWebBaseUrl,
   });
 
   /// Reads the `--dart-define` values baked in at build time.
@@ -48,8 +49,19 @@ class AppConfig {
         'MAP_TILE_URL',
         defaultValue: defaultMapTileUrl,
       ),
+      // Set per build when the web site moves (staging, say).
+      // ignore: avoid_redundant_argument_values
+      webBaseUrl: const String.fromEnvironment(
+        'WEB_BASE_URL',
+        defaultValue: defaultWebBaseUrl,
+      ),
     );
   }
+
+  /// The public web site: legal pages and the grievance officer live there.
+  static const defaultWebBaseUrl = 'https://barterly.in';
+
+  final String webBaseUrl;
 
   final AppEnv env;
 

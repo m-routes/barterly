@@ -123,6 +123,14 @@ class _ProfileSummary extends ConsumerWidget {
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.push('/profile/verification'),
         ),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.privacy_tip_outlined),
+          title: const Text('Privacy and your data'),
+          subtitle: const Text('Consents, download, correct or delete'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push(Routes.privacy),
+        ),
         const SizedBox(height: BarterlySpace.md),
         const Divider(),
         ListTile(

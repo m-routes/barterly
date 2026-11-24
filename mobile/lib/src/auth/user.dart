@@ -8,6 +8,7 @@ class User {
     required this.phone,
     required this.role,
     required this.profileComplete,
+    this.needsConsent = false,
   });
 
   factory fromJson(Map<String, Object?> json) => User(
@@ -15,6 +16,7 @@ class User {
     phone: json['phone']! as String,
     role: UserRole.parse(json['role'] as String? ?? ''),
     profileComplete: json['profile_complete'] as bool? ?? false,
+    needsConsent: json['needs_consent'] as bool? ?? false,
   );
 
   final String id;
@@ -22,16 +24,21 @@ class User {
   final UserRole role;
   final bool profileComplete;
 
+  /// The terms or privacy policy changed (or were never accepted): ask again.
+  final bool needsConsent;
+
   @override
   bool operator ==(Object other) =>
       other is User &&
       other.id == id &&
       other.phone == phone &&
       other.role == role &&
-      other.profileComplete == profileComplete;
+      other.profileComplete == profileComplete &&
+      other.needsConsent == needsConsent;
 
   @override
-  int get hashCode => Object.hash(id, phone, role, profileComplete);
+  int get hashCode =>
+      Object.hash(id, phone, role, profileComplete, needsConsent);
 }
 
 /// `none` until the person picks a role (the API sends "").

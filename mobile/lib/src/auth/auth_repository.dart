@@ -1,6 +1,7 @@
 import 'package:barterly/src/api/api_error.dart';
 import 'package:barterly/src/api/token_store.dart';
 import 'package:barterly/src/auth/user.dart';
+import 'package:barterly/src/privacy/legal.dart';
 import 'package:dio/dio.dart';
 
 /// Sign-in, the current user and role choice, over the API.
@@ -34,10 +35,18 @@ class AuthRepository {
   });
 
   /// Sets the role once. Talent use this app; vendors use the web console.
+  /// The person has declared they are 18 or older and accepted the terms and
+  /// the privacy policy shown ([legalVersion]); each is recorded separately.
   Future<User> chooseTalentRole() => guardApi(() async {
     final response = await _dio.post<Map<String, Object?>>(
       '/api/v1/me/role/',
-      data: {'role': 'talent'},
+      data: {
+        'role': 'talent',
+        'confirm_adult': true,
+        'terms_version': legalVersion,
+        'privacy_version': legalVersion,
+        'source': 'mobile',
+      },
     );
     return User.fromJson(response.data!);
   });

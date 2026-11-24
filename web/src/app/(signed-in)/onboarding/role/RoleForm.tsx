@@ -8,7 +8,10 @@ import { FormError } from "@/components/ui/fields";
 import { api, unwrap } from "@/lib/api/client";
 import { ApiError, describeError } from "@/lib/api/errors";
 import type { User } from "@/lib/api/types";
+import { LEGAL_VERSION } from "@/lib/legal/documents";
 import { roleSchema, type RoleForm as RoleValues } from "@/lib/validation/auth";
+
+import { Agreement } from "../Agreement";
 
 const OPTIONS = [
   {
@@ -25,12 +28,26 @@ const OPTIONS = [
 
 /** Choose vendor or talent. The API allows this once; admins are made in the admin. */
 export function RoleForm({ onChosen }: { onChosen: (user: User | null) => void | Promise<void> }) {
-  const form = useForm<RoleValues>({ resolver: zodResolver(roleSchema) });
+  const form = useForm<RoleValues>({
+    resolver: zodResolver(roleSchema),
+    defaultValues: { adult: false, terms: false, privacy: false },
+  });
   const selected = useWatch({ control: form.control, name: "role" });
+  const errors = form.formState.errors;
 
   async function submit({ role }: RoleValues) {
     try {
-      const user = await unwrap(api.POST("/api/v1/me/role/", { body: { role } }));
+      const user = await unwrap(
+        api.POST("/api/v1/me/role/", {
+          body: {
+            role,
+            confirm_adult: true,
+            terms_version: LEGAL_VERSION,
+            privacy_version: LEGAL_VERSION,
+            source: "web",
+          },
+        }),
+      );
       await onChosen(user);
     } catch (error) {
       if (error instanceof ApiError && error.code === "role_already_set") {
@@ -74,6 +91,40 @@ export function RoleForm({ onChosen }: { onChosen: (user: User | null) => void |
           You can&apos;t change this later, so pick the one that fits.
         </p>
       )}
+      <fieldset className="stack-sm">
+        <legend className="visually-hidden">Age and agreements</legend>
+        <Agreement
+          error={errors.adult?.message}
+          {...form.register("adult")}
+          label="I am 18 or older."
+        />
+        <Agreement
+          error={errors.terms?.message}
+          {...form.register("terms")}
+          label={
+            <>
+              I agree to the{" "}
+              <a href="/legal/terms" target="_blank" rel="noreferrer">
+                terms of service
+              </a>
+              .
+            </>
+          }
+        />
+        <Agreement
+          error={errors.privacy?.message}
+          {...form.register("privacy")}
+          label={
+            <>
+              I have read the{" "}
+              <a href="/legal/privacy" target="_blank" rel="noreferrer">
+                privacy policy
+              </a>{" "}
+              and agree to Barterly using my data as it describes.
+            </>
+          }
+        />
+      </fieldset>
       <FormError message={form.formState.errors.root?.message} />
       <Button type="submit" block busy={form.formState.isSubmitting} busyLabel="Saving…">
         Continue
