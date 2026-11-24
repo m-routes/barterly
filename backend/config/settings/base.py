@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "apps.reviews",
     "apps.flags",
     "apps.appversions",
+    "apps.qa",
     "apps.backoffice.apps.BackofficeConfig",
 ]
 
@@ -385,6 +386,11 @@ APP_VERSION_DEFAULTS = {
 # The global load balancer's address(es) (docs/edge.md). When X-Forwarded-For ends in
 # one, EdgeForwardedForMiddleware drops it so throttles see the client.
 EDGE_PROXY_IPS = env_list("EDGE_PROXY_IPS")
+# Acceptance testing (apps.qa): seed_staging may run here. Off in production, always.
+ALLOW_SEED = env_bool("ALLOW_SEED", True)
+# The admin persona's back-office password, for the acceptance suite. From the
+# environment (a CI secret) only; empty leaves the account without a password.
+SEED_ADMIN_PASSWORD = env_str("SEED_ADMIN_PASSWORD", "")
 ATTENDANCE_PREVIOUS_PUBLIC_KEYS = env_list("ATTENDANCE_PREVIOUS_PUBLIC_KEYS", "")
 ATTENDANCE_PASS_HOURS = env_int("ATTENDANCE_PASS_HOURS", 48)
 ATTENDANCE_GEOFENCE_FLAG_METERS = env_int("ATTENDANCE_GEOFENCE_FLAG_METERS", 1000)

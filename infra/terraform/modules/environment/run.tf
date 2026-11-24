@@ -366,6 +366,15 @@ resource "google_cloud_run_v2_service" "web" {
         }
       }
 
+      # Acceptance tests may sign in with Firebase test numbers (qa.tf).
+      dynamic "env" {
+        for_each = var.qa_enabled ? ["1"] : []
+        content {
+          name  = "FIREBASE_TEST_NUMBERS_ALLOWED"
+          value = env.value
+        }
+      }
+
       # Phone sign-in (Firebase web SDK). Read at request time by the login page.
       env {
         name  = "FIREBASE_PROJECT_ID"

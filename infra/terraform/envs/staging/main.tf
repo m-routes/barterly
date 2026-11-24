@@ -51,6 +51,7 @@ module "environment" {
 
   firebase_web = var.firebase_web
   alert_emails = var.alert_emails
+  qa_enabled   = true
 
   api_min_instances   = 0
   web_min_instances   = 0

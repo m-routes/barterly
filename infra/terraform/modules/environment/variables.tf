@@ -260,3 +260,9 @@ variable "armor_auth_requests_per_minute" {
   type        = number
   default     = 120
 }
+
+variable "qa_enabled" {
+  description = "Acceptance testing: the QA job, its admin password secret and test-number sign-in (staging only)."
+  type        = bool
+  default     = false
+}
