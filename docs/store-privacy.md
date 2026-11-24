@@ -12,10 +12,9 @@ it, and every SDK in `pubspec.yaml` with what it touches. The iOS privacy manife
 new SDK, a new permission), update `data_safety.json`, the manifest and this page in
 the same PR. Then update the store consoles before that build is released.
 
-Reviewed against the code on 2026-11-24 (`feat/release`). This branch doesn't include
-`feat/privacy` (PR #33). That branch adds consent records, account deletion and the
-public privacy policy, which the store forms link to. Re-check this page after
-merging it.
+Reviewed against the code on 2026-11-24, with `feat/privacy` (PR #33) merged in. Privacy
+adds consent records, account export and deletion, and the public legal pages
+(`/legal/privacy`, `/account/privacy`) that the store forms link to.
 
 ## Google Play: Data safety form
 
