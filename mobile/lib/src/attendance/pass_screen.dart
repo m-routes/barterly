@@ -5,6 +5,7 @@ import 'package:barterly/src/attendance/attendance_models.dart';
 import 'package:barterly/src/attendance/location.dart';
 import 'package:barterly/src/attendance/totp.dart';
 import 'package:barterly/src/platform/device_security.dart';
+import 'package:barterly/src/platform/permission_rationale.dart';
 import 'package:barterly/src/providers.dart';
 import 'package:barterly/src/theme/tokens.dart';
 import 'package:barterly/src/widgets/feedback.dart';
@@ -94,7 +95,7 @@ class _CheckInPassScreenState extends ConsumerState<CheckInPassScreen> {
         final share = await showModalBottomSheet<bool>(
           context: context,
           isScrollControlled: true,
-          builder: (_) => const _LocationExplainer(),
+          builder: (_) => const RationaleSheet(AppPermission.location),
         );
         await store.writeJson(key, {'asked': true, 'shared': share ?? false});
         if (share ?? false) access = await reader.request();
@@ -241,38 +242,3 @@ class _PassBody extends StatelessWidget {
 }
 
 /// Why the pass asks for location, before the system prompt does.
-class _LocationExplainer extends StatelessWidget {
-  const new();
-
-  @override
-  Widget build(BuildContext context) => SafeArea(
-    child: SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: BarterlySpace.sm,
-        children: [
-          const Icon(Icons.location_on_outlined, size: 32),
-          Text(
-            'Share where you are for check-in?',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const Text(
-            'Your host sees how far you are from the property when they check '
-            'you in. We read your location once, now, and never in the '
-            "background. It's optional: check-in works without it.",
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Share location'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Not now'),
-          ),
-        ],
-      ),
-    ),
-  );
-}

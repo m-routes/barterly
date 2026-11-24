@@ -1,7 +1,15 @@
 project_id   = "barterly-prod-123456"
 state_bucket = "barterly-prod-123456-tfstate"
+
+# docs/edge.md. The first domain of each list is canonical; other web domains redirect
+# to it. After `terraform apply`, create the records from `terraform output` ->
+# environment.dns_records at the registrar.
 api_domains  = ["api.barterly.in"]
 web_domains  = ["barterly.in", "www.barterly.in"]
+media_domain = "media.barterly.in"
+edge_enabled = true
+# Then run infra/scripts/set-cdn-key.sh production, set this and apply again:
+# media_cdn_signing_enabled = true
 
 # Firebase console -> Project settings -> Your apps -> Web app. Public values.
 # firebase_web = { api_key = "AIza...", app_id = "1:123456789:web:abc123" }

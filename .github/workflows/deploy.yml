@@ -1,8 +1,11 @@
 name: deploy
 
 # main  -> build images, deploy to staging.
-# v*.*.* tag -> wait for approval (GitHub environment "production"), then promote the
-#               exact images staging ran for that commit. Production never rebuilds.
+# v*.*.* tag -> wait for approval (GitHub environment "production": required reviewers,
+#               deployments limited to v*.*.* tags), then promote the exact images
+#               staging ran for that commit. Production never rebuilds. After a good
+#               deploy, publish the GitHub release with notes from the merged PRs.
+#               docs/release.md has the checklist.
 on:
   push:
     branches: [main]
@@ -68,6 +71,7 @@ jobs:
             GIT_SHA=${{ github.sha }}
             SENTRY_ORG=${{ vars.SENTRY_ORG }}
             SENTRY_PROJECT_WEB=${{ vars.SENTRY_PROJECT_WEB }}
+            MEDIA_CDN_ORIGINS=${{ vars.MEDIA_CDN_ORIGINS }}
           # Uploads source maps to Sentry when the secret exists; skipped otherwise.
           secrets: |
             sentry_auth_token=${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -75,11 +79,18 @@ jobs:
           cache-to: type=gha,scope=web,mode=max
 
       - name: Migrate, smoke test, shift traffic
+        env:
+          # Also checked through the load balancer when set (docs/edge.md).
+          PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL }}
+          PUBLIC_WEB_URL: ${{ vars.PUBLIC_WEB_URL }}
         run: infra/scripts/deploy.sh staging "${GITHUB_SHA}"
 
   production:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # publish the GitHub release
+      id-token: write
     # Required reviewers on this GitHub environment provide the manual approval.
     environment:
       name: production
@@ -92,6 +103,20 @@ jobs:
       PROJECT_NUMBER: ${{ vars.GCP_PROJECT_NUMBER }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # tags and main's history, for the checks and release notes
+
+      - name: Check the tag is a release of a commit on main
+        run: |
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::${GITHUB_REF_NAME} is not a release tag (vMAJOR.MINOR.PATCH)."
+            exit 1
+          fi
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::${GITHUB_REF_NAME} points at a commit that is not on main."
+            exit 1
+          fi
 
       - uses: google-github-actions/auth@v2
         with:
@@ -111,4 +136,21 @@ jobs:
           done
 
       - name: Migrate, smoke test, shift traffic
+        env:
+          PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL }}
+          PUBLIC_WEB_URL: ${{ vars.PUBLIC_WEB_URL }}
         run: infra/scripts/deploy.sh production "${GITHUB_SHA}"
+
+      # Notes from the PRs merged since the previous release tag, grouped by label
+      # (.github/release.yml). CHANGELOG.md gets the same notes in the release PR
+      # (infra/scripts/changelog.sh).
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "Release ${GITHUB_REF_NAME} already exists (a re-run)."
+          else
+            gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes \
+              --title "$GITHUB_REF_NAME"
+          fi

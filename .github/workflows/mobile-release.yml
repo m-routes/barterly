@@ -1,0 +1,88 @@
+name: mobile-release
+
+# Builds the signed, obfuscated Android App Bundle for the Play Console and uploads its
+# Dart symbols to Sentry. It does not upload to Google Play: a person uploads the
+# bundle to the internal track and starts the staged rollout (docs/release.md).
+#
+# Runs on a mobile-v*.*.* tag (the version must match mobile/pubspec.yaml) after
+# approval on the GitHub environment "mobile-release", which holds:
+#   secrets: ANDROID_UPLOAD_KEYSTORE_BASE64, ANDROID_UPLOAD_STORE_PASSWORD,
+#            ANDROID_UPLOAD_KEY_ALIAS, ANDROID_UPLOAD_KEY_PASSWORD,
+#            FIREBASE_KEYS_JSON (the content of mobile/env/firebase-keys.json),
+#            SENTRY_AUTH_TOKEN
+#   vars:    SENTRY_ORG, SENTRY_PROJECT_MOBILE
+# iOS builds need a Mac with the team's signing identity: tool/build_release.sh ipa.
+on:
+  push:
+    tags: ["mobile-v*.*.*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-release
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: mobile
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    environment: mobile-release
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the default build number counts commits
+
+      - name: The tag matches pubspec's version
+        run: |
+          version="$(sed -n 's/^version: *\([0-9][0-9.]*\).*/\1/p' pubspec.yaml)"
+          if [[ "$GITHUB_REF_NAME" != "mobile-v${version}" ]]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} but pubspec.yaml says ${version}."
+            exit 1
+          fi
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.9
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Signing key and Firebase keys (temporary files, removed after)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+          FIREBASE_KEYS_JSON: ${{ secrets.FIREBASE_KEYS_JSON }}
+        run: |
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode >"$RUNNER_TEMP/upload.jks"
+          printf '%s' "$FIREBASE_KEYS_JSON" >env/firebase-keys.json
+
+      - name: Build and upload symbols
+        env:
+          BARTERLY_UPLOAD_STORE_FILE: ${{ runner.temp }}/upload.jks
+          BARTERLY_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
+          BARTERLY_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          BARTERLY_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT_MOBILE }}
+        run: tool/build_release.sh appbundle env/production.json
+
+      - name: Remove the key files
+        if: always()
+        run: rm -f "$RUNNER_TEMP/upload.jks" env/firebase-keys.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: barterly-${{ github.ref_name }}-aab
+          path: mobile/build/app/outputs/bundle/release/app-release.aab
+          retention-days: 30

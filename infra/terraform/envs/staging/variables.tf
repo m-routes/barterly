@@ -36,3 +36,27 @@ variable "alert_emails" {
   type        = list(string)
   default     = []
 }
+
+variable "edge_enabled" {
+  description = "Global HTTPS load balancer + Cloud Armor + Cloud CDN for the domains (docs/edge.md)."
+  type        = bool
+  default     = false
+}
+
+variable "media_domain" {
+  description = "Media through Cloud CDN, e.g. media.barterly.in (empty: Cloud Storage signed URLs)."
+  type        = string
+  default     = ""
+}
+
+variable "media_cdn_signing_enabled" {
+  description = "Set after infra/scripts/set-cdn-key.sh staging has added the CDN signing key."
+  type        = bool
+  default     = false
+}
+
+variable "armor_preview" {
+  description = "Cloud Armor rules log instead of block (use for the first days after enabling)."
+  type        = bool
+  default     = false
+}

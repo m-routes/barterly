@@ -7,7 +7,12 @@ from unittest import mock
 import pytest
 from google.api_core.exceptions import NotFound
 
-from apps.media.storage import GCSMediaStorage, StorageNotConfigured
+from apps.media.storage import (
+    CDNMediaStorage,
+    GCSMediaStorage,
+    StorageNotConfigured,
+    cdn_signed_url,
+)
 
 
 class FakeComputeCredentials:
@@ -102,3 +107,54 @@ def test_stat_read_write_delete(gcs):
     )
     bucket.blob.return_value.delete.side_effect = NotFound("gone")
     storage.delete("k")  # already gone: fine
+
+
+CDN_KEY = base64.urlsafe_b64encode(bytes(range(16))).decode().rstrip("=")
+
+
+def test_cdn_signed_url_signs_the_url_with_expiry_and_key_name():
+    import hashlib
+    import hmac
+
+    url = cdn_signed_url(
+        "https://media.example.com/users/u/x.png", key_name="k1", key_b64=CDN_KEY, expires_at=1700
+    )
+    unsigned, signature = url.split("&Signature=")
+    assert unsigned == "https://media.example.com/users/u/x.png?Expires=1700&KeyName=k1"
+    expected = hmac.new(bytes(range(16)), unsigned.encode(), hashlib.sha1).digest()
+    assert base64.urlsafe_b64decode(signature) == expected
+
+
+@pytest.fixture
+def cdn(settings):
+    settings.GS_SA_EMAIL = None
+    settings.MEDIA_CDN_HOST = "media.example.com"
+    settings.MEDIA_CDN_KEY_NAME = "media-key-1"
+    settings.MEDIA_CDN_KEY = CDN_KEY
+    with (
+        mock.patch("google.auth.default", return_value=(FakeComputeCredentials(), "project")),
+        mock.patch("google.cloud.storage.Client") as client_cls,
+    ):
+        storage = CDNMediaStorage(bucket_name="media-bucket")
+    return storage, client_cls.return_value.bucket.return_value
+
+
+def test_cdn_inline_reads_use_the_cdn_and_stay_short_lived(cdn):
+    storage, bucket = cdn
+    with mock.patch("apps.media.storage.time.time", return_value=1000.0):
+        url = storage.signed_read_url("users/u 1/x.png", expires=timedelta(minutes=5))
+    assert url.startswith(
+        "https://media.example.com/users/u%201/x.png?Expires=1300&KeyName=media-key-1&Signature="
+    )
+    bucket.blob.return_value.generate_signed_url.assert_not_called()
+    with pytest.raises(ValueError):
+        storage.signed_read_url("k", expires=timedelta(hours=2))
+
+
+def test_cdn_downloads_with_a_file_name_use_cloud_storage(cdn):
+    storage, bucket = cdn
+    bucket.blob.return_value.generate_signed_url.return_value = "https://storage.googleapis.com/s"
+    url = storage.signed_read_url(
+        "k", expires=timedelta(minutes=5), download_name="a.pdf", attachment=True
+    )
+    assert url == "https://storage.googleapis.com/s"

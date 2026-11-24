@@ -6,6 +6,7 @@ locals {
     "artifactregistry.googleapis.com",
     "cloudscheduler.googleapis.com",
     "cloudtasks.googleapis.com",
+    "compute.googleapis.com", # the edge load balancer, Cloud Armor and Cloud CDN
     "fcm.googleapis.com",
     "cloudresourcemanager.googleapis.com",
     "iam.googleapis.com",

@@ -7,6 +7,10 @@
 #      backwards compatible (expand/contract; see infra/ROLLBACK.md).
 #   3. Smoke-test the candidate URL, then move 100% of traffic to it.
 #   4. Web: same candidate -> smoke test -> traffic flow.
+#   5. With PUBLIC_API_URL / PUBLIC_WEB_URL set (the custom domains behind the load
+#      balancer, docs/edge.md), check the release through the public edge as well. A
+#      failure there fails the job (so no GitHub release is published) but traffic has
+#      already moved: follow docs/runbooks/bad-deploy-rollback.md.
 #
 # Usage: PROJECT_ID=... PROJECT_NUMBER=... infra/scripts/deploy.sh staging|production <image-tag>
 set -euo pipefail
@@ -68,5 +72,12 @@ promote "$API_SERVICE" "$API_REVISION"
 WEB_REVISION="$(deploy_candidate "$WEB_SERVICE" "$WEB_IMAGE")"
 smoke "$(candidate_url "$WEB_SERVICE")/"
 promote "$WEB_SERVICE" "$WEB_REVISION"
+
+if [[ -n "${PUBLIC_API_URL:-}" ]]; then
+  smoke "${PUBLIC_API_URL%/}/api/v1/health/"
+fi
+if [[ -n "${PUBLIC_WEB_URL:-}" ]]; then
+  smoke "${PUBLIC_WEB_URL%/}/"
+fi
 
 echo "Deployed ${TAG} to ${ENVIRONMENT}"

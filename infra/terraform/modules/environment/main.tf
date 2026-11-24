@@ -28,4 +28,9 @@ locals {
   )
 
   settings_module = "config.settings.${local.env}"
+
+  # The web server calls the API server-to-server. Behind the edge it uses the run.app
+  # URL directly, so its traffic isn't counted against Cloud Armor's per-IP limits as if
+  # every browser were the web server (docs/edge.md).
+  web_api_url = var.edge_enabled ? "https://${local.api_run_host}" : local.api_url
 }

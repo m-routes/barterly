@@ -39,6 +39,22 @@ describe("contentSecurityPolicy", () => {
     );
   });
 
+  it("allows images and video from the media CDN origins, https only", () => {
+    const csp = contentSecurityPolicy({
+      mediaOrigins: [
+        "https://media.barterly.in",
+        " https://media.staging.barterly.in ",
+        "http://x.test",
+        "nonsense",
+      ],
+    });
+    expect(directive(csp, "img-src")).toContain("https://media.barterly.in");
+    expect(directive(csp, "img-src")).toContain("https://media.staging.barterly.in");
+    expect(directive(csp, "media-src")).toContain("https://media.barterly.in");
+    expect(csp).not.toContain("http://x.test");
+    expect(csp).not.toContain("nonsense");
+  });
+
   it("allows images from the configured tile host", () => {
     const custom = contentSecurityPolicy({ tileUrl: "https://tiles.example.com/{z}/{x}/{y}.png" });
     expect(directive(custom, "img-src")).toContain("https://tiles.example.com");

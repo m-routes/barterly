@@ -10,7 +10,8 @@ BaseOptions _options(String baseUrl) => BaseOptions(
   headers: {'Accept': 'application/json'},
 );
 
-/// The Dio every repository uses: JSON, timeouts and [AuthInterceptor].
+/// The Dio every repository uses: JSON, timeouts and [AuthInterceptor], after
+/// [interceptors] (the app adds the client-version headers and the 426 check).
 ///
 /// [adapter] lets tests answer requests without a network.
 Dio createApiClient({
@@ -18,6 +19,7 @@ Dio createApiClient({
   required TokenStore tokens,
   required void Function() onSessionExpired,
   HttpClientAdapter? adapter,
+  List<Interceptor> interceptors = const [],
 }) {
   final bare = Dio(_options(baseUrl));
   final dio = Dio(_options(baseUrl));
@@ -25,12 +27,14 @@ Dio createApiClient({
     bare.httpClientAdapter = adapter;
     dio.httpClientAdapter = adapter;
   }
-  dio.interceptors.add(
-    AuthInterceptor(
-      store: tokens,
-      bareDio: bare,
-      onSessionExpired: onSessionExpired,
-    ),
-  );
+  dio.interceptors
+    ..addAll(interceptors)
+    ..add(
+      AuthInterceptor(
+        store: tokens,
+        bareDio: bare,
+        onSessionExpired: onSessionExpired,
+      ),
+    );
   return dio;
 }

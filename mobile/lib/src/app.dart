@@ -5,6 +5,7 @@ import 'package:barterly/src/auth/user.dart';
 import 'package:barterly/src/providers.dart';
 import 'package:barterly/src/router.dart';
 import 'package:barterly/src/theme/app_theme.dart';
+import 'package:barterly/src/update/update_gate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -34,6 +35,9 @@ class BarterlyApp extends ConsumerWidget {
       theme: barterlyTheme(brandFonts: brandFonts),
       routerConfig: ref.watch(routerProvider),
       scaffoldMessengerKey: ref.watch(scaffoldMessengerKeyProvider),
+      // Old versions are stopped here after a breaking API change.
+      builder: (context, child) =>
+          UpdateGate(child: child ?? const SizedBox.shrink()),
     );
   }
 }
