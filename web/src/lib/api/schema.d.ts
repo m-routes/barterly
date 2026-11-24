@@ -41,6 +41,43 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/admin/flags/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Feature flags (admin) */
+    get: operations["flags_admin_list"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/flags/{key}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Turn a feature flag on or off (admin)
+     * @description A reason is required; the change is audited.
+     */
+    post: operations["flags_admin_set"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/admin/money/escrows/{booking_id}/decide/": {
     parameters: {
       query?: never;
@@ -1270,7 +1307,7 @@ export interface paths {
     put?: never;
     /**
      * Start funding a booking's stipend
-     * @description Creates the gateway order for the host to pay at checkout (asking again before paying returns the same order). The money is held once the gateway confirms the payment. 503 while the kill switch is on.
+     * @description Creates the gateway order for the host to pay at checkout (asking again before paying returns the same order). The money is held once the gateway confirms the payment. 503 while the kill switch is on or the escrow_funding flag is off.
      */
     post: operations["money_escrow_fund"];
     delete?: never;
@@ -1620,6 +1657,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/flags/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Which risky features are on
+     * @description Apps hide a switched-off feature's entry points. The server enforces the flag regardless. Changes reach every instance within a minute.
+     */
+    get: operations["flags_values"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/geo/geocode/": {
     parameters: {
       query?: never;
@@ -1931,7 +1988,7 @@ export interface paths {
     put?: never;
     /**
      * Run a scheduled job (Cloud Scheduler only)
-     * @description Jobs: billing_dunning, billing_invoices, close_expired_gigs, deliverable_reminders, deliverable_stats, dispatch_notifications, escrow_auto_release, escrow_reconcile, expire_offers, expire_verifications, flag_stale_interviews, payout_run, payout_validations, render_agreements, reputation_recompute, reviews_close_windows, run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
+     * @description Jobs: billing_dunning, billing_invoices, close_expired_gigs, deliverable_reminders, deliverable_stats, dispatch_notifications, escrow_auto_release, escrow_reconcile, expire_offers, expire_verifications, flag_stale_interviews, ops_backlog, payout_run, payout_validations, render_agreements, reputation_recompute, reviews_close_windows, run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
      */
     post: operations["jobs_run"];
     delete?: never;
@@ -4264,6 +4321,12 @@ export interface components {
         [key: string]: components["schemas"]["Component"];
       };
     };
+    Flag: {
+      key: components["schemas"]["KeyEnum"];
+      enabled: boolean;
+      description: string;
+      when_off: string;
+    };
     /**
      * @description * `` - Not flagged
      *     * `far` - Far from the property
@@ -4272,6 +4335,12 @@ export interface components {
     FlagEnum: "far";
     FlagReview: {
       note: string;
+    };
+    /** @description For apps and the web: which risky features are on right now. */
+    FlagValues: {
+      escrow_funding: boolean;
+      sos_live_sharing: boolean;
+      ai_safety_checks: boolean;
     };
     GeocodeRequest: {
       /** @description A full address. */
@@ -4643,6 +4712,13 @@ export interface components {
         [key: string]: unknown;
       };
     };
+    /**
+     * @description * `ai_safety_checks` - ai_safety_checks
+     *     * `escrow_funding` - escrow_funding
+     *     * `sos_live_sharing` - sos_live_sharing
+     * @enum {string}
+     */
+    KeyEnum: "ai_safety_checks" | "escrow_funding" | "sos_live_sharing";
     KillSwitch: {
       paused?: boolean;
       reason?: string;
@@ -6137,6 +6213,10 @@ export interface components {
       /** @description Tell the sender this when it isn't empty (e.g. why a number was hidden). */
       notice: string;
     };
+    SetFlag: {
+      enabled: boolean;
+      reason: string;
+    };
     Sign: {
       /** @description The signer ticked the consent statement. */
       consent: boolean;
@@ -7000,6 +7080,60 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["PaginatedCheckInList"];
+        };
+      };
+    };
+  };
+  flags_admin_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Flag"][];
+        };
+      };
+    };
+  };
+  flags_admin_set: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        key: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SetFlag"];
+        "application/x-www-form-urlencoded": components["schemas"]["SetFlag"];
+        "multipart/form-data": components["schemas"]["SetFlag"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Flag"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
         };
       };
     };
@@ -11683,6 +11817,25 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  flags_values: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FlagValues"];
         };
       };
     };

@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "apps.attendance",
     "apps.deliverables",
     "apps.reviews",
+    "apps.flags",
     "apps.backoffice.apps.BackofficeConfig",
 ]
 
@@ -340,6 +341,10 @@ ATTENDANCE_SIGNING_KEY = env_str("ATTENDANCE_SIGNING_KEY", "")
 # Field-level encryption (apps.common.encryption): "id:base64(32 bytes)" pairs, comma
 # separated, newest first. Secret Manager when deployed; local runs derive a key.
 FIELD_ENCRYPTION_KEYS = env_str("FIELD_ENCRYPTION_KEYS", "")
+
+# Feature flags (apps.flags): how long instances cache them, so a change made in the
+# back office reaches every instance within this many seconds.
+FLAG_CACHE_SECONDS = env_int("FLAG_CACHE_SECONDS", 30)
 ATTENDANCE_PREVIOUS_PUBLIC_KEYS = env_list("ATTENDANCE_PREVIOUS_PUBLIC_KEYS", "")
 ATTENDANCE_PASS_HOURS = env_int("ATTENDANCE_PASS_HOURS", 48)
 ATTENDANCE_GEOFENCE_FLAG_METERS = env_int("ATTENDANCE_GEOFENCE_FLAG_METERS", 1000)

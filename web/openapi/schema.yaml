@@ -99,6 +99,65 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedCheckInList'
           description: ''
+  /api/v1/admin/flags/:
+    get:
+      operationId: flags_admin_list
+      summary: Feature flags (admin)
+      tags:
+      - flags
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Flag'
+          description: ''
+  /api/v1/admin/flags/{key}/:
+    post:
+      operationId: flags_admin_set
+      description: A reason is required; the change is audited.
+      summary: Turn a feature flag on or off (admin)
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+        required: true
+      tags:
+      - flags
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetFlag'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SetFlag'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SetFlag'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Flag'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/admin/money/escrows/{booking_id}/decide/:
     post:
       operationId: money_admin_decide
@@ -3531,7 +3590,8 @@ paths:
       operationId: money_escrow_fund
       description: Creates the gateway order for the host to pay at checkout (asking
         again before paying returns the same order). The money is held once the gateway
-        confirms the payment. 503 while the kill switch is on.
+        confirms the payment. 503 while the kill switch is on or the escrow_funding
+        flag is off.
       summary: Start funding a booking's stipend
       parameters:
       - in: path
@@ -4698,6 +4758,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/flags/:
+    get:
+      operationId: flags_values
+      description: Apps hide a switched-off feature's entry points. The server enforces
+        the flag regardless. Changes reach every instance within a minute.
+      summary: Which risky features are on
+      tags:
+      - flags
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlagValues'
           description: ''
   /api/v1/geo/geocode/:
     post:
@@ -5901,11 +5979,11 @@ paths:
       operationId: jobs_run
       description: 'Jobs: billing_dunning, billing_invoices, close_expired_gigs, deliverable_reminders,
         deliverable_stats, dispatch_notifications, escrow_auto_release, escrow_reconcile,
-        expire_offers, expire_verifications, flag_stale_interviews, payout_run, payout_validations,
-        render_agreements, reputation_recompute, reviews_close_windows, run_search_alerts,
-        send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed
-        OIDC token for the scheduler service account. Idempotent; overlapping runs
-        of one job are skipped.'
+        expire_offers, expire_verifications, flag_stale_interviews, ops_backlog, payout_run,
+        payout_validations, render_agreements, reputation_recompute, reviews_close_windows,
+        run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results.
+        Needs a Google-signed OIDC token for the scheduler service account. Idempotent;
+        overlapping runs of one job are skipped.'
       summary: Run a scheduled job (Cloud Scheduler only)
       parameters:
       - in: path
@@ -11487,6 +11565,22 @@ components:
       required:
       - breakdown
       - score
+    Flag:
+      type: object
+      properties:
+        key:
+          $ref: '#/components/schemas/KeyEnum'
+        enabled:
+          type: boolean
+        description:
+          type: string
+        when_off:
+          type: string
+      required:
+      - description
+      - enabled
+      - key
+      - when_off
     FlagEnum:
       enum:
       - far
@@ -11502,6 +11596,20 @@ components:
           maxLength: 300
       required:
       - note
+    FlagValues:
+      type: object
+      description: 'For apps and the web: which risky features are on right now.'
+      properties:
+        escrow_funding:
+          type: boolean
+        sos_live_sharing:
+          type: boolean
+        ai_safety_checks:
+          type: boolean
+      required:
+      - ai_safety_checks
+      - escrow_funding
+      - sos_live_sharing
     GeocodeRequest:
       type: object
       properties:
@@ -12473,6 +12581,16 @@ components:
       - result
       - run_id
       - skipped
+    KeyEnum:
+      enum:
+      - ai_safety_checks
+      - escrow_funding
+      - sos_live_sharing
+      type: string
+      description: |-
+        * `ai_safety_checks` - ai_safety_checks
+        * `escrow_funding` - escrow_funding
+        * `sos_live_sharing` - sos_live_sharing
     KillSwitch:
       type: object
       properties:
@@ -15634,6 +15752,17 @@ components:
       required:
       - message
       - notice
+    SetFlag:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        reason:
+          type: string
+          maxLength: 300
+      required:
+      - enabled
+      - reason
     Sign:
       type: object
       properties:

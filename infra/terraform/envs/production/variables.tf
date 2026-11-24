@@ -30,3 +30,9 @@ variable "firebase_web" {
   })
   default = { api_key = "", app_id = "" }
 }
+
+variable "alert_emails" {
+  description = "Who gets monitoring alerts (modules/environment/monitoring.tf)."
+  type        = list(string)
+  default     = []
+}

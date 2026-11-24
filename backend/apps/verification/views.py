@@ -9,6 +9,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.common.ops import ops_event
 from apps.common.permissions import IsStaffWith, IsTalent, IsVendor
 from apps.common.serializers import ErrorSerializer
 from apps.verification.constants import CHECKS, BadgeKind, CaseStatus, CheckType
@@ -285,6 +286,7 @@ class KycWebhookView(APIView):
         try:
             outcome = kyc.handle_webhook(request.headers, body)
         except InvalidWebhook as exc:
+            ops_event("webhook_rejected", provider="kyc", reason=str(exc)[:200])
             raise InvalidWebhookError from exc
         except KycProviderNotConfigured as exc:
             raise KycUnavailable from exc

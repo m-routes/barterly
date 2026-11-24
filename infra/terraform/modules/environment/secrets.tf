@@ -48,6 +48,7 @@ locals {
     api_youtube_key      = { secret = "youtube_api_key", member = google_service_account.api.member }
     api_instagram_token  = { secret = "instagram_graph_token", member = google_service_account.api.member }
     api_sentry_dsn       = { secret = "sentry_dsn", member = google_service_account.api.member }
+    web_sentry_dsn       = { secret = "sentry_dsn", member = google_service_account.web.member }
     api_email_password   = { secret = "email_host_password", member = google_service_account.api.member }
     api_kyc_webhook      = { secret = "kyc_webhook_secret", member = google_service_account.api.member }
   }

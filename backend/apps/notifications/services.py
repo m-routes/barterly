@@ -23,6 +23,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import F, Q
 from django.utils import timezone
 
+from apps.common.ops import ops_event
 from apps.media.tasks import get_queue, task
 from apps.notifications import catalog, templates
 from apps.notifications.channels.base import (
@@ -290,6 +291,12 @@ def deliver(delivery_id, *, now: datetime | None = None) -> Delivery:
                 delivery.last_error = f"{type(exc).__name__}: {exc}"[:2000]
                 if delivery.attempts >= max_attempts():
                     delivery.status = DeliveryStatus.DEAD
+                    ops_event(
+                        "notification_dead_letter",
+                        delivery_id=delivery.pk,
+                        channel=delivery.channel,
+                        provider=delivery.provider,
+                    )
                 else:
                     retry = delivery.last_error
             else:

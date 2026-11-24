@@ -337,6 +337,21 @@ resource "google_cloud_run_v2_service" "web" {
         value = local.env
       }
 
+      # Error reporting (web/src/instrumentation*.ts), once the sentry-dsn secret has
+      # a value and sentry_enabled is set.
+      dynamic "env" {
+        for_each = var.sentry_enabled ? ["SENTRY_DSN"] : []
+        content {
+          name = env.value
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.this["sentry_dsn"].secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+
       # Phone sign-in (Firebase web SDK). Read at request time by the login page.
       env {
         name  = "FIREBASE_PROJECT_ID"

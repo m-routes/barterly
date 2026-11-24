@@ -39,7 +39,18 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   mocktail: ^1.0.5
+  sentry_dart_plugin: 3.4.0
   very_good_analysis: ^11.0.0
 
 flutter:
   uses-material-design: true
+
+# Release builds upload debug symbols so Sentry can show Dart stack traces from
+# obfuscated builds (tool/build_release.sh). The release name is barterly@<version>,
+# the same one sentry_flutter reports. SENTRY_AUTH_TOKEN, SENTRY_ORG and
+# SENTRY_PROJECT come from the environment, never this file.
+sentry:
+  upload_debug_symbols: true
+  upload_source_maps: false
+  symbols_path: build/symbols
+  wait_for_processing: false

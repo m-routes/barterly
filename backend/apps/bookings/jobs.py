@@ -7,6 +7,7 @@ the second time. A Postgres advisory lock also stops two runs of the same job fr
 overlapping. Each run is recorded as a JobRun.
 """
 
+import logging
 import zlib
 from collections.abc import Callable
 from datetime import timedelta
@@ -23,7 +24,9 @@ from apps.billing.services import dunning as billing_dunning
 from apps.bookings.cancellation import cancel_unsigned
 from apps.bookings.lifecycle import OFFER_TTL, STALE_INTERVIEW_AFTER, Actor
 from apps.bookings.models import JobRun
+from apps.common import backlog
 from apps.common.events import DomainEvent, publish
+from apps.common.ops import ops_event
 from apps.common.services.audit import log_action
 from apps.deliverables import services as deliverables
 from apps.discovery.alerts import run_alerts
@@ -149,6 +152,7 @@ JOBS: dict[str, Callable[..., dict]] = {
     "payout_run": lambda now: payouts.scheduled(now),
     "payout_validations": lambda now: payout_accounts.sync_pending(now),
     "escrow_reconcile": lambda now: reconciliation.run_job(now),
+    "ops_backlog": lambda now: backlog.report(now),
 }
 
 
@@ -170,6 +174,7 @@ def run(name: str, *, trigger: str = "scheduler", now=None) -> JobRun:
         record.result = job(now or timezone.now())
     except Exception as exc:
         record.error = f"{type(exc).__name__}: {exc}"
+        ops_event("job_failed", level=logging.ERROR, job=name, error=type(exc).__name__)
         raise
     finally:
         record.finished_at = timezone.now()

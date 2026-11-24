@@ -32,3 +32,17 @@ export function firebaseWebConfig(): FirebaseWebConfig | null {
   const authDomain = process.env.FIREBASE_AUTH_DOMAIN?.trim() || `${projectId}.firebaseapp.com`;
   return { apiKey, authDomain, projectId, appId };
 }
+
+/** Error reporting. The DSN identifies the Sentry project; it isn't a secret. */
+export type SentryConfig = { dsn: string; environment: string; release: string };
+
+/** Sentry settings, or null when error reporting is off for this environment. */
+export function sentryConfig(): SentryConfig | null {
+  const dsn = process.env.SENTRY_DSN?.trim();
+  if (!dsn) return null;
+  return {
+    dsn,
+    environment: process.env.BARTERLY_ENV?.trim() || "local",
+    release: process.env.SENTRY_RELEASE?.trim() || "unknown",
+  };
+}

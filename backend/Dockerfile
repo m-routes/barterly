@@ -12,7 +12,10 @@ COPY pyproject.toml uv.lock .python-version ./
 RUN uv sync --locked --no-dev --no-install-project
 
 FROM python:3.12-slim AS runtime
-ENV PYTHONDONTWRITEBYTECODE=1 \
+# The commit is the Sentry release (deploy.yml passes it).
+ARG GIT_SHA=unknown
+ENV SENTRY_RELEASE=${GIT_SHA} \
+    PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH" \
     DJANGO_SETTINGS_MODULE=config.settings.production \
