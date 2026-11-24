@@ -450,8 +450,9 @@ def _money(user, now) -> int:
 
 
 def _attendance(user, now) -> int:
+    # Blanking the pass's TOTP secret on erasure, not setting a password.
     count = (
-        _model("attendance.AttendancePass")
+        _model("attendance.AttendancePass")  # nosec B106
         .objects.filter(talent=user)
         .update(latitude=None, longitude=None, accuracy_m=None, code_secret="")
     )
