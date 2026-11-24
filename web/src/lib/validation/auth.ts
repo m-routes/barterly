@@ -33,7 +33,18 @@ export const otpSchema = z.object({
 });
 export type OtpForm = z.infer<typeof otpSchema>;
 
+const mustAgree = (message: string) => z.boolean().refine((value) => value, { message });
+
 export const roleSchema = z.object({
   role: z.enum(["vendor", "talent"], { message: "Choose how you'll use Barterly." }),
+  adult: mustAgree("You must be 18 or older to use Barterly."),
+  terms: mustAgree("Accept the terms of service to continue."),
+  privacy: mustAgree("Accept the privacy policy to continue."),
 });
 export type RoleForm = z.infer<typeof roleSchema>;
+
+export const consentSchema = z.object({
+  terms: mustAgree("Accept the terms of service to continue."),
+  privacy: mustAgree("Accept the privacy policy to continue."),
+});
+export type ConsentForm = z.infer<typeof consentSchema>;

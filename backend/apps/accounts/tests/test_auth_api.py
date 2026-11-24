@@ -16,6 +16,11 @@ REFRESH = reverse("accounts:auth-refresh")
 LOGOUT = reverse("accounts:auth-logout")
 ME = reverse("accounts:me")
 ROLE = reverse("accounts:me-role")
+SIGN_UP = {
+    "confirm_adult": True,
+    "terms_version": "2026-11-draft-1",
+    "privacy_version": "2026-11-draft-1",
+}
 PHONE = "+919812345678"
 
 
@@ -235,7 +240,7 @@ def test_choose_role_once(api):
     access = exchange(api).json()["access"]
     client = bearer(access)
 
-    response = client.post(ROLE, {"role": "vendor"}, format="json")
+    response = client.post(ROLE, {"role": "vendor", **SIGN_UP}, format="json")
     assert response.status_code == 200
     assert response.json()["role"] == "vendor"
     assert response.json()["profile_complete"] is False
@@ -243,8 +248,9 @@ def test_choose_role_once(api):
     assert user.role == Role.VENDOR
     entry = AuditLog.objects.get(action="user.role_selected")
     assert (entry.before, entry.after, entry.actor) == ({"role": ""}, {"role": "vendor"}, user)
+    assert response.json()["needs_consent"] is False
 
-    again = client.post(ROLE, {"role": "talent"}, format="json")
+    again = client.post(ROLE, {"role": "talent", **SIGN_UP}, format="json")
     assert again.status_code == 409
     assert again.json()["code"] == "role_already_set"
     user.refresh_from_db()
@@ -256,11 +262,32 @@ def test_choose_role_once(api):
 @pytest.mark.parametrize("role", ["admin", "superuser", ""])
 def test_admin_and_unknown_roles_cannot_be_chosen(api, role):
     client = bearer(exchange(api).json()["access"])
-    response = client.post(ROLE, {"role": role}, format="json")
+    response = client.post(ROLE, {"role": role, **SIGN_UP}, format="json")
     assert response.status_code == 400
     assert "role" in response.json()["details"]
     assert User.objects.get(phone=PHONE).role == ""
 
 
 def test_choose_role_requires_sign_in(api):
-    assert api.post(ROLE, {"role": "talent"}, format="json").status_code == 401
+    assert api.post(ROLE, {"role": "talent", **SIGN_UP}, format="json").status_code == 401
+
+
+def test_choose_role_needs_the_adult_declaration_and_both_consents(api):
+    client = bearer(exchange(api).json()["access"])
+    minor = client.post(ROLE, {"role": "talent", **SIGN_UP, "confirm_adult": False}, format="json")
+    assert minor.status_code == 400
+    assert minor.json()["details"]["confirm_adult"] == ["You must be 18 or older to use Barterly."]
+    missing = client.post(ROLE, {"role": "talent", "confirm_adult": True}, format="json")
+    assert set(missing.json()["details"]) == {"terms_version", "privacy_version"}
+    stale = client.post(ROLE, {"role": "talent", **SIGN_UP, "terms_version": "old"}, format="json")
+    assert stale.status_code == 409 and stale.json()["code"] == "document_changed"
+    user = User.objects.get(phone=PHONE)
+    assert user.role == "" and not user.consent_records.exists()  # all or nothing
+
+    ok = client.post(ROLE, {"role": "talent", **SIGN_UP, "source": "web"}, format="json")
+    assert ok.status_code == 200
+    records = {r.purpose: r for r in user.consent_records.all()}
+    assert set(records) == {"terms", "privacy"}
+    assert {r.version for r in records.values()} == {"2026-11-draft-1"}
+    assert {r.source for r in records.values()} == {"web"}
+    assert AuditLog.objects.filter(action="user.declared_adult", actor=user).exists()

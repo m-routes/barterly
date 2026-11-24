@@ -1179,7 +1179,7 @@ export interface paths {
     put?: never;
     /**
      * Your check-in pass
-     * @description A signed token to show as a QR code, and the secret for the six-digit fallback code. Valid offline until `valid_until`; ask again for a fresh one. Send your location to record your distance from the property at check-in (it never blocks check-in).
+     * @description A signed token to show as a QR code, and the secret for the six-digit fallback code. Valid offline until `valid_until`; ask again for a fresh one. Send your location to record your distance from the property at check-in (it never blocks check-in). The location is kept only if you have given location consent (POST /api/v1/privacy/consents/); otherwise it is ignored.
      */
     post: operations["attendance_pass"];
     delete?: never;
@@ -1988,7 +1988,7 @@ export interface paths {
     put?: never;
     /**
      * Run a scheduled job (Cloud Scheduler only)
-     * @description Jobs: billing_dunning, billing_invoices, close_expired_gigs, deliverable_reminders, deliverable_stats, dispatch_notifications, escrow_auto_release, escrow_reconcile, expire_offers, expire_verifications, flag_stale_interviews, ops_backlog, payout_run, payout_validations, render_agreements, reputation_recompute, reviews_close_windows, run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
+     * @description Jobs: billing_dunning, billing_invoices, close_expired_gigs, deliverable_reminders, deliverable_stats, dispatch_notifications, escrow_auto_release, escrow_reconcile, expire_offers, expire_verifications, flag_stale_interviews, ops_backlog, payout_run, payout_validations, privacy_deletions, privacy_retention, render_agreements, reputation_recompute, reviews_close_windows, run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
      */
     post: operations["jobs_run"];
     delete?: never;
@@ -2025,7 +2025,7 @@ export interface paths {
     put?: never;
     /**
      * Choose vendor or talent (once)
-     * @description Sets the role of a user who signed up by OTP. Allowed once; admin roles are granted only in the Django admin.
+     * @description Sets the role of a user who signed up by OTP. Allowed once; admin roles are granted only in the Django admin. The person must declare they are 18 or older (`confirm_adult`) and accept the current terms and privacy policy, each recorded as a separate consent with its version. A stale version is 409 `document_changed`.
      */
     post: operations["accounts_me_role"];
     delete?: never;
@@ -2354,6 +2354,159 @@ export interface paths {
      * @description A UPI id, or a bank account (number, IFSC, name on the account). The payout provider verifies it (a ₹1 deposit or an account check) before payouts use it: `validation_status` goes pending → verified or failed. Changing an account holds payouts for 24 hours and notifies you on every channel. Only a masked version is kept.
      */
     put: operations["money_payout_account_link"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/privacy/consents/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My consents, one per purpose */
+    get: operations["privacy_consents"];
+    put?: never;
+    /**
+     * Give or withdraw one consent
+     * @description `granted: true` with the version shown gives consent; `granted: false` withdraws it, effective at once. Terms and privacy policy can't be withdrawn on their own (409 `consent_required`): delete the account instead. Every change is audit-logged. Returns all consents.
+     */
+    post: operations["privacy_consents_change"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/privacy/consents/history/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Every consent I gave or withdrew, newest first */
+    get: operations["privacy_consents_history"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/privacy/corrections/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My correction requests */
+    get: operations["privacy_corrections"];
+    put?: never;
+    /**
+     * Ask us to correct something you can't edit yourself
+     * @description Your profile is edited directly (PATCH /api/v1/profiles/.../me/). Use this for the rest: your phone number, a name on a signed agreement, a verification result. The team replies within the grievance timelines.
+     */
+    post: operations["privacy_corrections_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/privacy/deletion/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Whether my account is scheduled for deletion, and what blocks it */
+    get: operations["privacy_deletion"];
+    put?: never;
+    /**
+     * Delete my account
+     * @description Schedules deletion after a grace period (cancel any time before). Then every personal field is erased; records the law makes us keep (payments, agreements, disputes, the audit log) stay, anonymised. 409 `deletion_blocked` lists what to finish first in `details.blockers`.
+     */
+    post: operations["privacy_deletion_request"];
+    /** Cancel my scheduled deletion */
+    delete: operations["privacy_deletion_cancel"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/privacy/documents/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Current versions of the documents people consent to */
+    get: operations["privacy_documents"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/privacy/exports/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My data exports */
+    get: operations["privacy_exports"];
+    put?: never;
+    /**
+     * Export my data as JSON
+     * @description Builds one machine-readable JSON file of everything Barterly holds about you and keeps it for a day. Fetch it with the export's link endpoint, which returns a signed URL valid for a few minutes. A few exports a day at most.
+     */
+    post: operations["privacy_exports_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/privacy/exports/{export_id}/link/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** A short-lived download link for one of my exports */
+    post: operations["privacy_exports_link"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/privacy/grievance-officer/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** How to reach the Grievance Officer */
+    get: operations["privacy_grievance_officer"];
+    put?: never;
     post?: never;
     delete?: never;
     options?: never;
@@ -3425,6 +3578,11 @@ export interface components {
         [key: string]: unknown;
       };
     };
+    Blocker: {
+      code: string;
+      count: number;
+      message: string;
+    };
     Booking: {
       /** Format: uuid */
       readonly id: string;
@@ -3897,8 +4055,17 @@ export interface components {
       | "social_account"
       | "certificate"
       | "reference";
+    /** @description Sign-up's last step: the role, the 18+ declaration and the two required consents. */
     ChooseRole: {
       role: components["schemas"]["ChooseRoleRoleEnum"];
+      /** @description The person declares they are 18 or older. Must be true. */
+      confirm_adult: boolean;
+      /** @description Version of the terms shown (GET /api/v1/privacy/documents/). */
+      terms_version: string;
+      /** @description Version of the privacy policy shown. */
+      privacy_version: string;
+      /** @default api */
+      source: components["schemas"]["ConsentSourceEnum"];
     };
     /**
      * @description * `vendor` - Vendor
@@ -3934,6 +4101,64 @@ export interface components {
     ConfirmRequest: {
       /** Format: uuid */
       media_id: string;
+    };
+    ConsentChange: {
+      purpose: components["schemas"]["ConsentPurposeEnum"];
+      /** @description true to give, false to withdraw. */
+      granted: boolean;
+      /** @description The document version shown. Required when giving consent. */
+      version?: string;
+      /** @default api */
+      source: components["schemas"]["ConsentSourceEnum"];
+    };
+    /**
+     * @description * `terms` - Terms of service
+     *     * `privacy` - Privacy policy
+     *     * `location` - Location use
+     *     * `social` - Social account access
+     *     * `marketing` - Marketing messages
+     * @enum {string}
+     */
+    ConsentPurposeEnum: "terms" | "privacy" | "location" | "social" | "marketing";
+    ConsentRecord: {
+      readonly id: number;
+      readonly purpose: components["schemas"]["ConsentPurposeEnum"];
+      /** @description True when given, False when withdrawn. */
+      readonly granted: boolean;
+      /** @description The document version shown. */
+      readonly version: string;
+      readonly source: components["schemas"]["ConsentRecordSourceEnum"];
+      /** Format: date-time */
+      readonly recorded_at: string;
+    };
+    /**
+     * @description * `web` - Web
+     *     * `mobile` - Mobile app
+     *     * `api` - API
+     *     * `system` - System
+     * @enum {string}
+     */
+    ConsentRecordSourceEnum: "web" | "mobile" | "api" | "system";
+    /**
+     * @description * `web` - Web
+     *     * `mobile` - Mobile app
+     *     * `api` - API
+     * @enum {string}
+     */
+    ConsentSourceEnum: "web" | "mobile" | "api";
+    ConsentState: {
+      purpose: components["schemas"]["ConsentPurposeEnum"];
+      label: string;
+      /** @description Needed to use Barterly at all. */
+      required: boolean;
+      granted: boolean;
+      /** @description The version agreed to; "" if never asked. */
+      version: string;
+      current_version: string;
+      /** @description Given for an older version. */
+      needs_renewal: boolean;
+      /** Format: date-time */
+      recorded_at: string | null;
     };
     Contact: {
       name: string;
@@ -3984,6 +4209,32 @@ export interface components {
       readonly contact_sharing_allowed: boolean;
       readonly blocked_by_me: boolean;
     };
+    CorrectionCreate: {
+      field: string;
+      correct_value: string;
+      note?: string;
+    };
+    CorrectionRequest: {
+      /** Format: uuid */
+      readonly id: string;
+      /** @description What is wrong, e.g. 'phone'. */
+      field: string;
+      correct_value: string;
+      note?: string;
+      readonly status: components["schemas"]["CorrectionRequestStatusEnum"];
+      /** Format: date-time */
+      readonly created_at: string;
+      /** Format: date-time */
+      readonly resolved_at: string | null;
+      readonly resolution_note: string;
+    };
+    /**
+     * @description * `open` - Open
+     *     * `done` - Corrected
+     *     * `rejected` - Not changed
+     * @enum {string}
+     */
+    CorrectionRequestStatusEnum: "open" | "done" | "rejected";
     Counter: {
       changes: components["schemas"]["CounterChanges"];
       message?: string;
@@ -4001,6 +4252,22 @@ export interface components {
       deliverables?: components["schemas"]["TermsDeliverable"][];
       usage_rights?: components["schemas"]["UsageRights"] | null;
     };
+    DataExport: {
+      /** Format: uuid */
+      readonly id: string;
+      readonly status: components["schemas"]["DataExportStatusEnum"];
+      readonly size_bytes: number;
+      /** Format: date-time */
+      readonly created_at: string;
+      /** Format: date-time */
+      readonly expires_at: string;
+    };
+    /**
+     * @description * `ready` - Ready to download
+     *     * `expired` - Expired and deleted
+     * @enum {string}
+     */
+    DataExportStatusEnum: "ready" | "expired";
     /**
      * @description * `ok` - ok
      *     * `unavailable` - unavailable
@@ -4033,6 +4300,36 @@ export interface components {
       name: string;
       address: string;
       tan: string;
+    };
+    DeletionCreate: {
+      /** @description Must be true. */
+      confirm: boolean;
+      reason?: string;
+    };
+    DeletionRequest: {
+      /** Format: uuid */
+      readonly id: string;
+      readonly status: components["schemas"]["DeletionRequestStatusEnum"];
+      /** Format: date-time */
+      readonly requested_at: string;
+      /** Format: date-time */
+      readonly scheduled_for: string;
+      /** Format: date-time */
+      readonly cancelled_at: string | null;
+      /** Format: date-time */
+      readonly completed_at: string | null;
+    };
+    /**
+     * @description * `scheduled` - Scheduled
+     *     * `cancelled` - Cancelled
+     *     * `completed` - Completed
+     * @enum {string}
+     */
+    DeletionRequestStatusEnum: "scheduled" | "cancelled" | "completed";
+    DeletionStatus: {
+      request: components["schemas"]["DeletionRequest"] | null;
+      blockers: components["schemas"]["Blocker"][];
+      grace_days: number;
     };
     Deliverable: {
       type: components["schemas"]["DeliverableTypeEnum"];
@@ -4293,6 +4590,14 @@ export interface components {
       /** @description True until the user picks vendor or talent at /api/v1/me/role/. */
       needs_role: boolean;
       user: components["schemas"]["User"];
+    };
+    ExportLink: {
+      /**
+       * Format: uri
+       * @description Signed; works once fetched, for a few minutes.
+       */
+      url: string;
+      expires_in_seconds: number;
     };
     FileLink: {
       /** Format: uuid */
@@ -4559,6 +4864,16 @@ export interface components {
      * @enum {string}
      */
     GigStatusEnum: "draft" | "in_review" | "live" | "paused" | "filled" | "closed" | "archived";
+    GrievanceOfficer: {
+      name: string;
+      /** Format: email */
+      email: string;
+      phone: string;
+      address: string;
+      hours: string;
+      acknowledge_hours: number;
+      resolve_days: number;
+    };
     Health: {
       status: components["schemas"]["HealthStatusEnum"];
       database: components["schemas"]["DatabaseEnum"];
@@ -5160,6 +5475,21 @@ export interface components {
       previous?: string | null;
       results: components["schemas"]["CheckIn"][];
     };
+    PaginatedConsentRecordList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["ConsentRecord"][];
+    };
     PaginatedConversationList: {
       /** @example 123 */
       count: number;
@@ -5174,6 +5504,36 @@ export interface components {
        */
       previous?: string | null;
       results: components["schemas"]["Conversation"][];
+    };
+    PaginatedCorrectionRequestList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["CorrectionRequest"][];
+    };
+    PaginatedDataExportList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["DataExport"][];
     };
     PaginatedGigList: {
       /** @example 123 */
@@ -5814,6 +6174,14 @@ export interface components {
       readonly features: {
         [key: string]: boolean;
       };
+    };
+    PolicyDocument: {
+      purpose: components["schemas"]["ConsentPurposeEnum"];
+      label: string;
+      version: string;
+      required: boolean;
+      /** @description Where to read it on the web app. */
+      web_path: string;
     };
     PostStats: {
       readonly source: components["schemas"]["PostStatsSourceEnum"];
@@ -6744,6 +7112,8 @@ export interface components {
       readonly is_active: boolean;
       /** @description True once the user has a role and the matching profile. */
       readonly profile_complete: boolean;
+      /** @description True when the terms or the privacy policy were never accepted, or changed since. Ask again (POST /api/v1/privacy/consents/) before going on. */
+      readonly needs_consent: boolean;
       /** Format: date-time */
       readonly created_at: string;
     };
@@ -13948,6 +14318,536 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_consents: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConsentState"][];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_consents_change: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ConsentChange"];
+        "application/x-www-form-urlencoded": components["schemas"]["ConsentChange"];
+        "multipart/form-data": components["schemas"]["ConsentChange"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConsentState"][];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_consents_history: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedConsentRecordList"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_corrections: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedCorrectionRequestList"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_corrections_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CorrectionCreate"];
+        "application/x-www-form-urlencoded": components["schemas"]["CorrectionCreate"];
+        "multipart/form-data": components["schemas"]["CorrectionCreate"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CorrectionRequest"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_deletion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeletionStatus"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_deletion_request: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DeletionCreate"];
+        "application/x-www-form-urlencoded": components["schemas"]["DeletionCreate"];
+        "multipart/form-data": components["schemas"]["DeletionCreate"];
+      };
+    };
+    responses: {
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeletionStatus"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_deletion_cancel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeletionRequest"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_documents: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicyDocument"][];
+        };
+      };
+    };
+  };
+  privacy_exports: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedDataExportList"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_exports_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DataExport"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_exports_link: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        export_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ExportLink"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      410: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_grievance_officer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GrievanceOfficer"];
         };
       };
     };

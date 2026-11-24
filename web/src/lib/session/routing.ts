@@ -1,7 +1,11 @@
 import type { Role, User } from "@/lib/api/types";
 
 /** Where a signed-in person belongs, given who they are. */
-export function homeFor(user: Pick<User, "role" | "profile_complete">): string {
+export function homeFor(
+  user: Pick<User, "role" | "profile_complete"> & { needs_consent?: boolean },
+): string {
+  // Terms or privacy policy changed (or were never accepted): ask before anything else.
+  if (user.role && user.needs_consent) return "/onboarding/consent";
   switch (user.role) {
     case "vendor":
       return user.profile_complete ? "/console" : "/onboarding/vendor";
@@ -26,11 +30,12 @@ export type Access =
  * - A vendor page that needs a complete profile sends them to finish it.
  */
 export function accessFor(
-  user: Pick<User, "role" | "profile_complete">,
+  user: Pick<User, "role" | "profile_complete"> & { needs_consent?: boolean },
   role: Role,
   options: { requireComplete?: boolean } = {},
 ): Access {
   if (!user.role) return { kind: "redirect", to: "/onboarding/role" };
+  if (user.needs_consent) return { kind: "redirect", to: "/onboarding/consent" };
   if (user.role !== role) return { kind: "forbidden", role: user.role };
   if (options.requireComplete && !user.profile_complete) {
     return { kind: "redirect", to: homeFor(user) };

@@ -32,6 +32,8 @@ locals {
     payout_validations       = { schedule = "*/10 * * * *", description = "Ask the payout provider about account validations still pending." }
     escrow_reconcile         = { schedule = "30 2 * * *", description = "Compare yesterday's ledger totals with the gateway's; alert on a mismatch." }
     ops_backlog              = { schedule = "*/5 * * * *", description = "Log counts of stuck notifications, payouts and failed jobs for monitoring." }
+    privacy_retention        = { schedule = "0 4 * * *", description = "Purge data past its retention period (PRIVACY_RETENTION_DAYS); audit each purge." }
+    privacy_deletions        = { schedule = "30 4 * * *", description = "Anonymise accounts whose deletion grace period has ended." }
   }
 }
 

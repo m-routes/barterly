@@ -28,5 +28,6 @@ export const vendorUser = {
   role: "vendor" as const,
   is_active: true,
   profile_complete: true,
+  needs_consent: false,
   created_at: "2026-11-01T10:00:00Z",
 };
