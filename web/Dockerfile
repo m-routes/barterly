@@ -10,14 +10,25 @@ RUN npm ci --no-audit --no-fund
 
 FROM node:24-slim AS build
 WORKDIR /app
-ENV NEXT_TELEMETRY_DISABLED=1
+# The commit is the Sentry release; source maps upload when the sentry_auth_token
+# build secret is given (deploy.yml), then next.config deletes them from the output.
+ARG GIT_SHA=unknown
+ARG SENTRY_ORG=""
+ARG SENTRY_PROJECT_WEB=""
+ENV NEXT_TELEMETRY_DISABLED=1 \
+    SENTRY_RELEASE=${GIT_SHA} \
+    SENTRY_ORG=${SENTRY_ORG} \
+    SENTRY_PROJECT_WEB=${SENTRY_PROJECT_WEB}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+RUN --mount=type=secret,id=sentry_auth_token,required=false \
+    SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_auth_token 2>/dev/null || true)" npm run build
 
 FROM node:24-slim AS runtime
 WORKDIR /app
-ENV NODE_ENV=production \
+ARG GIT_SHA=unknown
+ENV SENTRY_RELEASE=${GIT_SHA} \
+    NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=8080 \
     HOSTNAME=0.0.0.0

@@ -5,3 +5,6 @@ web_domains  = ["barterly.in", "www.barterly.in"]
 
 # Firebase console -> Project settings -> Your apps -> Web app. Public values.
 # firebase_web = { api_key = "AIza...", app_id = "1:123456789:web:abc123" }
+
+# Monitoring alerts go here (an email channel each).
+alert_emails = ["ops@example.com"]

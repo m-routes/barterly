@@ -178,3 +178,41 @@ variable "clamav_image" {
   type        = string
   default     = "clamav/clamav:1.4.3"
 }
+
+# ---------- Monitoring (monitoring.tf) ----------
+
+variable "alert_emails" {
+  description = "Who gets alerts. Empty: metrics, uptime checks and the SLO exist, no alerts."
+  type        = list(string)
+  default     = []
+}
+
+variable "availability_slo" {
+  description = "Share of API requests that must succeed over 28 days (docs/slo.md)."
+  type        = number
+  default     = 0.995
+}
+
+variable "error_rate_alert" {
+  description = "5xx share of requests over 10 minutes that alerts."
+  type        = number
+  default     = 0.02
+}
+
+variable "latency_p95_alert_ms" {
+  description = "p95 request latency (ms) over 10 minutes that alerts."
+  type        = number
+  default     = 1500
+}
+
+variable "queue_depth_alert" {
+  description = "Cloud Tasks waiting for 15 minutes that alerts."
+  type        = number
+  default     = 200
+}
+
+variable "db_connection_alert" {
+  description = "Open database connections that alert (set near the tier's limit)."
+  type        = number
+  default     = 80
+}

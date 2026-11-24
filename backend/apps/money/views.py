@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from django.db.models import Q
 from django.http import HttpResponse
@@ -10,9 +12,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.bookings.models import Booking
+from apps.common.ops import ops_event
 from apps.common.permissions import IsAdminRole, IsTalent, IsVendor
 from apps.common.serializers import ErrorSerializer
 from apps.common.services.audit import log_action
+from apps.flags import services as flags
 from apps.money import deliverables, escrow, payout_accounts, payouts, wallet, webhooks
 from apps.money.gateway.base import GatewayError
 from apps.money.models import (
@@ -126,7 +130,8 @@ class FundView(APIView):
         description=(
             "Creates the gateway order for the host to pay at checkout (asking again before "
             "paying returns the same order). The money is held once the gateway confirms "
-            "the payment. 503 while the kill switch is on."
+            "the payment. 503 while the kill switch is on or the escrow_funding flag "
+            "is off."
         ),
         request=None,
         responses={
@@ -138,6 +143,8 @@ class FundView(APIView):
         tags=TAG,
     )
     def post(self, request: Request, booking_id) -> Response:
+        if not flags.is_enabled("escrow_funding"):
+            raise FundingSwitchedOff()
         try:
             record, order_id = escrow.start_funding(
                 booking_id, vendor=request.user, request=request
@@ -327,6 +334,12 @@ class ReconciliationView(APIView):
         return Response(ReconciliationRunSerializer(runs, many=True).data)
 
 
+class FundingSwitchedOff(exceptions.APIException):
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    default_detail = "Paying into escrow is switched off for now. Please try again later."
+    default_code = "escrow_funding_off"
+
+
 class WebhookRejected(exceptions.APIException):
     status_code = status.HTTP_400_BAD_REQUEST
     default_code = "invalid_webhook"
@@ -359,7 +372,11 @@ class WebhookView(APIView):
         try:
             outcome = webhooks.handle(request.body, request.headers)
         except GatewayError as exc:
+            ops_event("webhook_rejected", provider="razorpay", reason=str(exc)[:200])
             raise WebhookRejected(str(exc)) from exc
+        except Exception:
+            ops_event("webhook_failed", level=logging.ERROR, provider="razorpay")
+            raise
         return Response({"outcome": outcome})
 
 
@@ -711,5 +728,9 @@ class PayoutWebhookView(APIView):
         try:
             outcome = payouts.handle_webhook(request.body, request.headers)
         except GatewayError as exc:
+            ops_event("webhook_rejected", provider="razorpayx", reason=str(exc)[:200])
             raise WebhookRejected(str(exc)) from exc
+        except Exception:
+            ops_event("webhook_failed", level=logging.ERROR, provider="razorpayx")
+            raise
         return Response({"outcome": outcome})

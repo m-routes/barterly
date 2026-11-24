@@ -7,12 +7,14 @@ A payout that fails on a later day than it was made is reversed in the ledger on
 day of the failure, so it shows as a difference on both days: check those by hand.
 """
 
+import logging
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from django.db.models import Sum
 from django.utils import timezone
 
+from apps.common.ops import ops_event
 from apps.money import alerts, ledger
 from apps.money.gateway.base import GatewayError, get_gateway
 from apps.money.gateway.payouts import get_provider
@@ -83,6 +85,13 @@ def run(day: date | None = None, now=None) -> ReconciliationRun:
         },
     )
     if mismatches:
+        ops_event(
+            "reconciliation_mismatch",
+            level=logging.ERROR,
+            day=str(day),
+            mismatch_count=len(mismatches),
+            fields=[m["field"] for m in mismatches],
+        )
         alerts.raise_alert(
             f"Reconciliation mismatch for {day}",
             {"day": str(day), "mismatches": mismatches},
