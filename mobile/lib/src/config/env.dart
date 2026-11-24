@@ -72,8 +72,8 @@ class AppConfig {
   bool get crashReportingEnabled => sentryDsn.isNotEmpty;
 
   static String _defaultBaseUrl(AppEnv env) => switch (env) {
-    AppEnv.production =>
-      'https://barterly-api-production-430344535597.asia-south1.run.app',
+    // Through the load balancer and Cloud Armor (docs/edge.md), never run.app.
+    AppEnv.production => 'https://api.barterly.in',
     AppEnv.staging =>
       'https://barterly-api-staging-430344535597.asia-south1.run.app',
     // The Android emulator reaches the host machine at 10.0.2.2.

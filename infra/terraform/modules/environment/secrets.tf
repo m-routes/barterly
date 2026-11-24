@@ -28,6 +28,8 @@ locals {
     email_host_password   = "email-host-password-${local.env}"
     kyc_webhook_secret    = "kyc-webhook-secret-${local.env}"
     instagram_graph_token = "instagram-graph-token-${local.env}"
+    # Cloud CDN signing key for media (edge.tf); written by infra/scripts/set-cdn-key.sh.
+    media_cdn_key = "media-cdn-key-${local.env}"
   }
 
   secret_access = {
@@ -51,6 +53,7 @@ locals {
     web_sentry_dsn       = { secret = "sentry_dsn", member = google_service_account.web.member }
     api_email_password   = { secret = "email_host_password", member = google_service_account.api.member }
     api_kyc_webhook      = { secret = "kyc_webhook_secret", member = google_service_account.api.member }
+    api_media_cdn_key    = { secret = "media_cdn_key", member = google_service_account.api.member }
   }
 }
 

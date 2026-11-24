@@ -6,11 +6,13 @@ Everything needed to recreate Barterly's staging and production environments.
 | --- | --- |
 | `scripts/bootstrap.sh` | Enables base APIs and creates the Terraform state bucket |
 | `terraform/shared/` | APIs, Artifact Registry, GitHub Workload Identity Federation |
-| `terraform/modules/environment/` | One environment: service accounts, secrets, buckets, Cloud SQL, Cloud Run `api` + `web`, migrate job |
+| `terraform/modules/environment/` | One environment: service accounts, secrets, buckets, Cloud SQL, Cloud Run `api` + `web`, migrate job, and the edge (load balancer, TLS, Cloud Armor, CDN: [docs/edge.md](../docs/edge.md)) |
 | `terraform/envs/{staging,production}/` | Roots that instantiate the module |
 | `scripts/set-secrets.sh` | Generates the Django secret key into Secret Manager |
 | `scripts/deploy.sh` | Candidate revision → migrate job → smoke test → traffic (used by CI) |
 | `scripts/rollback.sh` | Moves traffic back to an earlier revision |
+| `scripts/set-cdn-key.sh` | Creates the Cloud CDN signing key for media (docs/edge.md) |
+| `scripts/changelog.sh` | Writes a release's CHANGELOG.md section from merged PRs (docs/release.md) |
 | [ROLLBACK.md](ROLLBACK.md) | Rollback runbook |
 
 ## Layout in GCP (asia-south1)
@@ -106,7 +108,10 @@ infra/scripts/set-secrets.sh production
 | `GCP_PROJECT_NUMBER` | `terraform output` → `environment.project_number` |
 | `GCP_WIF_PROVIDER` | `terraform output workload_identity_provider_name` (shared) |
 | `GCP_DEPLOY_SA` | `terraform output` → `environment.deploy_service_account` |
-| `WEB_URL` | `terraform output` → `environment.web_run_url` (or your domain) |
+| `WEB_URL` | The canonical web domain (`https://barterly.in`), or `environment.web_run_url` without one |
+| `PUBLIC_API_URL`, `PUBLIC_WEB_URL` | The custom domains: the deploy checks the release through the load balancer too |
+
+And one **repository** variable: `MEDIA_CDN_ORIGINS`, every environment's media CDN origin, comma separated (`https://media.barterly.in,https://media.staging.barterly.in`). The web image is built once, so its CSP lists both.
 
 Protect `main`: require a pull request (0 approvals, since GitHub doesn't let you approve your own PR), require conversation resolution, block force-pushes and deletion, and include administrators.
 
@@ -120,7 +125,9 @@ To make checks required later, add a gate workflow that runs on every PR, works 
 git tag v0.1.0 && git push origin v0.1.0
 ```
 
-Custom domains: add them to `api_domains` / `web_domains` in `terraform.tfvars` (this updates `ALLOWED_HOSTS`, CSRF origins and bucket CORS), apply, then map them with a global HTTPS load balancer or Cloud Run domain mapping.
+Custom domains: set `api_domains`, `web_domains` and `media_domain` in `terraform.tfvars` with `edge_enabled = true`, apply, and create the DNS records from `terraform output` (`environment.dns_records`). This creates the global HTTPS load balancer, the managed certificate, Cloud Armor and Cloud CDN, and updates `ALLOWED_HOSTS`, CSRF origins and bucket CORS. See [docs/edge.md](../docs/edge.md) and the one-time steps in [docs/release-checklist.md](../docs/release-checklist.md).
+
+Production releases: [docs/release.md](../docs/release.md).
 
 ## How a deploy works
 

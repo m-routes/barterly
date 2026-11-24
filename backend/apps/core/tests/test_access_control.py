@@ -43,6 +43,7 @@ SCHEMA = settings.BASE_DIR.parent / "web" / "openapi" / "schema.yaml"
 PUBLIC = {
     ("GET", "/api/v1/health/"): "Load balancer probe.",
     ("GET", "/api/v1/meta/"): "Public app config (versions, links).",
+    ("GET", "/api/v1/app/version/"): "Supported app versions, checked before sign-in.",
     ("GET", "/api/v1/gigs/public/"): "Public gig listings for the website.",
     ("GET", "/api/v1/gigs/{gig_id}/public/"): "A live gig's public page.",
     (

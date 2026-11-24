@@ -24,6 +24,8 @@ const nextConfig: NextConfig = {
           // (docs/security.md, "Web CSP"). Everything else in the policy is strict.
           inlineScripts: true,
           tileUrl: process.env.NEXT_PUBLIC_MAP_TILE_URL,
+          // Comma-separated, set at build time (deploy.yml, vars.MEDIA_CDN_ORIGINS).
+          mediaOrigins: process.env.MEDIA_CDN_ORIGINS?.split(",").filter(Boolean),
         }),
       },
     ];

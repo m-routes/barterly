@@ -7,6 +7,7 @@ import 'package:barterly/src/apply/outbox.dart';
 import 'package:barterly/src/discover/discover_controller.dart';
 import 'package:barterly/src/discover/gig.dart';
 import 'package:barterly/src/platform/media_picker.dart';
+import 'package:barterly/src/platform/permission_rationale.dart';
 import 'package:barterly/src/providers.dart';
 import 'package:barterly/src/theme/tokens.dart';
 import 'package:barterly/src/widgets/feedback.dart';
@@ -154,6 +155,13 @@ class _ApplyFormState extends ConsumerState<ApplyForm> {
       ),
     );
     if (source == null || !mounted) return;
+    if (source == PickSource.camera &&
+        !await ref
+            .read(permissionPromptsProvider)
+            .explain(AppPermission.camera)) {
+      return;
+    }
+    if (!mounted) return;
     final picker = ref.read(mediaPickerProvider);
     final messenger = ScaffoldMessenger.of(context);
     try {

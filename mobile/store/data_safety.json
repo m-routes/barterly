@@ -1,0 +1,153 @@
+{
+  "about": "What the talent app collects, derived from the code (repositories under lib/src, the SDKs in pubspec.yaml). The source for the Play Data safety form, the App Store privacy labels and ios/Runner/PrivacyInfo.xcprivacy; docs/store-privacy.md explains each answer. test/store/data_safety_test.dart fails when a dependency or an iOS data type is missing here.",
+  "reviewed": "2026-11-24",
+  "practices": {
+    "encrypted_in_transit": true,
+    "deletion_request": true,
+    "shared_with_third_parties": false,
+    "tracking": false,
+    "ads": false
+  },
+  "data": [
+    {
+      "id": "phone_number",
+      "what": "The account's phone number (sign-in) and an emergency contact's phone number (profile).",
+      "play": { "category": "Personal info", "type": "Phone number", "optional": false, "purposes": ["App functionality", "Account management"] },
+      "apple": { "type": "NSPrivacyCollectedDataTypePhoneNumber", "label": "Contact Info: Phone Number" },
+      "sources": ["lib/src/auth/phone_auth.dart (Firebase Auth)", "lib/src/profile/talent_profile.dart emergency_contact_phone"]
+    },
+    {
+      "id": "name",
+      "what": "Display name and the emergency contact's name.",
+      "play": { "category": "Personal info", "type": "Name", "optional": false, "purposes": ["App functionality", "Account management"] },
+      "apple": { "type": "NSPrivacyCollectedDataTypeName", "label": "Contact Info: Name" },
+      "sources": ["lib/src/profile/talent_profile.dart display_name, emergency_contact_name"]
+    },
+    {
+      "id": "account_ids",
+      "what": "Barterly account id (tags crash reports) and the Instagram handle on the profile.",
+      "play": { "category": "Personal info", "type": "User IDs", "optional": false, "purposes": ["App functionality", "Account management"] },
+      "apple": { "type": "NSPrivacyCollectedDataTypeUserID", "label": "Identifiers: User ID" },
+      "sources": ["lib/src/crash/crash_reporter.dart setUser(id)", "lib/src/profile/profile_repository.dart instagram_handle"]
+    },
+    {
+      "id": "social_handle",
+      "what": "Instagram handle, a way to reach the person outside the app.",
+      "play": { "category": "Personal info", "type": "User IDs", "optional": true, "purposes": ["App functionality"] },
+      "apple": { "type": "NSPrivacyCollectedDataTypeOtherUserContactInfo", "label": "Contact Info: Other User Contact Info" },
+      "sources": ["lib/src/profile/talent_profile.dart instagram_handle", "lib/src/verification/verification_repository.dart submitSocial"]
+    },
+    {
+      "id": "profile_details",
+      "what": "Date of birth, bio, home city (typed, not device location), languages, skills, talent type; the result of the optional ID check (the ID and selfie themselves are captured on the KYC provider's page, not by the app).",
+      "play": { "category": "Personal info", "type": "Other info", "optional": false, "purposes": ["App functionality", "Account management", "Fraud prevention, security, and compliance"] },
+      "apple": { "type": "NSPrivacyCollectedDataTypeOtherDataTypes", "label": "Other Data: Other Data Types" },
+      "sources": ["lib/src/profile/talent_profile.dart toJson", "lib/src/verification/verification_repository.dart startIdCheck"]
+    },
+    {
+      "id": "payout_account",
+      "what": "UPI ID, or bank account number and IFSC, to pay stipends out. Sent to the payment provider; never kept on the phone.",
+      "play": { "category": "Financial info", "type": "Other financial info", "optional": true, "purposes": ["App functionality"] },
+      "apple": { "type": "NSPrivacyCollectedDataTypeOtherFinancialInfo", "label": "Financial Info: Other Financial Info" },
+      "sources": ["lib/src/wallet/wallet_repository.dart linkUpi, linkBank"]
+    },
+    {
+      "id": "precise_location",
+      "what": "One location reading when the person opens a check-in pass and agrees, to show the host the distance to the property. Never in the background.",
+      "play": { "category": "Location", "type": "Precise location", "optional": true, "purposes": ["App functionality"] },
+      "apple": { "type": "NSPrivacyCollectedDataTypePreciseLocation", "label": "Location: Precise Location" },
+      "sources": ["lib/src/attendance/location.dart", "lib/src/attendance/attendance_repository.dart location"]
+    },
+    {
+      "id": "messages",
+      "what": "Chat messages with hosts (and photos attached to them).",
+      "play": { "category": "Messages", "type": "Other in-app messages", "optional": true, "purposes": ["App functionality"] },
+      "apple": { "type": "NSPrivacyCollectedDataTypeEmailsOrTextMessages", "label": "User Content: Emails or Text Messages" },
+      "sources": ["lib/src/chat/chat_repository.dart send"]
+    },
+    {
+      "id": "photos_videos",
+      "what": "Photos and videos the person picks or takes for applications, deliverables and chat.",
+      "play": { "category": "Photos and videos", "type": "Photos; Videos", "optional": true, "purposes": ["App functionality"] },
+      "apple": { "type": "NSPrivacyCollectedDataTypePhotosorVideos", "label": "User Content: Photos or Videos" },
+      "sources": ["lib/src/platform/media_picker.dart", "lib/src/apply/applications_repository.dart upload"]
+    },
+    {
+      "id": "files",
+      "what": "PDFs attached to applications.",
+      "play": { "category": "Files and docs", "type": "Files and docs", "optional": true, "purposes": ["App functionality"] },
+      "apple": { "type": "NSPrivacyCollectedDataTypeOtherUserContent", "label": "User Content: Other User Content" },
+      "sources": ["lib/src/platform/media_picker.dart contentTypeFor(.pdf)"]
+    },
+    {
+      "id": "user_content",
+      "what": "Application notes, reviews and replies, hours notes, deliverable post links and their reported stats, report and decline reasons.",
+      "play": { "category": "App activity", "type": "Other user-generated content", "optional": true, "purposes": ["App functionality"] },
+      "apple": { "type": "NSPrivacyCollectedDataTypeOtherUserContent", "label": "User Content: Other User Content" },
+      "sources": ["lib/src/reviews/reviews_repository.dart", "lib/src/deliverables/deliverables_repository.dart", "lib/src/attendance/attendance_repository.dart"]
+    },
+    {
+      "id": "saved_searches",
+      "what": "Saved gig searches (filters and a name) for new-match alerts.",
+      "play": { "category": "App activity", "type": "In-app search history", "optional": true, "purposes": ["App functionality"] },
+      "apple": { "type": "NSPrivacyCollectedDataTypeSearchHistory", "label": "Search History" },
+      "sources": ["lib/src/discover/gigs_repository.dart saveSearch"]
+    },
+    {
+      "id": "push_token",
+      "what": "The device's push token, once the person allows notifications.",
+      "play": { "category": "Device or other IDs", "type": "Device or other IDs", "optional": true, "purposes": ["App functionality"] },
+      "apple": { "type": "NSPrivacyCollectedDataTypeDeviceID", "label": "Identifiers: Device ID" },
+      "sources": ["lib/src/notifications/push_registrar.dart", "lib/src/notifications/notifications_repository.dart registerDevice"]
+    },
+    {
+      "id": "crash_logs",
+      "what": "Crash reports with stack traces (Sentry), tagged with the account id, never the phone number.",
+      "play": { "category": "App info and performance", "type": "Crash logs", "optional": false, "purposes": ["App functionality", "Analytics"] },
+      "apple": { "type": "NSPrivacyCollectedDataTypeCrashData", "label": "Diagnostics: Crash Data" },
+      "sources": ["lib/src/crash/crash_reporter.dart"]
+    },
+    {
+      "id": "diagnostics",
+      "what": "Device model and OS in crash reports, and rooted/jailbroken-device signals (reported, never blocking).",
+      "play": { "category": "App info and performance", "type": "Diagnostics", "optional": false, "purposes": ["App functionality", "Fraud prevention, security, and compliance"] },
+      "apple": { "type": "NSPrivacyCollectedDataTypeOtherDiagnosticData", "label": "Diagnostics: Other Diagnostic Data" },
+      "sources": ["lib/src/platform/device_security.dart reportDeviceIntegrity"]
+    }
+  ],
+  "not_collected": {
+    "Email address": "The app never asks for one (the web console may).",
+    "Approximate location": "Only the typed home city, declared under Other info.",
+    "Contacts": "add_2_calendar's iOS location field may suggest contacts inside the system sheet; the app never reads them.",
+    "Calendar": "add_2_calendar opens the system calendar with an event filled in; the app never reads the calendar.",
+    "Audio": "Sound is only part of videos the person adds.",
+    "Web browsing, Health, Fitness, Purchases": "Not collected."
+  },
+  "sdks": {
+    "add_2_calendar": "Opens the system calendar with an event; reads nothing.",
+    "connectivity_plus": "Network on/off, on the device only.",
+    "crypto": "Check-in pass codes (TOTP), computed on the device.",
+    "cupertino_icons": "Icons.",
+    "dio": "HTTPS client for the Barterly API.",
+    "firebase_auth": "Phone number sign-in (Google, as processor): phone_number.",
+    "firebase_core": "Firebase setup.",
+    "firebase_messaging": "Push token: push_token.",
+    "flutter": "Framework.",
+    "flutter_map": "Map tiles from the tile server (IP address and the map area, as any web request).",
+    "flutter_riverpod": "App state.",
+    "flutter_secure_storage": "Sign-in tokens in the Keychain/Keystore, on the device only.",
+    "geolocator": "Check-in location: precise_location.",
+    "go_router": "Navigation.",
+    "google_fonts": "Downloads the Inter and Space Grotesk fonts from Google Fonts on first launch (the request carries the IP address, like any web request); nothing about the person.",
+    "image_picker": "Camera and photo picker: photos_videos, files.",
+    "intl": "Formatting.",
+    "latlong2": "Coordinates maths.",
+    "material_ui": "UI.",
+    "package_info_plus": "The app's own version, for the update check.",
+    "path_provider": "App folders for picked files, on the device only.",
+    "qr_flutter": "Draws the check-in QR code.",
+    "sentry_flutter": "Crash reports: crash_logs, diagnostics, account_ids.",
+    "shared_preferences": "Offline feed and queued applications, on the device only.",
+    "url_launcher": "Opens links and the KYC provider's page in the browser."
+  }
+}

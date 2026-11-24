@@ -71,3 +71,13 @@ resource "google_storage_bucket_iam_member" "migrate_static" {
   role   = "roles/storage.objectUser"
   member = google_service_account.migrate.member
 }
+
+# Cloud CDN reads private media with its own fill account (edge.tf), which Google
+# creates when the first signing key is added (infra/scripts/set-cdn-key.sh), hence the
+# separate switch.
+resource "google_storage_bucket_iam_member" "cdn_media" {
+  count  = local.media_cdn && var.media_cdn_signing_enabled ? 1 : 0
+  bucket = google_storage_bucket.media.name
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:service-${local.project_number}@cloud-cdn-fill.iam.gserviceaccount.com"
+}

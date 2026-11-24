@@ -1,5 +1,6 @@
 """Request-id middleware: one id per request, in logs, audit entries and the response."""
 
+import logging
 import re
 import uuid
 
@@ -113,3 +114,66 @@ def _origin(url: str) -> str:
         return ""
     scheme, rest = url.split("://", 1)
     return f"{scheme}://{rest.split('/', 1)[0]}"
+
+
+class EdgeForwardedForMiddleware:
+    """Drop the load balancer's own hop from X-Forwarded-For (docs/edge.md).
+
+    Behind the global HTTPS load balancer, Cloud Run receives
+    `X-Forwarded-For: <client-supplied...>, <client>, <load balancer IP>`. DRF's
+    NUM_PROXIES=1 takes the last entry, which would make every app user the same
+    "client" for per-IP throttles. When the last entry is one of EDGE_PROXY_IPS, it is
+    removed so the last entry is the real client again.
+
+    Only the last entry is checked: a request straight to the run.app URL always ends in
+    the caller's real address (Cloud Run appends it), so naming the load balancer
+    earlier in a forged header changes nothing.
+    """
+
+    def __init__(self, get_response):
+        from django.conf import settings
+
+        self.get_response = get_response
+        self.edge_ips = frozenset(getattr(settings, "EDGE_PROXY_IPS", []) or [])
+
+    def __call__(self, request):
+        if self.edge_ips:
+            forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
+            hops = [hop.strip() for hop in forwarded.split(",") if hop.strip()]
+            if len(hops) > 1 and hops[-1] in self.edge_ips:
+                request.META["HTTP_X_FORWARDED_FOR"] = ", ".join(hops[:-1])
+        return self.get_response(request)
+
+
+class DeprecationMiddleware:
+    """Deprecation, Sunset and Link headers on deprecated operations
+    (apps.common.deprecation, docs/api-versioning.md).
+
+    Each call to one is also logged with the app's platform and version, so we can see
+    who still uses it before raising the minimum app version:
+    `jsonPayload.deprecated_call=true` in Cloud Logging.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        from apps.common.deprecation import headers_for
+
+        response = self.get_response(request)
+        headers = headers_for(request.method, request.path)
+        if headers:
+            for name, value in headers.items():
+                response.headers.setdefault(name, value)
+            logging.getLogger("apps.api").info(
+                "Deprecated API call",
+                extra={
+                    "deprecated_call": True,
+                    "method": request.method,
+                    "path": request.path,
+                    "sunset": headers["Sunset"],
+                    "client_platform": request.META.get("HTTP_X_CLIENT_PLATFORM", "")[:20],
+                    "client_version": request.META.get("HTTP_X_CLIENT_VERSION", "")[:40],
+                },
+            )
+        return response

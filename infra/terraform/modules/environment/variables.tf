@@ -216,3 +216,47 @@ variable "db_connection_alert" {
   type        = number
   default     = 80
 }
+
+# ---------- Edge: load balancer, TLS, Cloud Armor, CDN (edge.tf) ----------
+
+variable "edge_enabled" {
+  description = "Put the domains behind a global HTTPS load balancer with Cloud Armor and Cloud CDN (docs/edge.md). Needs api_domains and web_domains."
+  type        = bool
+  default     = false
+}
+
+variable "media_domain" {
+  description = "Host for media through Cloud CDN, e.g. media.barterly.in. Empty: media stays on Cloud Storage signed URLs."
+  type        = string
+  default     = ""
+}
+
+variable "media_cdn_signing_enabled" {
+  description = "Serve media reads through the CDN. Set after infra/scripts/set-cdn-key.sh has added the signing key (it also creates Cloud CDN's fill account)."
+  type        = bool
+  default     = false
+}
+
+variable "media_cdn_key_name" {
+  description = "Name of the Cloud CDN signing key on the media backend bucket (set-cdn-key.sh)."
+  type        = string
+  default     = "media-key-1"
+}
+
+variable "armor_preview" {
+  description = "Cloud Armor WAF and rate-limit rules only log (preview) instead of blocking."
+  type        = bool
+  default     = false
+}
+
+variable "armor_requests_per_minute" {
+  description = "Requests per minute per client IP before Cloud Armor answers 429. High on purpose: mobile carriers share addresses (CGNAT)."
+  type        = number
+  default     = 3000
+}
+
+variable "armor_auth_requests_per_minute" {
+  description = "Requests per minute per client IP to /api/v1/auth/ before 429."
+  type        = number
+  default     = 120
+}

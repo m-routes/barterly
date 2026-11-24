@@ -4,6 +4,73 @@ info:
   version: 0.1.0
   description: Work-exchange marketplace for travel and hospitality in India.
 paths:
+  /api/v1/admin/app-versions/:
+    get:
+      operationId: app_versions_admin_list
+      summary: App version policies (admin)
+      tags:
+      - app versions
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AppVersion'
+          description: ''
+  /api/v1/admin/app-versions/{platform}/:
+    put:
+      operationId: app_versions_admin_set
+      description: Raising the minimum forces every older app to update before it
+        can do anything. A reason is required; the change is audited. Takes effect
+        on every instance within APP_VERSION_CACHE_SECONDS.
+      summary: Set a platform's minimum and latest versions (admin)
+      parameters:
+      - in: path
+        name: platform
+        schema:
+          type: string
+        required: true
+      tags:
+      - app versions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetAppVersion'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SetAppVersion'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SetAppVersion'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppVersion'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/admin/attendance/{check_in_id}/review/:
     post:
       operationId: attendance_admin_flag_review
@@ -966,6 +1033,45 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: ''
         '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/app/version/:
+    get:
+      operationId: app_version
+      description: |-
+        The app calls this on launch. Below `minimum_version` it must block and send the person to `store_url`. Below `latest_version` it may offer the update.
+
+        The app also sends `X-Client-Platform` and `X-Client-Version` on every call. When that version is below the minimum, **any** endpoint answers `426 Upgrade Required` with code `upgrade_required` and `details` holding `minimum_version` and `store_url` (docs/api-versioning.md). This endpoint and the health check never do.
+      summary: Minimum and latest app versions
+      parameters:
+      - in: query
+        name: platform
+        schema:
+          type: string
+          enum:
+          - android
+          - ios
+        required: true
+      - in: query
+        name: version
+        schema:
+          type: string
+        description: The app's version, e.g. 1.4.2.
+      tags:
+      - app versions
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppVersionStatus'
+          description: ''
+        '400':
           content:
             application/json:
               schema:
@@ -9178,6 +9284,70 @@ components:
         reason:
           type: string
           maxLength: 500
+    AppPlatformEnum:
+      enum:
+      - android
+      - ios
+      type: string
+      description: |-
+        * `android` - Android
+        * `ios` - iOS
+    AppVersion:
+      type: object
+      properties:
+        platform:
+          $ref: '#/components/schemas/AppPlatformEnum'
+        minimum_version:
+          type: string
+          description: Older apps get 426 upgrade_required on every call.
+        latest_version:
+          type: string
+          description: Older apps are offered an update.
+        store_url:
+          type: string
+          description: Where the update button goes. May be empty.
+        message:
+          type: string
+          description: Shown on the update screen. May be empty.
+      required:
+      - latest_version
+      - message
+      - minimum_version
+      - platform
+      - store_url
+    AppVersionStatus:
+      type: object
+      properties:
+        platform:
+          $ref: '#/components/schemas/AppPlatformEnum'
+        minimum_version:
+          type: string
+          description: Older apps get 426 upgrade_required on every call.
+        latest_version:
+          type: string
+          description: Older apps are offered an update.
+        store_url:
+          type: string
+          description: Where the update button goes. May be empty.
+        message:
+          type: string
+          description: Shown on the update screen. May be empty.
+        update:
+          allOf:
+          - $ref: '#/components/schemas/UpdateEnum'
+          description: |-
+            For the `version` asked about; `none` when no version was given.
+
+            * `required` - required
+            * `available` - available
+            * `none` - none
+      required:
+      - latest_version
+      - message
+      - minimum_version
+      - platform
+      - store_url
+      - update
     Applicant:
       type: object
       description: |-
@@ -15752,6 +15922,32 @@ components:
       required:
       - message
       - notice
+    SetAppVersion:
+      type: object
+      properties:
+        minimum_version:
+          type: string
+          maxLength: 20
+        latest_version:
+          type: string
+          maxLength: 20
+        store_url:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 300
+          - type: string
+            maxLength: 0
+        message:
+          type: string
+          maxLength: 300
+        reason:
+          type: string
+          maxLength: 300
+      required:
+      - latest_version
+      - minimum_version
+      - reason
     SetFlag:
       type: object
       properties:
@@ -16792,6 +16988,16 @@ components:
           type: integer
       required:
       - unread
+    UpdateEnum:
+      enum:
+      - required
+      - available
+      - none
+      type: string
+      description: |-
+        * `required` - required
+        * `available` - available
+        * `none` - none
     UpdatePreferences:
       type: object
       properties:
