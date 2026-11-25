@@ -1,0 +1,31 @@
+{% extends "backoffice/base.html" %}
+{% block content %}
+<form method="get" class="bo-filters">
+  <div><label for="status">Show</label><select name="status" id="status">{% for value, label in statuses %}<option value="{{ value }}"{% if value == status %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+  <div><label for="kind">About</label><select name="kind" id="kind"><option value="">Anything</option>{% for value, label in kinds %}<option value="{{ value }}"{% if value == kind %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+  <div><input type="submit" value="Filter"></div>
+</form>
+{% if overdue_total %}<p class="errornote">{{ overdue_total }} request{{ overdue_total|pluralize }} past {{ overdue_total|pluralize:"its,their" }} SLA. <a href="?status=overdue">Show them</a></p>{% endif %}
+<p>Past-SLA first, then urgent, then by when an answer is due. SLAs: docs/beta/support.md. <a href="{% url 'admin:support_find_person' %}">Find a person by phone</a></p>
+<div class="results">
+<table id="result_list">
+  <thead><tr><th scope="col">Request</th><th scope="col">From</th><th scope="col">About</th><th scope="col">Priority</th><th scope="col">Status</th><th scope="col">Due</th><th scope="col">With</th></tr></thead>
+  <tbody>
+  {% for ticket, overdue in rows %}
+    <tr>
+      <th scope="row"><a href="{% url 'admin:support_ticket' ticket.pk %}">{{ ticket.reference }}</a><br>{{ ticket.subject }}</th>
+      <td><a href="{% url 'admin:support_timeline' ticket.user_id %}">{{ ticket.user.phone }}</a><br><span class="help">{{ ticket.user.role|default:"no role" }}</span></td>
+      <td>{{ ticket.get_kind_display }}</td>
+      <td>{% if ticket.priority == "urgent" %}<span class="bo-flag bo-flag--bad">Urgent</span>{% else %}{{ ticket.get_priority_display }}{% endif %}</td>
+      <td>{{ ticket.get_status_display }}</td>
+      <td>{% if overdue %}<span class="bo-flag bo-flag--bad">{% if overdue == "first_response" %}Answer overdue{% else %}Resolution overdue{% endif %}</span>{% elif not ticket.first_responded_at %}Answer by {{ ticket.first_response_due|date:"d M H:i" }}{% elif ticket.resolve_due %}Resolve by {{ ticket.resolve_due|date:"d M H:i" }}{% else %}–{% endif %}</td>
+      <td>{{ ticket.assigned_to|default:"–" }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="7">Nothing here.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% include "backoffice/pager.html" %}
+{% endblock %}

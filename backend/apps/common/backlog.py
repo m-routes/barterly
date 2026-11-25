@@ -18,9 +18,11 @@ PAYOUT_PROCESSING_STUCK_AFTER = timedelta(hours=24)
 
 
 def counts(now) -> dict[str, int]:
+    from apps.beta import review
     from apps.bookings.models import JobRun
     from apps.money.models import Payout, PayoutAttemptStatus
     from apps.notifications.models import Delivery, DeliveryStatus
+    from apps.support import services as support
 
     return {
         "notifications_stuck": Delivery.objects.filter(
@@ -40,6 +42,10 @@ def counts(now) -> dict[str, int]:
         "jobs_failed_24h": JobRun.objects.filter(started_at__gte=now - timedelta(hours=24))
         .exclude(error="")
         .count(),
+        # The closed beta: support requests past their SLA, and disputes or safety
+        # reports from past weeks that the weekly review hasn't looked at.
+        "support_overdue": support.overdue_count(now),
+        "safety_reviews_overdue": len(review.overdue(now)),
     }
 
 

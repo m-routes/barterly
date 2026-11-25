@@ -21,6 +21,7 @@ from django.utils import timezone
 from apps.applications import services as applications
 from apps.applications.constants import ApplicationStatus
 from apps.applications.models import Application
+from apps.beta import rules as beta_rules
 from apps.bookings.lifecycle import OFFER_TTL, Actor
 from apps.common.events import DomainEvent, publish
 from apps.common.services.audit import log_action, snapshot
@@ -87,6 +88,10 @@ def _create(
     step_in_for=None,
     by_system=False,
 ):
+    try:
+        beta_rules.check_offer_terms(terms)
+    except beta_rules.BetaLimitReached as exc:
+        raise OfferError(exc.message, 422) from exc
     offer = Offer.objects.create(
         step_in_for=step_in_for,
         application=application,

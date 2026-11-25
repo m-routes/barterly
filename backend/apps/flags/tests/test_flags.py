@@ -50,7 +50,12 @@ def test_reason_is_required_and_unknown_flags_refused():
 
 def test_clients_read_values():
     body = client(UserFactory()).get("/api/v1/flags/").json()
-    assert body == {"escrow_funding": True, "sos_live_sharing": True, "ai_safety_checks": True}
+    assert body == {
+        "escrow_funding": True,
+        "sos_live_sharing": True,
+        "ai_safety_checks": True,
+        "closed_beta": False,
+    }
     assert APIClient().get("/api/v1/flags/").status_code == 401
 
 

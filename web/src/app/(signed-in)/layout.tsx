@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 
+import { ScreenViews } from "@/components/analytics/ScreenViews";
 import { LoadingState } from "@/components/ui/states";
 import { SessionProvider } from "@/lib/session/session";
 
@@ -13,7 +14,10 @@ import { SessionProvider } from "@/lib/session/session";
 export default function SignedInLayout({ children }: { children: React.ReactNode }) {
   return (
     <Suspense fallback={<LoadingState />}>
-      <SessionProvider>{children}</SessionProvider>
+      <SessionProvider>
+        <ScreenViews />
+        {children}
+      </SessionProvider>
     </Suspense>
   );
 }

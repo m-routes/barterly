@@ -1,0 +1,8 @@
+{% extends "backoffice/base.html" %}
+{% block content %}
+<form method="get" class="bo-filters">
+  <div><label for="phone">Phone number</label><input type="tel" name="phone" id="phone" value="{{ phone }}" autocomplete="off"></div>
+  <div><input type="submit" value="Open timeline"></div>
+</form>
+{% if error %}<p class="errornote">{{ error }}</p>{% endif %}
+{% endblock %}

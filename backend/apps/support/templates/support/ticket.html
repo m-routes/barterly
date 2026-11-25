@@ -1,0 +1,56 @@
+{% extends "backoffice/base.html" %}
+{% block extrastyle %}{{ block.super }}
+<style>
+  .thread { list-style: none; padding: 0; margin: 0; }
+  .thread li { border: 1px solid var(--hairline-color); border-radius: 6px; padding: 8px 12px; margin-bottom: 8px; }
+  .thread .staff { background: var(--darkened-bg); }
+  .thread .internal { border-style: dashed; background: #fbe9cf33; }
+  .thread p { white-space: pre-wrap; margin: 4px 0 0; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="bo-grid">
+<div>
+  {% if overdue %}<p class="errornote">{% if overdue == "first_response" %}The first answer is overdue (target {{ first_sla_hours }} h).{% else %}Resolution is overdue (target {{ resolve_sla_hours }} h).{% endif %}</p>{% endif %}
+  <ol class="thread">
+  {% for m in thread %}
+    <li class="{% if m.internal %}internal{% elif m.from_staff %}staff{% endif %}">
+      <strong>{% if m.internal %}Internal note by {{ m.author }}{% elif m.from_staff %}{{ m.author }} (Barterly){% else %}{{ ticket.user.phone }}{% endif %}</strong>
+      <span class="help">{{ m.created_at|date:"D d M, H:i" }}</span>
+      <p>{{ m.body }}</p>
+    </li>
+  {% endfor %}
+  </ol>
+  <form method="post" class="bo-card bo-actions">{% csrf_token %}
+    <h2>Answer</h2>
+    {{ form.non_field_errors }}
+    {{ form.as_p }}
+    <div class="submit-row"><button type="submit" class="default" name="action" value="reply">Send</button></div>
+    <p class="help">They read {% if locale == "hi" %}Hindi{% else %}English{% endif %}; canned replies come in that language.</p>
+  </form>
+</div>
+<div>
+  <div class="bo-card">
+    <h2>Request</h2>
+    <dl>
+      <dt>From</dt><dd><a href="{% url 'admin:support_timeline' ticket.user_id %}">{{ ticket.user.phone }}</a> ({{ ticket.user.role|default:"no role" }})</dd>
+      <dt>About</dt><dd>{{ ticket.get_kind_display }}</dd>
+      <dt>Priority</dt><dd>{{ ticket.get_priority_display }}</dd>
+      <dt>Status</dt><dd>{{ ticket.get_status_display }}</dd>
+      <dt>With</dt><dd>{{ ticket.assigned_to|default:"Nobody yet" }}</dd>
+      <dt>Opened</dt><dd>{{ ticket.created_at|date:"d M Y H:i" }}</dd>
+      <dt>Sent from</dt><dd>{{ ticket.platform|default:"–" }} {{ ticket.app_version }} {{ ticket.screen }}</dd>
+      {% if ticket.booking_id %}<dt>Booking</dt><dd><a href="{% url 'admin:bookings_booking_change' ticket.booking_id %}">{{ ticket.booking_id }}</a></dd>{% endif %}
+    </dl>
+    <form method="post">{% csrf_token %}
+      <button type="submit" name="action" value="assign_me">Assign to me</button>
+      {% if ticket.status != "resolved" %}<button type="submit" name="action" value="resolve">Mark resolved</button>{% endif %}
+    </form>
+  </div>
+  <div class="bo-card">
+    <h2>Canned replies</h2>
+    <ul>{% for r in replies %}<li><a href="?canned={{ r.pk }}">{{ r.title }}</a></li>{% empty %}<li>None yet. Add them under Support → Canned responses.</li>{% endfor %}</ul>
+  </div>
+</div>
+</div>
+{% endblock %}

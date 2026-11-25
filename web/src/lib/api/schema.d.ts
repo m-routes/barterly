@@ -358,6 +358,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/analytics/events/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send product events (only kept with analytics consent)
+     * @description Up to 50 events per call. Without the person's analytics consent nothing is kept and `consent` is false. Unknown events and properties are dropped; see apps/analytics/events.py for the list. No personal data is stored: the person is a keyed hash, with no IP or device id.
+     */
+    post: operations["analytics_events"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/applicant-filters/": {
     parameters: {
       query?: never;
@@ -880,6 +900,26 @@ export interface paths {
      * @description Rotating refresh: the old refresh token is blacklisted once used.
      */
     post: operations["auth_refresh"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/beta/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The closed-beta rules in force
+     * @description Whether sign-up needs an invite code (and for which roles), and the beta's limits on live gigs per host and on one booking's stipend. Clients show the invite field and the limits from this; the server enforces them regardless.
+     */
+    get: operations["beta_rules"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -1988,7 +2028,7 @@ export interface paths {
     put?: never;
     /**
      * Run a scheduled job (Cloud Scheduler only)
-     * @description Jobs: billing_dunning, billing_invoices, close_expired_gigs, deliverable_reminders, deliverable_stats, dispatch_notifications, escrow_auto_release, escrow_reconcile, expire_offers, expire_verifications, flag_stale_interviews, ops_backlog, payout_run, payout_validations, privacy_deletions, privacy_retention, render_agreements, reputation_recompute, reviews_close_windows, run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
+     * @description Jobs: analytics_kpi_snapshot, billing_dunning, billing_invoices, close_expired_gigs, deliverable_reminders, deliverable_stats, dispatch_notifications, escrow_auto_release, escrow_reconcile, expire_offers, expire_verifications, flag_stale_interviews, ops_backlog, payout_run, payout_validations, privacy_deletions, privacy_retention, render_agreements, reputation_recompute, reviews_close_windows, run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
      */
     post: operations["jobs_run"];
     delete?: never;
@@ -2025,7 +2065,7 @@ export interface paths {
     put?: never;
     /**
      * Choose vendor or talent (once)
-     * @description Sets the role of a user who signed up by OTP. Allowed once; admin roles are granted only in the Django admin. The person must declare they are 18 or older (`confirm_adult`) and accept the current terms and privacy policy, each recorded as a separate consent with its version. A stale version is 409 `document_changed`.
+     * @description Sets the role of a user who signed up by OTP. Allowed once; admin roles are granted only in the Django admin. The person must declare they are 18 or older (`confirm_adult`) and accept the current terms and privacy policy, each recorded as a separate consent with its version. A stale version is 409 `document_changed`. During the closed beta (GET /api/v1/beta/) the role may need `invite_code`: missing is 403 `invite_required`; wrong, used up, expired or for the other role is 400 `invite_invalid`.
      */
     post: operations["accounts_me_role"];
     delete?: never;
@@ -2759,6 +2799,64 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/support/tickets/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My help and feedback requests */
+    get: operations["support_tickets_list"];
+    put?: never;
+    /**
+     * Ask for help or send feedback
+     * @description Opens a request in the support inbox. Safety and money requests are urgent (answered within 2 hours, 8am to 10pm IST); others within a day; feedback within 3 days. `reply_expected_by` says when.
+     */
+    post: operations["support_tickets_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/support/tickets/{ticket_id}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One request with its messages */
+    get: operations["support_tickets_retrieve"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/support/tickets/{ticket_id}/messages/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Add a message to my request
+     * @description A resolved request opens again when the person writes.
+     */
+    post: operations["support_tickets_reply"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/tasks/{name}/": {
     parameters: {
       query?: never;
@@ -3331,6 +3429,27 @@ export interface components {
       | "power_backup"
       | "wifi"
       | "workspace";
+    AnalyticsEvent: {
+      /** @description One of: apply_started, apply_submitted, feedback_sent, gig_builder_step, gig_submitted, gig_viewed, help_opened, invite_entered, offer_viewed, onboarding_step, screen_view, search. */
+      name: string;
+      /** @description ISO 8601 with an offset; up to 7 days old. Default: now. */
+      occurred_at?: string;
+      /** @description Only the properties listed for the event are kept. */
+      props?: {
+        [key: string]: unknown;
+      };
+    };
+    AnalyticsEventBatch: {
+      platform: components["schemas"]["DevicePlatformEnum"];
+      app_version?: string;
+      events: components["schemas"]["AnalyticsEvent"][];
+    };
+    AnalyticsEventBatchResult: {
+      accepted: number;
+      dropped: number;
+      /** @description False: the person hasn't agreed to analytics, so nothing was kept. Clients should stop sending until they do. */
+      consent: boolean;
+    };
     Answer: {
       reason?: string;
     };
@@ -3563,6 +3682,16 @@ export interface components {
       | "social_verified"
       | "reference_checked"
       | "trusted_member";
+    BetaRules: {
+      /** @description True while sign-up is invite-only. */
+      closed_beta: boolean;
+      /** @description Roles that need an invite code at /api/v1/me/role/. */
+      invite_required_for: components["schemas"]["InviteRequiredForEnum"][];
+      /** @description Live gigs a host may have at once; null: the plan decides. */
+      max_live_gigs: number | null;
+      /** @description Largest stipend for one booking; null: no beta limit. */
+      max_stipend_rupees: number | null;
+    };
     BillingOverview: {
       subscription: components["schemas"]["Subscription"] | null;
       entitlements: components["schemas"]["Entitlements"];
@@ -4066,6 +4195,8 @@ export interface components {
       privacy_version: string;
       /** @default api */
       source: components["schemas"]["ConsentSourceEnum"];
+      /** @description During the closed beta: the invite code (GET /api/v1/beta/ says which roles need one). With or without the dash, any case. */
+      invite_code?: string;
     };
     /**
      * @description * `vendor` - Vendor
@@ -4117,9 +4248,10 @@ export interface components {
      *     * `location` - Location use
      *     * `social` - Social account access
      *     * `marketing` - Marketing messages
+     *     * `analytics` - Product analytics
      * @enum {string}
      */
-    ConsentPurposeEnum: "terms" | "privacy" | "location" | "social" | "marketing";
+    ConsentPurposeEnum: "terms" | "privacy" | "location" | "social" | "marketing" | "analytics";
     ConsentRecord: {
       readonly id: number;
       readonly purpose: components["schemas"]["ConsentPurposeEnum"];
@@ -4401,12 +4533,12 @@ export interface components {
       platform: components["schemas"]["DevicePlatformEnum"];
     };
     /**
-     * @description * `android` - Android
+     * @description * `web` - Web
+     *     * `android` - Android
      *     * `ios` - iOS
-     *     * `web` - Web
      * @enum {string}
      */
-    DevicePlatformEnum: "android" | "ios" | "web";
+    DevicePlatformEnum: "web" | "android" | "ios";
     DeviceToken: {
       token: string;
     };
@@ -4539,6 +4671,7 @@ export interface components {
      *     * `reviews` - reviews
      *     * `deliverables` - deliverables
      *     * `payouts` - payouts
+     *     * `support.replied` - support.replied
      *     * `other` - other
      * @enum {string}
      */
@@ -4557,6 +4690,7 @@ export interface components {
       | "reviews"
       | "deliverables"
       | "payouts"
+      | "support.replied"
       | "other";
     EventTypeSetting: {
       key: string;
@@ -4646,6 +4780,7 @@ export interface components {
       escrow_funding: boolean;
       sos_live_sharing: boolean;
       ai_safety_checks: boolean;
+      closed_beta: boolean;
     };
     GeocodeRequest: {
       /** @description A full address. */
@@ -4989,6 +5124,12 @@ export interface components {
      * @enum {string}
      */
     InterviewStatusEnum: "proposed" | "scheduled" | "new_times_requested" | "cancelled";
+    /**
+     * @description * `vendor` - vendor
+     *     * `talent` - talent
+     * @enum {string}
+     */
+    InviteRequiredForEnum: "vendor" | "talent";
     Invoice: {
       /** Format: uuid */
       readonly id: string;
@@ -5029,11 +5170,12 @@ export interface components {
     };
     /**
      * @description * `ai_safety_checks` - ai_safety_checks
+     *     * `closed_beta` - closed_beta
      *     * `escrow_funding` - escrow_funding
      *     * `sos_live_sharing` - sos_live_sharing
      * @enum {string}
      */
-    KeyEnum: "ai_safety_checks" | "escrow_funding" | "sos_live_sharing";
+    KeyEnum: "ai_safety_checks" | "closed_beta" | "escrow_funding" | "sos_live_sharing";
     KillSwitch: {
       paused?: boolean;
       reason?: string;
@@ -5400,6 +5542,23 @@ export interface components {
       /** @description The host's reliability (v1). */
       host_reliability: components["schemas"]["Reliability"];
     };
+    OpenSupportTicket: {
+      kind: components["schemas"]["TicketKindEnum"];
+      subject: string;
+      body: string;
+      /** Format: uuid */
+      booking_id?: string | null;
+      screen?: string;
+      platform?: components["schemas"]["OpenSupportTicketPlatformEnum"];
+      app_version?: string;
+    };
+    /**
+     * @description * `web` - web
+     *     * `android` - android
+     *     * `ios` - ios
+     * @enum {string}
+     */
+    OpenSupportTicketPlatformEnum: "web" | "android" | "ios";
     PaginatedAdminCaseList: {
       /** @example 123 */
       count: number;
@@ -5684,6 +5843,21 @@ export interface components {
        */
       previous?: string | null;
       results: components["schemas"]["StayReview"][];
+    };
+    PaginatedSupportTicketList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["SupportTicket"][];
     };
     PaginatedTrackedDeliverableList: {
       /** @example 123 */
@@ -6858,6 +7032,49 @@ export interface components {
      */
     SubscriptionStatusEnum:
       "created" | "authenticated" | "active" | "past_due" | "halted" | "cancelled" | "completed";
+    SupportMessage: {
+      readonly id: number;
+      readonly from_staff: boolean;
+      readonly body: string;
+      /** Format: date-time */
+      readonly created_at: string;
+    };
+    SupportReply: {
+      body: string;
+    };
+    SupportTicket: {
+      /** Format: uuid */
+      readonly id: string;
+      readonly reference: string;
+      readonly kind: components["schemas"]["TicketKindEnum"];
+      readonly subject: string;
+      readonly status: components["schemas"]["TicketStatusEnum"];
+      /** Format: uuid */
+      readonly booking: string | null;
+      /** Format: date-time */
+      readonly created_at: string;
+      /** Format: date-time */
+      readonly last_message_at: string;
+      /** @description When we aim to answer, while we haven't yet; null once we have. */
+      readonly reply_expected_by: string | null;
+    };
+    SupportTicketDetail: {
+      /** Format: uuid */
+      readonly id: string;
+      readonly reference: string;
+      readonly kind: components["schemas"]["TicketKindEnum"];
+      readonly subject: string;
+      readonly status: components["schemas"]["TicketStatusEnum"];
+      /** Format: uuid */
+      readonly booking: string | null;
+      /** Format: date-time */
+      readonly created_at: string;
+      /** Format: date-time */
+      readonly last_message_at: string;
+      /** @description When we aim to answer, while we haven't yet; null once we have. */
+      readonly reply_expected_by: string | null;
+      readonly messages: components["schemas"]["SupportMessage"][];
+    };
     SyncRequest: {
       events: components["schemas"]["CheckInRequest"][];
     };
@@ -6993,6 +7210,22 @@ export interface components {
       /** @default  */
       notes: string;
     };
+    /**
+     * @description * `help` - Help with something
+     *     * `payment` - Money or payments
+     *     * `safety` - A safety concern
+     *     * `bug` - Something isn't working
+     *     * `feedback` - Feedback or an idea
+     * @enum {string}
+     */
+    TicketKindEnum: "help" | "payment" | "safety" | "bug" | "feedback";
+    /**
+     * @description * `open` - Waiting for us
+     *     * `waiting` - Waiting for the person
+     *     * `resolved` - Resolved
+     * @enum {string}
+     */
+    TicketStatusEnum: "open" | "waiting" | "resolved";
     TimelineEntry: {
       status: string;
       /** Format: date-time */
@@ -8330,6 +8563,47 @@ export interface operations {
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  analytics_events: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AnalyticsEventBatch"];
+        "application/x-www-form-urlencoded": components["schemas"]["AnalyticsEventBatch"];
+        "multipart/form-data": components["schemas"]["AnalyticsEventBatch"];
+      };
+    };
+    responses: {
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnalyticsEventBatchResult"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
         headers: {
           [name: string]: unknown;
         };
@@ -9825,6 +10099,25 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  beta_rules: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BetaRules"];
         };
       };
     };
@@ -13394,6 +13687,14 @@ export interface operations {
           "application/json": components["schemas"]["Error"];
         };
       };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
       409: {
         headers: {
           [name: string]: unknown;
@@ -15661,6 +15962,143 @@ export interface operations {
         };
       };
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  support_tickets_list: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedSupportTicketList"];
+        };
+      };
+    };
+  };
+  support_tickets_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["OpenSupportTicket"];
+        "application/x-www-form-urlencoded": components["schemas"]["OpenSupportTicket"];
+        "multipart/form-data": components["schemas"]["OpenSupportTicket"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SupportTicketDetail"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  support_tickets_retrieve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ticket_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SupportTicketDetail"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  support_tickets_reply: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ticket_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SupportReply"];
+        "application/x-www-form-urlencoded": components["schemas"]["SupportReply"];
+        "multipart/form-data": components["schemas"]["SupportReply"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SupportTicketDetail"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
         headers: {
           [name: string]: unknown;
         };

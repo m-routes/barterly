@@ -16,6 +16,7 @@ class FlagValuesSerializer(serializers.Serializer):
     escrow_funding = serializers.BooleanField()
     sos_live_sharing = serializers.BooleanField()
     ai_safety_checks = serializers.BooleanField()
+    closed_beta = serializers.BooleanField()
 
 
 class SetFlagSerializer(serializers.Serializer):

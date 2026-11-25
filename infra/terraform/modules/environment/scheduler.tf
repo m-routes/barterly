@@ -33,6 +33,7 @@ locals {
     escrow_reconcile         = { schedule = "30 2 * * *", description = "Compare yesterday's ledger totals with the gateway's; alert on a mismatch." }
     ops_backlog              = { schedule = "*/5 * * * *", description = "Log counts of stuck notifications, payouts and failed jobs for monitoring." }
     privacy_retention        = { schedule = "0 4 * * *", description = "Purge data past its retention period (PRIVACY_RETENTION_DAYS); audit each purge." }
+    analytics_kpi_snapshot   = { schedule = "30 0 * * *", description = "Keep yesterday's 28-day beta KPIs for the dashboard's trend." }
     privacy_deletions        = { schedule = "30 4 * * *", description = "Anonymise accounts whose deletion grace period has ended." }
   }
 }

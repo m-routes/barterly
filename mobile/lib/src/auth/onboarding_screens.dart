@@ -1,3 +1,4 @@
+import 'package:barterly/src/analytics/analytics.dart';
 import 'package:barterly/src/api/api_error.dart';
 import 'package:barterly/src/auth/session.dart';
 import 'package:barterly/src/auth/user.dart';
@@ -43,23 +44,64 @@ class JoinAsTalentScreen extends ConsumerStatefulWidget {
   ConsumerState<JoinAsTalentScreen> createState() => _JoinState();
 }
 
+final FutureProvider<List<String>> _inviteRolesProvider =
+    FutureProvider.autoDispose<List<String>>(
+      (ref) => ref.watch(authRepositoryProvider).inviteRoles(),
+    );
+
 class _JoinState extends ConsumerState<JoinAsTalentScreen> {
+  final _invite = TextEditingController();
+  bool _askInvite = false;
+  String? _inviteError;
   bool _adult = false;
   bool _terms = false;
   bool _privacy = false;
   bool _busy = false;
   String? _error;
 
+  @override
+  void dispose() {
+    _invite.dispose();
+    super.dispose();
+  }
+
+  bool get _needsInvite =>
+      _askInvite ||
+      (ref.read(_inviteRolesProvider).value?.contains('talent') ?? false);
+
   Future<void> _join() async {
+    final code = _invite.text.trim();
+    if (_needsInvite && code.isEmpty) {
+      setState(() {
+        _askInvite = true;
+        _inviteError = 'Enter the invite code we sent you.';
+      });
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
+      _inviteError = null;
     });
+    final analytics = ref.read(analyticsProvider);
     try {
-      await ref.read(authRepositoryProvider).chooseTalentRole();
+      await ref
+          .read(authRepositoryProvider)
+          .chooseTalentRole(inviteCode: _needsInvite ? code : null);
+      if (_needsInvite) analytics.track('invite_entered', {'ok': true});
       await ref.read(sessionProvider.notifier).reload();
     } on ApiError catch (error) {
-      if (error.code == 'role_already_set') {
+      if (error.code == 'invite_required' || error.code == 'invite_invalid') {
+        if (error.code == 'invite_invalid') {
+          analytics.track('invite_entered', {'ok': false});
+        }
+        if (mounted) {
+          setState(() {
+            _askInvite = true;
+            _inviteError = error.message;
+          });
+        }
+      } else if (error.code == 'role_already_set') {
         // Chosen on another device: carry on with what the API has.
         await ref.read(sessionProvider.notifier).reload();
       } else if (mounted) {
@@ -96,6 +138,24 @@ class _JoinState extends ConsumerState<JoinAsTalentScreen> {
               ),
             ),
             const SizedBox(height: BarterlySpace.lg),
+            if (_askInvite ||
+                (ref.watch(_inviteRolesProvider).value?.contains('talent') ??
+                    false)) ...[
+              TextField(
+                controller: _invite,
+                autocorrect: false,
+                textCapitalization: TextCapitalization.characters,
+                maxLength: 20,
+                decoration: InputDecoration(
+                  labelText: 'Invite code',
+                  helperText:
+                      'Barterly is invite-only for now. '
+                      'It looks like ABCD-2345.',
+                  errorText: _inviteError,
+                ),
+              ),
+              const SizedBox(height: BarterlySpace.md),
+            ],
             AgreementsChecklist(
               adult: _adult,
               terms: _terms,

@@ -87,6 +87,8 @@ def test_backlog_counts_stuck_work(caplog):
         "notifications_dead_24h": 0,
         "payouts_stuck": 0,
         "jobs_failed_24h": 1,
+        "support_overdue": 0,
+        "safety_reviews_overdue": 0,
     }
     [event] = events_in(caplog)
     assert event["jobs_failed_24h"] == 1

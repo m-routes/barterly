@@ -1014,3 +1014,56 @@ a {
   flex-wrap: wrap;
   gap: var(--space-3);
 }
+
+/* Help and feedback (components/support) */
+.support-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.support-list__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.support-list__item:last-child {
+  border-bottom: 0;
+}
+
+.support-list__meta,
+.support-thread__who {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+.support-thread {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.support-thread__message {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--space-3);
+  max-width: 40rem;
+}
+
+.support-thread__message--staff {
+  background: var(--color-surface-muted, var(--color-surface));
+  align-self: flex-end;
+}
+
+.support-thread__body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: var(--space-1) 0 0;
+}

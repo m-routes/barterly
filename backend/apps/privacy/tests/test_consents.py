@@ -19,7 +19,7 @@ def by_purpose(body):
 def test_nothing_is_assumed():
     user = TalentFactory()
     states = {s.purpose: s for s in consents.states(user)}
-    assert set(states) == {"terms", "privacy", "location", "social", "marketing"}
+    assert set(states) == {"terms", "privacy", "location", "social", "marketing", "analytics"}
     assert not any(s.granted for s in states.values())
     assert states["terms"].required and not states["marketing"].required
     assert consents.needs_required_consent(user)

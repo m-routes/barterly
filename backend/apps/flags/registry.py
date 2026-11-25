@@ -32,6 +32,17 @@ FLAGS: dict[str, Flag] = {
             "themselves are never switched off."
         ),
     ),
+    "closed_beta": Flag(
+        default=False,
+        description=(
+            "Closed beta: sign-up needs an invite code, hosts have a live-gig cap and "
+            "each booking's stipend has a ceiling (BETA_* settings)."
+        ),
+        when_off=(
+            "Anyone can sign up and only the plan limits apply. Codes already used stay "
+            "recorded. Turn it on before the beta opens (docs/beta/README.md)."
+        ),
+    ),
     "ai_safety_checks": Flag(
         default=True,
         description="Automated safety checks on new gigs.",

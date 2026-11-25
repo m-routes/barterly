@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:barterly/src/analytics/analytics.dart';
 import 'package:barterly/src/auth/session.dart';
 import 'package:barterly/src/profile/talent_profile.dart';
 import 'package:barterly/src/providers.dart';
@@ -130,6 +133,21 @@ class _ProfileSummary extends ConsumerWidget {
           subtitle: const Text('Consents, download, correct or delete'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.push(Routes.privacy),
+        ),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.support_agent_outlined),
+          title: const Text('Help and feedback'),
+          subtitle: const Text(
+            'Ask us anything, report a problem, share an idea',
+          ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () {
+            ref.read(analyticsProvider).track('help_opened', {
+              'screen': 'profile',
+            });
+            unawaited(context.push(Routes.help));
+          },
         ),
         const SizedBox(height: BarterlySpace.md),
         const Divider(),

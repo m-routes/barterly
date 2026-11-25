@@ -1,0 +1,46 @@
+{% extends "backoffice/base.html" %}
+{% block content %}
+<div class="bo-grid">
+<div>
+  <form method="get" class="bo-filters">
+    {% for value, label in categories %}<div><label><input type="checkbox" name="show" value="{{ value }}"{% if value in chosen %} checked{% endif %}> {{ label }}</label></div>{% endfor %}
+    <div><input type="submit" value="Show"></div>
+  </form>
+  <div class="results">
+  <table id="result_list">
+    <thead><tr><th scope="col">When</th><th scope="col">What</th><th scope="col">Detail</th></tr></thead>
+    <tbody>
+    {% for e in entries %}
+      <tr><td>{{ e.at|date:"d M Y H:i" }}</td><th scope="row">{% if e.link %}<a href="{{ e.link }}">{{ e.title }}</a>{% else %}{{ e.title }}{% endif %}<br><span class="help">{{ e.category }}</span></th><td>{{ e.detail }}</td></tr>
+    {% empty %}
+      <tr><td colspan="3">Nothing recorded.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if truncated %}<p class="help">Showing the latest 500. Narrow it down with the boxes above.</p>{% endif %}
+</div>
+<div>
+  <div class="bo-card">
+    <h2>{{ header.user.phone }}</h2>
+    <dl>
+      <dt>Role</dt><dd>{{ header.user.role|default:"Not chosen" }}</dd>
+      <dt>Joined</dt><dd>{{ header.user.created_at|date:"d M Y" }}</dd>
+      <dt>Active</dt><dd>{{ header.user.is_active|yesno:"Yes,No (deactivated)" }}</dd>
+      <dt>Invite</dt><dd>{% if header.invite %}{{ header.invite.display }} ({{ header.invite.cohort }}{% if header.invite.label %}, {{ header.invite.label }}{% endif %}){% else %}–{% endif %}</dd>
+      <dt>Badges</dt><dd>{% for b in header.badges %}{{ b.get_kind_display }}{% if not forloop.last %}, {% endif %}{% empty %}None{% endfor %}</dd>
+      <dt>Open requests</dt><dd>{{ header.open_tickets }}</dd>
+    </dl>
+  </div>
+  <div class="bo-card">
+    <h2>Consents</h2>
+    <dl>{% for c in header.consents %}<dt>{{ c.label }}</dt><dd>{{ c.granted|yesno:"Yes,No" }}{% if c.version %} (v{{ c.version }}){% endif %}</dd>{% endfor %}</dl>
+  </div>
+  <div class="bo-card">
+    <h2>Support requests</h2>
+    <ul>{% for t in tickets %}<li><a href="{% url 'admin:support_ticket' t.pk %}">{{ t.reference }}</a> {{ t.subject }} <span class="help">{{ t.get_status_display }}</span></li>{% empty %}<li>None.</li>{% endfor %}</ul>
+  </div>
+  <p class="help">Opening this page is recorded in the audit log.</p>
+</div>
+</div>
+{% endblock %}

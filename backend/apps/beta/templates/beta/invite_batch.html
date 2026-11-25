@@ -1,0 +1,32 @@
+{% extends "backoffice/base.html" %}
+{% block content %}
+<div class="bo-grid">
+<div>
+{% if made %}
+<div class="bo-card">
+  <h2>{{ made|length }} new code{{ made|length|pluralize }}</h2>
+  <p>Send each property its own code. <a href="{% url 'admin:beta_invite_csv' made.0.cohort %}">Download every code in {{ made.0.cohort }} (CSV)</a></p>
+  <table>
+    <thead><tr><th scope="col">Code</th><th scope="col">For</th><th scope="col">Role</th><th scope="col">Expires</th></tr></thead>
+    <tbody>
+    {% for invite in made %}
+      <tr><th scope="row"><code>{{ invite.display }}</code></th><td>{{ invite.label|default:"–" }}</td><td>{{ invite.get_role_display }}</td><td>{{ invite.expires_at|date:"d M Y" }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+<form method="post" class="bo-card bo-actions">{% csrf_token %}
+  <h2>Make codes</h2>
+  {{ form.non_field_errors }}
+  {{ form.as_p }}
+  <div class="submit-row"><input type="submit" class="default" value="Make codes"></div>
+</form>
+</div>
+<div class="bo-card">
+  <h2>How codes work</h2>
+  <p>Someone types their code at the last step of sign-up, when they choose host or talent. Each use is audited. A code can be revoked from <a href="{% url 'admin:beta_invitecode_changelist' %}">Invite codes</a>.</p>
+  <p>Codes are only asked for while the <strong>closed_beta</strong> flag is on.</p>
+</div>
+</div>
+{% endblock %}

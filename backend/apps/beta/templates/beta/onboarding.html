@@ -1,0 +1,40 @@
+{% extends "backoffice/base.html" %}
+{% block content %}
+<form method="get" class="bo-filters">
+  <div><label for="cohort">Cohort</label>
+    <select name="cohort" id="cohort">{% for c in cohorts %}<option value="{{ c }}"{% if c == cohort %} selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+  <div><label><input type="checkbox" name="stuck" value="1"{% if stuck %} checked{% endif %}> Only properties not done yet</label></div>
+  <div><input type="submit" value="Show"></div>
+</form>
+{% if cohort %}
+<div class="bo-card">
+  <h2>{{ cohort }}: {{ total }} invite{{ total|pluralize }}</h2>
+  <table>
+    <thead><tr>{% for label, count in funnel %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead>
+    <tbody><tr>{% for label, count in funnel %}<td>{{ count }}</td>{% endfor %}</tr></tbody>
+  </table>
+</div>
+<div class="results">
+<table id="result_list">
+  <thead><tr><th scope="col">Property</th><th scope="col">Code</th><th scope="col">Host</th><th scope="col">Done</th><th scope="col">Next step</th><th scope="col">First gig live</th></tr></thead>
+  <tbody>
+  {% for row in rows %}
+    <tr>
+      <th scope="row">{{ row.invite.label|default:"(no label)" }}</th>
+      <td><code>{{ row.invite.display }}</code> <span class="help">{{ row.invite.state }}</span></td>
+      <td>{% if row.user_id %}<a href="{% url 'admin:support_timeline' row.user_id %}">{{ row.phone }}</a>{% else %}Not signed up{% endif %}</td>
+      <td>{{ row.progress }} / {{ steps|length }}</td>
+      <td>{% if row.next_step == "All done" %}<span class="bo-flag bo-flag--ok">All done</span>{% else %}{{ row.next_step }}{% endif %}</td>
+      <td>{{ row.first_live_at|date:"d M Y"|default:"–" }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6">Nobody to show.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="help">Call stuck hosts with the first-gig call script (docs/beta/onboarding/first-gig-call-script.md).</p>
+{% else %}
+<p>No invite codes yet. <a href="{% url 'admin:beta_invite_batch' %}">Make some</a>.</p>
+{% endif %}
+{% endblock %}

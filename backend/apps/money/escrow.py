@@ -30,6 +30,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
+from apps.beta import rules as beta_rules
 from apps.bookings.lifecycle import BookingStatus
 from apps.bookings.models import Booking
 from apps.common.events import DomainEvent, publish
@@ -237,6 +238,10 @@ def start_funding(booking_id, *, vendor, request=None, now=None) -> tuple[Escrow
         if escrow and escrow.status == E.FUNDING and escrow.gateway_order_id:
             return escrow, escrow.gateway_order_id
         amounts = quote(booking)
+        try:
+            beta_rules.check_stipend(amounts["stipend"])
+        except beta_rules.BetaLimitReached as exc:
+            raise EscrowError(exc.message, 422) from exc
         if escrow is None:
             escrow = Escrow(booking=booking, created_at=now)
         before = snapshot(escrow, AUDIT) if escrow.pk else {}

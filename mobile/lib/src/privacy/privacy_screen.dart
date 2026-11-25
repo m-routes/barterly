@@ -1,3 +1,4 @@
+import 'package:barterly/src/analytics/analytics.dart';
 import 'package:barterly/src/api/api_error.dart';
 import 'package:barterly/src/discover/gig.dart' show shortDate;
 import 'package:barterly/src/privacy/legal.dart';
@@ -26,6 +27,10 @@ const _purposeText = {
   'social': 'Read public numbers for posts you hand in, and check your handle.',
   'marketing':
       "Offers and news. Booking and payment messages aren't marketing.",
+  'analytics':
+      "Count which screens and steps you use, so we can fix what's "
+      "confusing. Never your messages, location or contacts; you're a random "
+      'code, not a name. Withdrawing deletes what we have.',
 };
 
 /// Consents, a copy of your data, corrections and deleting the account. Every
@@ -145,6 +150,9 @@ class _Consents extends ConsumerWidget {
       await ref
           .read(privacyRepositoryProvider)
           .setConsent(consent.purpose, granted: granted);
+      if (consent.purpose == 'analytics') {
+        ref.read(analyticsProvider).setConsent(granted: granted);
+      }
       ref.invalidate(consentsProvider);
       messenger.showSnackBar(
         SnackBar(

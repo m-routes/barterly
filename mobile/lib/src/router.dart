@@ -1,5 +1,7 @@
 import 'package:barterly/src/agreements/agreement_screen.dart';
 import 'package:barterly/src/agreements/offer_screen.dart';
+import 'package:barterly/src/analytics/analytics.dart';
+import 'package:barterly/src/analytics/events.dart';
 import 'package:barterly/src/apply/apply_screen.dart';
 import 'package:barterly/src/apply/my_applications_screen.dart';
 import 'package:barterly/src/attendance/hours_screen.dart';
@@ -19,6 +21,7 @@ import 'package:barterly/src/profile/profile_setup_screen.dart';
 import 'package:barterly/src/reviews/review_screens.dart';
 import 'package:barterly/src/shell/app_shell.dart';
 import 'package:barterly/src/shell/tabs.dart';
+import 'package:barterly/src/support/help_screens.dart';
 import 'package:barterly/src/trips/trip_screen.dart';
 import 'package:barterly/src/verification/verification_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -55,6 +58,8 @@ abstract final class Routes {
       '/trips/deliverables/$bookingId';
   static String review(String bookingId) => '/trips/review/$bookingId';
   static const myReviews = '/profile/reviews';
+  static const help = '/profile/help';
+  static String helpRequest(String id) => '/profile/help/$id';
 
   /// Screens that only make sense before the person is fully in.
   static const Set<String> gates = {
@@ -219,6 +224,24 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (_, _) => const PrivacyScreen(),
                   ),
                   GoRoute(
+                    path: 'help',
+                    builder: (_, _) => const HelpScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'new',
+                        builder: (_, state) => NewRequestScreen(
+                          bookingId: state.uri.queryParameters['booking'],
+                        ),
+                      ),
+                      GoRoute(
+                        path: ':id',
+                        builder: (_, state) => SupportThreadScreen(
+                          ticketId: state.pathParameters['id']!,
+                        ),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
                     path: 'notifications',
                     builder: (_, _) => const NotificationsScreen(),
                     routes: [
@@ -236,6 +259,22 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
-  ref.onDispose(router.dispose);
+  // One screen_view per screen people reach once signed in; analytics only
+  // sends it with their consent.
+  var lastScreen = '';
+  void screenView() {
+    if (ref.read(sessionProvider) is! SignedIn) return;
+    final screen = screenOf(
+      router.routerDelegate.currentConfiguration.uri.path,
+    );
+    if (screen == lastScreen) return;
+    lastScreen = screen;
+    ref.read(analyticsProvider).track('screen_view', {'screen': screen});
+  }
+
+  router.routerDelegate.addListener(screenView);
+  ref
+    ..onDispose(() => router.routerDelegate.removeListener(screenView))
+    ..onDispose(router.dispose);
   return router;
 });
