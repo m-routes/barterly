@@ -7,11 +7,15 @@ apps.media.tests.fakes.InMemoryMediaStorage.
 
 import base64
 import contextlib
+import hashlib
+import hmac
 import threading
+import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from functools import cache
 from typing import Protocol
+from urllib.parse import quote
 
 from django.conf import settings
 from django.utils import timezone
@@ -172,6 +176,41 @@ class GCSMediaStorage:
 
         with contextlib.suppress(NotFound):
             self._bucket.blob(key).delete()
+
+
+def cdn_signed_url(base_url: str, *, key_name: str, key_b64: str, expires_at: int) -> str:
+    """A Cloud CDN signed URL (HMAC-SHA1 over the URL with Expires and KeyName).
+
+    https://cloud.google.com/cdn/docs/using-signed-urls#programmatically_creating_signed_urls
+    """
+    separator = "&" if "?" in base_url else "?"
+    unsigned = f"{base_url}{separator}Expires={expires_at}&KeyName={key_name}"
+    key = base64.urlsafe_b64decode(key_b64 + "=" * (-len(key_b64) % 4))
+    digest = hmac.new(key, unsigned.encode(), hashlib.sha1).digest()
+    return f"{unsigned}&Signature={base64.urlsafe_b64encode(digest).decode()}"
+
+
+class CDNMediaStorage(GCSMediaStorage):
+    """GCSMediaStorage whose inline reads go through Cloud CDN (docs/edge.md).
+
+    The CDN's backend bucket is the private media bucket; only Cloud CDN's fill account
+    may read it, and only for requests carrying a valid signed URL. Downloads that need
+    a Content-Disposition (attachments, file names) keep using Cloud Storage signed
+    URLs, since the CDN can't set that header per request. Uploads are unchanged.
+    """
+
+    def signed_read_url(self, key, *, expires, download_name=None, attachment=False):
+        if attachment or download_name:
+            return super().signed_read_url(
+                key, expires=expires, download_name=download_name, attachment=attachment
+            )
+        check_link_lifetime(expires)
+        return cdn_signed_url(
+            f"https://{settings.MEDIA_CDN_HOST}/{quote(key, safe='/~')}",
+            key_name=settings.MEDIA_CDN_KEY_NAME,
+            key_b64=settings.MEDIA_CDN_KEY,
+            expires_at=int(time.time() + expires.total_seconds()),
+        )
 
 
 @cache

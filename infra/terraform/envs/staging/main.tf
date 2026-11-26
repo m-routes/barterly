@@ -43,8 +43,15 @@ module "environment" {
   api_domains = var.api_domains
   web_domains = var.web_domains
 
+  # docs/edge.md: load balancer, TLS, Cloud Armor, CDN.
+  edge_enabled              = var.edge_enabled
+  media_domain              = var.media_domain
+  media_cdn_signing_enabled = var.media_cdn_signing_enabled
+  armor_preview             = var.armor_preview
+
   firebase_web = var.firebase_web
   alert_emails = var.alert_emails
+  qa_enabled   = true
 
   api_min_instances   = 0
   web_min_instances   = 0

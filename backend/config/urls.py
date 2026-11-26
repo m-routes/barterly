@@ -31,6 +31,7 @@ urlpatterns = [
     path("api/v1/", include("apps.deliverables.urls")),
     path("api/v1/", include("apps.reviews.urls")),
     path("api/v1/", include("apps.flags.urls")),
+    path("api/v1/", include("apps.appversions.urls")),
     path("api/v1/", include("apps.privacy.urls")),
     path("api/v1/", include("apps.beta.urls")),
     path("api/v1/", include("apps.analytics.urls")),

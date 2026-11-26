@@ -20,12 +20,16 @@ import 'package:barterly/src/platform/calendar.dart';
 import 'package:barterly/src/platform/key_value_store.dart';
 import 'package:barterly/src/platform/media_picker.dart';
 import 'package:barterly/src/platform/network_status.dart';
+import 'package:barterly/src/platform/permission_rationale.dart';
 import 'package:barterly/src/platform/url_opener.dart';
 import 'package:barterly/src/privacy/privacy_repository.dart';
 import 'package:barterly/src/profile/profile_repository.dart';
 import 'package:barterly/src/reviews/reviews_repository.dart';
+import 'package:barterly/src/router.dart';
 import 'package:barterly/src/support/support_repository.dart';
 import 'package:barterly/src/trips/trip_models.dart';
+import 'package:barterly/src/update/app_version.dart';
+import 'package:barterly/src/update/update_gate.dart';
 import 'package:barterly/src/verification/verification_repository.dart';
 import 'package:barterly/src/wallet/wallet_repository.dart';
 import 'package:dio/dio.dart';
@@ -61,6 +65,13 @@ final dioProvider = Provider<Dio>(
     tokens: ref.watch(tokenStoreProvider),
     adapter: ref.watch(httpAdapterProvider),
     onSessionExpired: () => ref.read(sessionProvider.notifier).expired(),
+    interceptors: [
+      ClientVersionInterceptor(
+        installed: () => ref.read(installedAppProvider.future),
+        onUpgradeRequired: (policy) =>
+            ref.read(updateProvider.notifier).upgradeRequired(policy),
+      ),
+    ],
   ),
 );
 
@@ -180,6 +191,29 @@ final mediaPickerProvider = Provider<MediaPicker>(
 
 final urlOpenerProvider = Provider<UrlOpener>(
   (ref) => const LauncherUrlOpener(),
+);
+
+/// Shows a permission's explanation over whatever screen is open (tests
+/// answer it directly).
+final rationalePresenterProvider = Provider<RationalePresenter>(
+  (ref) => (permission) async {
+    final context = ref
+        .read(routerProvider)
+        .routerDelegate
+        .navigatorKey
+        .currentContext;
+    if (context == null || !context.mounted) return false;
+    return await showRationale(context, permission);
+  },
+);
+
+/// Explains camera and notification access before the system prompt.
+final permissionPromptsProvider = Provider<PermissionPrompts>(
+  (ref) => PermissionPrompts(
+    store: ref.watch(keyValueStoreProvider),
+    present: ref.watch(rationalePresenterProvider),
+    now: ref.watch(clockProvider),
+  ),
 );
 
 /// Null uses flutter_map's network tiles; tests swap in tiles from memory.

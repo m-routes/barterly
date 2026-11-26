@@ -15,6 +15,11 @@ export type CspOptions = {
   dev?: boolean;
   /** The map tile template, e.g. https://tile.openstreetmap.org/{z}/{x}/{y}.png */
   tileUrl?: string;
+  /**
+   * Media CDN origins (docs/edge.md), e.g. "https://media.barterly.in". One image is
+   * promoted from staging to production, so this lists both environments' hosts.
+   */
+  mediaOrigins?: string[];
 };
 
 const GOOGLE_AUTH = [
@@ -37,8 +42,12 @@ export function contentSecurityPolicy({
   inlineScripts = false,
   dev = false,
   tileUrl,
+  mediaOrigins = [],
 }: CspOptions = {}): string {
   const tiles = originOf(tileUrl) ?? "https://tile.openstreetmap.org";
+  const media = mediaOrigins
+    .map((origin) => originOf(origin.trim()))
+    .filter((origin): origin is string => origin?.startsWith("https://") ?? false);
   const directives: Record<string, string[]> = {
     "default-src": ["'self'"],
     "script-src": [
@@ -49,7 +58,9 @@ export function contentSecurityPolicy({
     ],
     // React and the map set style attributes; styles can't run code.
     "style-src": ["'self'", "'unsafe-inline'"],
-    "img-src": ["'self'", "data:", "blob:", STORAGE, tiles],
+    "img-src": ["'self'", "data:", "blob:", STORAGE, ...media, tiles],
+    // Intro videos in applications play from the same signed URLs.
+    "media-src": ["'self'", "blob:", STORAGE, ...media],
     "font-src": ["'self'"],
     // The BFF is same-origin; Firebase Auth and uploads to signed URLs are not.
     "connect-src": [

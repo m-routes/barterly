@@ -4,6 +4,43 @@
  */
 
 export interface paths {
+  "/api/v1/admin/app-versions/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** App version policies (admin) */
+    get: operations["app_versions_admin_list"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/app-versions/{platform}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Set a platform's minimum and latest versions (admin)
+     * @description Raising the minimum forces every older app to update before it can do anything. A reason is required; the change is audited. Takes effect on every instance within APP_VERSION_CACHE_SECONDS.
+     */
+    put: operations["app_versions_admin_set"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/admin/attendance/{check_in_id}/review/": {
     parameters: {
       query?: never;
@@ -372,6 +409,28 @@ export interface paths {
      * @description Up to 50 events per call. Without the person's analytics consent nothing is kept and `consent` is false. Unknown events and properties are dropped; see apps/analytics/events.py for the list. No personal data is stored: the person is a keyed hash, with no IP or device id.
      */
     post: operations["analytics_events"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/app/version/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Minimum and latest app versions
+     * @description The app calls this on launch. Below `minimum_version` it must block and send the person to `store_url`. Below `latest_version` it may offer the update.
+     *
+     *     The app also sends `X-Client-Platform` and `X-Client-Version` on every call. When that version is below the minimum, **any** endpoint answers `426 Upgrade Required` with code `upgrade_required` and `details` holding `minimum_version` and `store_url` (docs/api-versioning.md). This endpoint and the health check never do.
+     */
+    get: operations["app_version"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -3452,6 +3511,42 @@ export interface components {
     };
     Answer: {
       reason?: string;
+    };
+    /**
+     * @description * `android` - Android
+     *     * `ios` - iOS
+     * @enum {string}
+     */
+    AppPlatformEnum: "android" | "ios";
+    AppVersion: {
+      platform: components["schemas"]["AppPlatformEnum"];
+      /** @description Older apps get 426 upgrade_required on every call. */
+      minimum_version: string;
+      /** @description Older apps are offered an update. */
+      latest_version: string;
+      /** @description Where the update button goes. May be empty. */
+      store_url: string;
+      /** @description Shown on the update screen. May be empty. */
+      message: string;
+    };
+    AppVersionStatus: {
+      platform: components["schemas"]["AppPlatformEnum"];
+      /** @description Older apps get 426 upgrade_required on every call. */
+      minimum_version: string;
+      /** @description Older apps are offered an update. */
+      latest_version: string;
+      /** @description Where the update button goes. May be empty. */
+      store_url: string;
+      /** @description Shown on the update screen. May be empty. */
+      message: string;
+      /**
+       * @description For the `version` asked about; `none` when no version was given.
+       *
+       *     * `required` - required
+       *     * `available` - available
+       *     * `none` - none
+       */
+      update: components["schemas"]["UpdateEnum"];
     };
     /**
      * @description Who applied. Deliberately no phone, email, emergency contact, birth date or
@@ -6755,6 +6850,13 @@ export interface components {
       /** @description Tell the sender this when it isn't empty (e.g. why a number was hidden). */
       notice: string;
     };
+    SetAppVersion: {
+      minimum_version: string;
+      latest_version: string;
+      store_url?: string;
+      message?: string;
+      reason: string;
+    };
     SetFlag: {
       enabled: boolean;
       reason: string;
@@ -7291,6 +7393,13 @@ export interface components {
     UnreadCount: {
       unread: number;
     };
+    /**
+     * @description * `required` - required
+     *     * `available` - available
+     *     * `none` - none
+     * @enum {string}
+     */
+    UpdateEnum: "required" | "available" | "none";
     UpdatePreferences: {
       locale?: components["schemas"]["NotificationLocaleEnum"];
       quiet_hours_enabled?: boolean;
@@ -7596,6 +7705,68 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  app_versions_admin_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AppVersion"][];
+        };
+      };
+    };
+  };
+  app_versions_admin_set: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        platform: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SetAppVersion"];
+        "application/x-www-form-urlencoded": components["schemas"]["SetAppVersion"];
+        "multipart/form-data": components["schemas"]["SetAppVersion"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AppVersion"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
   attendance_admin_flag_review: {
     parameters: {
       query?: never;
@@ -8604,6 +8775,37 @@ export interface operations {
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  app_version: {
+    parameters: {
+      query: {
+        platform: "android" | "ios";
+        /** @description The app's version, e.g. 1.4.2. */
+        version?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AppVersionStatus"];
+        };
+      };
+      400: {
         headers: {
           [name: string]: unknown;
         };

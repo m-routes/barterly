@@ -119,6 +119,8 @@ UNEXPORTED_LINKS: dict[tuple[str, str], str] = {
     ("reviews.Review", "moderated_by"): "The moderator of a review.",
     ("privacy.CorrectionRequest", "resolved_by"): "The staff member who handled it.",
     ("privacy.MinorCase", "decided_by"): "The trust team member who decided it.",
+    ("flags.FeatureFlag", "updated_by"): "The staff member who last switched a flag.",
+    ("appversions.AppVersionPolicy", "updated_by"): "The staff member who set app versions.",
 }
 
 

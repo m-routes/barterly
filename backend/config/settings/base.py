@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     "apps.deliverables",
     "apps.reviews",
     "apps.flags",
+    "apps.appversions",
+    "apps.qa",
     "apps.privacy",
     "apps.beta",
     "apps.analytics",
@@ -52,9 +54,14 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
+    # First, so everything after it sees the client's address (docs/edge.md).
+    "apps.common.middleware.EdgeForwardedForMiddleware",
     "apps.common.middleware.RequestIDMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "apps.common.middleware.SecurityHeadersMiddleware",
+    # 426 upgrade_required for apps below the minimum version (docs/api-versioning.md).
+    "apps.appversions.middleware.ClientVersionMiddleware",
+    "apps.common.middleware.DeprecationMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -183,6 +190,7 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     # Stable names where two apps use the same field name (status, kind, ...).
     "ENUM_NAME_OVERRIDES": {
+        "AppPlatformEnum": "apps.appversions.models.Platform",
         "ConsentPurposeEnum": "apps.privacy.models.Purpose",
         "ConsentSourceEnum": "apps.privacy.models.CLIENT_SOURCES",
         "TicketKindEnum": "apps.support.models.TicketKind",
@@ -269,6 +277,15 @@ if CLAMAV_HOST:
     MEDIA_REQUIRE_SCAN = env_bool("MEDIA_REQUIRE_SCAN", True)
 # Signed links stay short-lived (ASVS 12.5); test_signed_url_lifetimes holds the cap.
 MEDIA_MAX_SIGNED_URL_SECONDS = 900
+# Media CDN (docs/edge.md): inline reads go through Cloud CDN with Cloud CDN signed URLs
+# when all three are set (apps.media.storage.CDNMediaStorage). The key is 16 random
+# bytes, base64url, from Secret Manager (infra/scripts/set-cdn-key.sh).
+MEDIA_CDN_HOST = env_str("MEDIA_CDN_HOST", "")
+MEDIA_CDN_KEY_NAME = env_str("MEDIA_CDN_KEY_NAME", "")
+MEDIA_CDN_KEY = env_str("MEDIA_CDN_KEY", "")
+if MEDIA_CDN_HOST and MEDIA_CDN_KEY_NAME and MEDIA_CDN_KEY:
+    MEDIA_STORAGE_CLASS = "apps.media.storage.CDNMediaStorage"
+    CSP_MEDIA_ORIGINS = [*CSP_MEDIA_ORIGINS, f"https://{MEDIA_CDN_HOST}"]
 
 # Verification (apps.verification). The KYC provider is a code setting like the token
 # verifier: deployed services use the real provider (a stub until one is chosen, which
@@ -355,6 +372,35 @@ FIELD_ENCRYPTION_KEYS = env_str("FIELD_ENCRYPTION_KEYS", "")
 # Feature flags (apps.flags): how long instances cache them, so a change made in the
 # back office reaches every instance within this many seconds.
 FLAG_CACHE_SECONDS = env_int("FLAG_CACHE_SECONDS", 30)
+
+# Supported app versions (apps.appversions). These defaults apply until someone sets a
+# policy in the back office; "0.0.0" forces nothing. The iOS store URL exists once the
+# app is created in App Store Connect.
+APP_VERSION_CACHE_SECONDS = env_int("APP_VERSION_CACHE_SECONDS", 30)
+APP_VERSION_DEFAULTS = {
+    "android": {
+        "minimum_version": env_str("APP_MIN_VERSION_ANDROID", "0.0.0"),
+        "latest_version": env_str("APP_LATEST_VERSION_ANDROID", "0.0.0"),
+        "store_url": env_str(
+            "APP_STORE_URL_ANDROID",
+            "https://play.google.com/store/apps/details?id=in.barterly.barterly",
+        ),
+    },
+    "ios": {
+        "minimum_version": env_str("APP_MIN_VERSION_IOS", "0.0.0"),
+        "latest_version": env_str("APP_LATEST_VERSION_IOS", "0.0.0"),
+        "store_url": env_str("APP_STORE_URL_IOS", ""),
+    },
+}
+
+# The global load balancer's address(es) (docs/edge.md). When X-Forwarded-For ends in
+# one, EdgeForwardedForMiddleware drops it so throttles see the client.
+EDGE_PROXY_IPS = env_list("EDGE_PROXY_IPS")
+# Acceptance testing (apps.qa): seed_staging may run here. Off in production, always.
+ALLOW_SEED = env_bool("ALLOW_SEED", True)
+# The admin persona's back-office password, for the acceptance suite. From the
+# environment (a CI secret) only; empty leaves the account without a password.
+SEED_ADMIN_PASSWORD = env_str("SEED_ADMIN_PASSWORD", "")
 ATTENDANCE_PREVIOUS_PUBLIC_KEYS = env_list("ATTENDANCE_PREVIOUS_PUBLIC_KEYS", "")
 ATTENDANCE_PASS_HOURS = env_int("ATTENDANCE_PASS_HOURS", 48)
 ATTENDANCE_GEOFENCE_FLAG_METERS = env_int("ATTENDANCE_GEOFENCE_FLAG_METERS", 1000)

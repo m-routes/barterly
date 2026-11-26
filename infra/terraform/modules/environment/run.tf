@@ -28,6 +28,19 @@ locals {
     INSTAGRAM_STATS_ENABLED       = var.instagram_stats_enabled ? "true" : "false"
     INSTAGRAM_BUSINESS_ACCOUNT_ID = var.instagram_business_account_id
   }
+
+  # Behind the load balancer (edge.tf): its address, so the API can drop its hop from
+  # X-Forwarded-For, and static files from the CDN on the API's own domain.
+  edge_env = var.edge_enabled ? {
+    EDGE_PROXY_IPS = google_compute_global_address.edge[0].address
+    STATIC_URL     = "https://${var.api_domains[0]}/static/"
+  } : {}
+
+  # Media through Cloud CDN once the signing key exists (set-cdn-key.sh).
+  media_cdn_env = local.media_cdn && var.media_cdn_signing_enabled ? {
+    MEDIA_CDN_HOST     = var.media_domain
+    MEDIA_CDN_KEY_NAME = var.media_cdn_key_name
+  } : {}
 }
 
 resource "google_cloud_run_v2_service" "api" {
@@ -70,7 +83,7 @@ resource "google_cloud_run_v2_service" "api" {
       }
 
       dynamic "env" {
-        for_each = merge(local.deployed_env, {
+        for_each = merge(local.deployed_env, local.edge_env, local.media_cdn_env, {
           GS_SA_EMAIL      = google_service_account.api.email
           WEB_CONCURRENCY  = tostring(var.api_workers)
           DB_POOL_MAX_SIZE = tostring(var.db_pool_max_size)
@@ -216,6 +229,7 @@ resource "google_cloud_run_v2_service" "api" {
             SENTRY_DSN          = var.sentry_enabled ? "sentry_dsn" : ""
             EMAIL_HOST_PASSWORD = var.email_enabled ? "email_host_password" : ""
             KYC_WEBHOOK_SECRET  = var.kyc_webhook_enabled ? "kyc_webhook_secret" : ""
+            MEDIA_CDN_KEY       = local.media_cdn && var.media_cdn_signing_enabled ? "media_cdn_key" : ""
           } : name => secret if secret != ""
         }
         content {
@@ -329,7 +343,7 @@ resource "google_cloud_run_v2_service" "web" {
 
       env {
         name  = "API_URL"
-        value = local.api_url
+        value = local.web_api_url
       }
 
       env {
@@ -349,6 +363,15 @@ resource "google_cloud_run_v2_service" "web" {
               version = "latest"
             }
           }
+        }
+      }
+
+      # Acceptance tests may sign in with Firebase test numbers (qa.tf).
+      dynamic "env" {
+        for_each = var.qa_enabled ? ["1"] : []
+        content {
+          name  = "FIREBASE_TEST_NUMBERS_ALLOWED"
+          value = env.value
         }
       }
 
@@ -429,7 +452,7 @@ resource "google_cloud_run_v2_job" "migrate" {
         }
 
         dynamic "env" {
-          for_each = merge(local.deployed_env, { DB_POOL_MAX_SIZE = "2" })
+          for_each = merge(local.deployed_env, local.edge_env, { DB_POOL_MAX_SIZE = "2" })
           content {
             name  = env.key
             value = env.value

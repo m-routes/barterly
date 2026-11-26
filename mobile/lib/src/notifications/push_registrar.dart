@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:barterly/src/apply/outbox.dart' show myApplicationsProvider;
 import 'package:barterly/src/notifications/push.dart';
+import 'package:barterly/src/platform/permission_rationale.dart';
 import 'package:barterly/src/providers.dart';
 import 'package:barterly/src/router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Ties push to the session: once signed in, ask permission, register the
+/// Ties push to the session: once signed in, explain why (PermissionPrompts),
+/// ask permission, register the
 /// device's token (and its refreshes), and handle pushes in every state:
 /// - open (foreground): the system shows nothing, so a banner does, with Open;
 /// - in the background: the system shows it; tapping opens the app here;
@@ -32,7 +34,10 @@ class PushRegistrar {
       ..add(_push.received.listen(_show))
       ..add(_push.tokenRefreshes.listen((t) => unawaited(_register(t))));
     try {
-      if (await _push.requestPermission()) {
+      final explained = await _ref
+          .read(permissionPromptsProvider)
+          .explain(AppPermission.notifications);
+      if (explained && await _push.requestPermission()) {
         final token = await _push.token();
         if (token != null) await _register(token);
       }

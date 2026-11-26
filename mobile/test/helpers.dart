@@ -9,8 +9,11 @@ import 'package:barterly/src/config/env.dart';
 import 'package:barterly/src/platform/key_value_store.dart';
 import 'package:barterly/src/platform/media_picker.dart';
 import 'package:barterly/src/platform/network_status.dart';
+import 'package:barterly/src/platform/permission_rationale.dart';
 import 'package:barterly/src/platform/url_opener.dart';
 import 'package:barterly/src/providers.dart';
+import 'package:barterly/src/update/app_version.dart';
+import 'package:barterly/src/update/update_gate.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -44,6 +47,7 @@ FakeResponse apiError(
 /// What a signed-in talent's tabs ask for when a test doesn't care: no gigs,
 /// no applications, no saved searches.
 final Map<String, Handler> talentDefaults = {
+  'GET /api/v1/app/version/': (_) => ok(upToDate),
   'GET /api/v1/gigs/': (_) => ok(emptyPage),
   'GET /api/v1/applications/mine/': (_) => ok(<Object?>[]),
   'GET /api/v1/gigs/saved-searches/': (_) => ok(<Object?>[]),
@@ -62,6 +66,24 @@ final Map<String, Handler> talentDefaults = {
   'GET /api/v1/wallet/history/': (_) =>
       ok({'count': 0, 'next': null, 'previous': null, 'results': <Object?>[]}),
 };
+
+/// The launch version check when nothing needs updating.
+const Map<String, Object?> upToDate = {
+  'platform': 'android',
+  'minimum_version': '0.0.0',
+  'latest_version': '1.0.0',
+  'store_url':
+      'https://play.google.com/store/apps/details?id=in.barterly.barterly',
+  'message': '',
+  'update': 'none',
+};
+
+/// What tests run as: Android, version 1.0.0.
+const testInstall = InstalledApp(
+  version: '1.0.0',
+  buildNumber: '1',
+  platform: 'android',
+);
 
 /// A new talent's wallet: nothing held, nothing owed, no payout account.
 const Map<String, Object?> emptyWallet = {
@@ -245,6 +267,8 @@ List<Override> testOverrides({
   NetworkStatus? network,
   MediaPicker? picker,
   UrlOpener? urls,
+  InstalledApp install = testInstall,
+  RationalePresenter? rationale,
 }) => [
   appConfigProvider.overrideWithValue(testConfig),
   httpAdapterProvider.overrideWithValue(api),
@@ -254,6 +278,9 @@ List<Override> testOverrides({
   networkStatusProvider.overrideWithValue(network ?? FakeNetworkStatus()),
   mediaPickerProvider.overrideWithValue(picker ?? FakeMediaPicker()),
   urlOpenerProvider.overrideWithValue(urls ?? FakeUrlOpener()),
+  installedAppProvider.overrideWith((ref) async => install),
+  // Permission explanations: "yes" unless a test says otherwise.
+  rationalePresenterProvider.overrideWithValue(rationale ?? (_) async => true),
 ];
 
 /// Pumps the whole app on fakes and lets the session load.
@@ -266,6 +293,8 @@ Future<void> pumpApp(
   NetworkStatus? network,
   MediaPicker? picker,
   UrlOpener? urls,
+  InstalledApp install = testInstall,
+  RationalePresenter? rationale,
   List<Override> extra = const [],
 }) async {
   await tester.pumpWidget(
@@ -280,6 +309,8 @@ Future<void> pumpApp(
         network: network,
         picker: picker,
         urls: urls,
+        install: install,
+        rationale: rationale,
       )..addAll(extra),
       child: const BarterlyApp(brandFonts: false),
     ),

@@ -37,12 +37,19 @@ class SentryCrashReporter implements CrashReporter {
     AppConfig config,
     Future<void> Function() appRunner,
   ) => SentryFlutter.init((options) {
+    // Release builds name themselves like the debug symbols that
+    // tool/build_release.sh uploads (barterly@<version>+<build>), so
+    // obfuscated stack traces map back.
+    const release = String.fromEnvironment('SENTRY_RELEASE');
+    const dist = String.fromEnvironment('SENTRY_DIST');
     options
       ..dsn = config.sentryDsn
       ..environment = config.env.name
       // Phone numbers are identifiers here; keep them out of reports.
       ..sendDefaultPii = false
       ..tracesSampleRate = 0;
+    if (release.isNotEmpty) options.release = release;
+    if (dist.isNotEmpty) options.dist = dist;
   }, appRunner: appRunner);
 
   @override

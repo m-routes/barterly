@@ -48,7 +48,8 @@ void main() {
     await tester.tap(find.text('Verify and continue'));
     await tester.pumpAndSettle();
     expect(find.textContaining("That code isn't right"), findsOneWidget);
-    expect(api.requests, isEmpty);
+    // Only the launch version check went out: no sign-in attempt.
+    expect(api.calls, ['GET /api/v1/app/version/']);
   });
 
   testWidgets('the right code signs in, stores tokens and moves on', (

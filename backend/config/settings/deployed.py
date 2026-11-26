@@ -71,7 +71,11 @@ STORAGES = {
         },
     },
 }
-STATIC_URL = f"https://storage.googleapis.com/{GS_STATIC_BUCKET}/static/"
+# Behind the load balancer, static files come from the CDN-backed bucket on the API's
+# own domain (https://api.example.com/static/); otherwise straight from the bucket.
+STATIC_URL = (
+    env_str("STATIC_URL", "") or f"https://storage.googleapis.com/{GS_STATIC_BUCKET}/static/"
+)
 
 
 # Health probes come from inside Cloud Run over plain HTTP.

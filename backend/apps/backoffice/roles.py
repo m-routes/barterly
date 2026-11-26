@@ -54,6 +54,7 @@ PERMISSIONS: dict[str, list[str]] = {
         "backoffice.view_audit_log",
         "bookings.change_booking",
         "flags.toggle_flag",
+        "appversions.set_app_version",
         "attendance.view_checkin",
         "attendance.review_checkin",
         # The closed beta: invites, onboarding, KPIs, and the support inbox as backup.
