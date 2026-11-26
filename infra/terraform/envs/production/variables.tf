@@ -22,6 +22,18 @@ variable "web_domains" {
   default = []
 }
 
+variable "firebase_project_id" {
+  description = "The Firebase project id (Firebase console -> Project settings). Empty = project_id."
+  type        = string
+  default     = ""
+}
+
+variable "razorpay_enabled" {
+  description = "Wire the Razorpay and RazorpayX secrets into the API. The live keys must have values before an apply (set-razorpay-secrets.sh)."
+  type        = bool
+  default     = true
+}
+
 variable "firebase_web" {
   description = "Firebase web app config (public): Firebase console -> Project settings -> Your apps."
   type = object({

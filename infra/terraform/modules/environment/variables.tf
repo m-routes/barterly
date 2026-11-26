@@ -118,6 +118,26 @@ variable "db_pool_max_size" {
   default     = 4
 }
 
+variable "firebase_project_id" {
+  description = <<-EOT
+    The Firebase project that signs people in (phone auth). Sign-in tokens are checked
+    against it, and the web console's Firebase SDK uses it. Empty = this Google Cloud
+    project (when Firebase was added to it rather than created separately).
+  EOT
+  type        = string
+  default     = ""
+}
+
+variable "razorpay_enabled" {
+  description = <<-EOT
+    Wire the Razorpay and RazorpayX secrets into the API. Add their values first
+    (infra/scripts/set-razorpay-secrets.sh): a secret with no version stops the
+    revision starting. Off, payments, escrow and payouts are unavailable.
+  EOT
+  type        = bool
+  default     = true
+}
+
 variable "firebase_web" {
   description = <<-EOT
     Firebase web app config for phone sign-in on the web console (Firebase console ->

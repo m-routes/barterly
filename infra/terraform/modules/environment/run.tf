@@ -2,6 +2,8 @@
 # image and traffic split (infra/scripts/deploy.sh), so those are ignored here.
 
 locals {
+  # Firebase may live in its own project (variables.tf: firebase_project_id).
+  firebase_project_id = coalesce(var.firebase_project_id, var.project_id)
 
   deployed_env = {
     DJANGO_SETTINGS_MODULE      = local.settings_module
@@ -11,7 +13,7 @@ locals {
     GS_STATIC_BUCKET            = google_storage_bucket.static.name
     # Firebase Auth lives in the same Google Cloud project; ID tokens are checked
     # against it (public certificates only, no key).
-    FIREBASE_PROJECT_ID = var.project_id
+    FIREBASE_PROJECT_ID = local.firebase_project_id
     # Only Cloud Scheduler's service account may run jobs (see scheduler.tf).
     SCHEDULER_AUDIENCE      = local.api_url
     SCHEDULER_INVOKER_EMAIL = google_service_account.scheduler.email
@@ -114,62 +116,24 @@ resource "google_cloud_run_v2_service" "api" {
         }
       }
 
-      env {
-        name = "RAZORPAY_KEY_ID"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.this["razorpay_key_id"].secret_id
-            version = "latest"
-          }
-        }
-      }
-
-      env {
-        name = "RAZORPAY_KEY_SECRET"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.this["razorpay_key_secret"].secret_id
-            version = "latest"
-          }
-        }
-      }
-
-      env {
-        name = "RAZORPAY_WEBHOOK_SECRET"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.this["razorpay_webhook_secret"].secret_id
-            version = "latest"
-          }
-        }
-      }
-
-      env {
-        name = "RAZORPAY_ESCROW_WEBHOOK_SECRET"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.this["razorpay_escrow_webhook_secret"].secret_id
-            version = "latest"
-          }
-        }
-      }
-
-      env {
-        name = "RAZORPAYX_WEBHOOK_SECRET"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.this["razorpayx_webhook_secret"].secret_id
-            version = "latest"
-          }
-        }
-      }
-
-      env {
-        name = "RAZORPAYX_ACCOUNT_NUMBER"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.this["razorpayx_account_number"].secret_id
-            version = "latest"
+      # Payments, escrow and payouts (Razorpay, RazorpayX), wired once their secrets
+      # have values (var.razorpay_enabled).
+      dynamic "env" {
+        for_each = var.razorpay_enabled ? {
+          RAZORPAY_KEY_ID                = "razorpay_key_id"
+          RAZORPAY_KEY_SECRET            = "razorpay_key_secret"
+          RAZORPAY_WEBHOOK_SECRET        = "razorpay_webhook_secret"
+          RAZORPAY_ESCROW_WEBHOOK_SECRET = "razorpay_escrow_webhook_secret"
+          RAZORPAYX_WEBHOOK_SECRET       = "razorpayx_webhook_secret"
+          RAZORPAYX_ACCOUNT_NUMBER       = "razorpayx_account_number"
+        } : {}
+        content {
+          name = env.key
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.this[env.value].secret_id
+              version = "latest"
+            }
           }
         }
       }
@@ -378,7 +342,7 @@ resource "google_cloud_run_v2_service" "web" {
       # Phone sign-in (Firebase web SDK). Read at request time by the login page.
       env {
         name  = "FIREBASE_PROJECT_ID"
-        value = var.project_id
+        value = local.firebase_project_id
       }
 
       env {

@@ -13,6 +13,12 @@ edge_enabled = true
 
 # Firebase console -> Project settings -> Your apps -> Web app. Public values.
 # firebase_web = { api_key = "AIza...", app_id = "1:123456789:web:abc123" }
+# The Firebase project people sign in with, when it isn't this Google Cloud project
+# (Firebase console -> Project settings -> Project ID).
+# firebase_project_id = "barterly-17da0"
+# Razorpay and RazorpayX: set to true only after set-razorpay-secrets.sh has stored
+# every value; a secret with no version stops the API's revision starting.
+# razorpay_enabled = true
 
 # Monitoring alerts go here (an email channel each).
 alert_emails = ["ops@example.com"]

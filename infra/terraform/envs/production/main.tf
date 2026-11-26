@@ -49,8 +49,10 @@ module "environment" {
   media_cdn_signing_enabled = var.media_cdn_signing_enabled
   armor_preview             = var.armor_preview
 
-  firebase_web = var.firebase_web
-  alert_emails = var.alert_emails
+  firebase_project_id = var.firebase_project_id
+  firebase_web        = var.firebase_web
+  razorpay_enabled    = var.razorpay_enabled
+  alert_emails        = var.alert_emails
 
   api_min_instances   = 1
   web_min_instances   = 1
