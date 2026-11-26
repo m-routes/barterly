@@ -26,6 +26,7 @@ import 'package:barterly/src/privacy/privacy_repository.dart';
 import 'package:barterly/src/profile/profile_repository.dart';
 import 'package:barterly/src/reviews/reviews_repository.dart';
 import 'package:barterly/src/router.dart';
+import 'package:barterly/src/support/support_repository.dart';
 import 'package:barterly/src/trips/trip_models.dart';
 import 'package:barterly/src/update/app_version.dart';
 import 'package:barterly/src/update/update_gate.dart';
@@ -146,6 +147,10 @@ final walletRepositoryProvider = Provider<WalletRepository>(
 
 final privacyRepositoryProvider = Provider<PrivacyRepository>(
   (ref) => PrivacyRepository(ref.watch(dioProvider)),
+);
+
+final supportRepositoryProvider = Provider<SupportRepository>(
+  (ref) => SupportRepository(ref.watch(dioProvider)),
 );
 
 final reviewsRepositoryProvider = Provider<ReviewsRepository>(

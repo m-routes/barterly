@@ -13,6 +13,7 @@ minutes, the diagnosis and the fix. Every alert's description links to its runbo
 | [database-restore.md](database-restore.md) | Restoring data, and the restore drill |
 | [bad-deploy-rollback.md](bad-deploy-rollback.md) | A release broke something |
 | [safety-incident.md](safety-incident.md) | SOS alerts, threats to someone's safety, abuse |
+| [support-backlog.md](support-backlog.md) | Help and feedback requests past their SLA |
 
 Related: [../../infra/ROLLBACK.md](../../infra/ROLLBACK.md) (the rollback commands),
 [../operations.md](../operations.md) (monitoring, Sentry, feature flags, backups),

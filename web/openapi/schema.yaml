@@ -1038,6 +1038,50 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/analytics/events/:
+    post:
+      operationId: analytics_events
+      description: 'Up to 50 events per call. Without the person''s analytics consent
+        nothing is kept and `consent` is false. Unknown events and properties are
+        dropped; see apps/analytics/events.py for the list. No personal data is stored:
+        the person is a keyed hash, with no IP or device id.'
+      summary: Send product events (only kept with analytics consent)
+      tags:
+      - analytics
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyticsEventBatch'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AnalyticsEventBatch'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AnalyticsEventBatch'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsEventBatchResult'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/app/version/:
     get:
       operationId: app_version
@@ -2544,6 +2588,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/beta/:
+    get:
+      operationId: beta_rules
+      description: Whether sign-up needs an invite code (and for which roles), and
+        the beta's limits on live gigs per host and on one booking's stipend. Clients
+        show the invite field and the limits from this; the server enforces them regardless.
+      summary: The closed-beta rules in force
+      tags:
+      - beta
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BetaRules'
           description: ''
   /api/v1/billing/:
     get:
@@ -6084,13 +6146,14 @@ paths:
   /api/v1/jobs/{job}/:
     post:
       operationId: jobs_run
-      description: 'Jobs: billing_dunning, billing_invoices, close_expired_gigs, deliverable_reminders,
-        deliverable_stats, dispatch_notifications, escrow_auto_release, escrow_reconcile,
-        expire_offers, expire_verifications, flag_stale_interviews, ops_backlog, payout_run,
-        payout_validations, privacy_deletions, privacy_retention, render_agreements,
-        reputation_recompute, reviews_close_windows, run_search_alerts, send_interview_reminders,
-        send_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the
-        scheduler service account. Idempotent; overlapping runs of one job are skipped.'
+      description: 'Jobs: analytics_kpi_snapshot, billing_dunning, billing_invoices,
+        close_expired_gigs, deliverable_reminders, deliverable_stats, dispatch_notifications,
+        escrow_auto_release, escrow_reconcile, expire_offers, expire_verifications,
+        flag_stale_interviews, ops_backlog, payout_run, payout_validations, privacy_deletions,
+        privacy_retention, render_agreements, reputation_recompute, reviews_close_windows,
+        run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results.
+        Needs a Google-signed OIDC token for the scheduler service account. Idempotent;
+        overlapping runs of one job are skipped.'
       summary: Run a scheduled job (Cloud Scheduler only)
       parameters:
       - in: path
@@ -6164,11 +6227,13 @@ paths:
   /api/v1/me/role/:
     post:
       operationId: accounts_me_role
-      description: Sets the role of a user who signed up by OTP. Allowed once; admin
+      description: 'Sets the role of a user who signed up by OTP. Allowed once; admin
         roles are granted only in the Django admin. The person must declare they are
         18 or older (`confirm_adult`) and accept the current terms and privacy policy,
         each recorded as a separate consent with its version. A stale version is 409
-        `document_changed`.
+        `document_changed`. During the closed beta (GET /api/v1/beta/) the role may
+        need `invite_code`: missing is 403 `invite_required`; wrong, used up, expired
+        or for the other role is 400 `invite_invalid`.'
       summary: Choose vendor or talent (once)
       tags:
       - accounts
@@ -6201,6 +6266,12 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: ''
         '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
           content:
             application/json:
               schema:
@@ -8335,6 +8406,154 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/support/tickets/:
+    get:
+      operationId: support_tickets_list
+      summary: My help and feedback requests
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - support
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSupportTicketList'
+          description: ''
+    post:
+      operationId: support_tickets_create
+      description: Opens a request in the support inbox. Safety and money requests
+        are urgent (answered within 2 hours, 8am to 10pm IST); others within a day;
+        feedback within 3 days. `reply_expected_by` says when.
+      summary: Ask for help or send feedback
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenSupportTicket'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OpenSupportTicket'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OpenSupportTicket'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicketDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/support/tickets/{ticket_id}/:
+    get:
+      operationId: support_tickets_retrieve
+      summary: One request with its messages
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - support
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicketDetail'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/support/tickets/{ticket_id}/messages/:
+    post:
+      operationId: support_tickets_reply
+      description: A resolved request opens again when the person writes.
+      summary: Add a message to my request
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportReply'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SupportReply'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SupportReply'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicketDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/tasks/{name}/:
     post:
       operationId: tasks_run
@@ -9768,6 +9987,56 @@ components:
         * `power_backup` - Power backup
         * `wifi` - Wi-Fi
         * `workspace` - Workspace
+    AnalyticsEvent:
+      type: object
+      properties:
+        name:
+          type: string
+          description: 'One of: apply_started, apply_submitted, feedback_sent, gig_builder_step,
+            gig_submitted, gig_viewed, help_opened, invite_entered, offer_viewed,
+            onboarding_step, screen_view, search.'
+          maxLength: 40
+        occurred_at:
+          type: string
+          description: 'ISO 8601 with an offset; up to 7 days old. Default: now.'
+          maxLength: 40
+        props:
+          type: object
+          additionalProperties: {}
+          description: Only the properties listed for the event are kept.
+      required:
+      - name
+    AnalyticsEventBatch:
+      type: object
+      properties:
+        platform:
+          $ref: '#/components/schemas/DevicePlatformEnum'
+        app_version:
+          type: string
+          maxLength: 20
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsEvent'
+          maxItems: 50
+      required:
+      - events
+      - platform
+    AnalyticsEventBatchResult:
+      type: object
+      properties:
+        accepted:
+          type: integer
+        dropped:
+          type: integer
+        consent:
+          type: boolean
+          description: 'False: the person hasn''t agreed to analytics, so nothing
+            was kept. Clients should stop sending until they do.'
+      required:
+      - accepted
+      - consent
+      - dropped
     Answer:
       type: object
       properties:
@@ -10327,6 +10596,30 @@ components:
         * `social_verified` - Social verified
         * `reference_checked` - Reference checked
         * `trusted_member` - Trusted member
+    BetaRules:
+      type: object
+      properties:
+        closed_beta:
+          type: boolean
+          description: True while sign-up is invite-only.
+        invite_required_for:
+          type: array
+          items:
+            $ref: '#/components/schemas/InviteRequiredForEnum'
+          description: Roles that need an invite code at /api/v1/me/role/.
+        max_live_gigs:
+          type: integer
+          nullable: true
+          description: 'Live gigs a host may have at once; null: the plan decides.'
+        max_stipend_rupees:
+          type: integer
+          nullable: true
+          description: 'Largest stipend for one booking; null: no beta limit.'
+      required:
+      - closed_beta
+      - invite_required_for
+      - max_live_gigs
+      - max_stipend_rupees
     BillingOverview:
       type: object
       properties:
@@ -11389,6 +11682,11 @@ components:
           allOf:
           - $ref: '#/components/schemas/ConsentSourceEnum'
           default: api
+        invite_code:
+          type: string
+          description: 'During the closed beta: the invite code (GET /api/v1/beta/
+            says which roles need one). With or without the dash, any case.'
+          maxLength: 20
       required:
       - confirm_adult
       - privacy_version
@@ -11473,6 +11771,7 @@ components:
       - location
       - social
       - marketing
+      - analytics
       type: string
       description: |-
         * `terms` - Terms of service
@@ -11480,6 +11779,7 @@ components:
         * `location` - Location use
         * `social` - Social account access
         * `marketing` - Marketing messages
+        * `analytics` - Product analytics
     ConsentRecord:
       type: object
       properties:
@@ -12103,14 +12403,14 @@ components:
       - token
     DevicePlatformEnum:
       enum:
+      - web
       - android
       - ios
-      - web
       type: string
       description: |-
+        * `web` - Web
         * `android` - Android
         * `ios` - iOS
-        * `web` - Web
     DeviceToken:
       type: object
       properties:
@@ -12408,6 +12708,7 @@ components:
       - reviews
       - deliverables
       - payouts
+      - support.replied
       - other
       type: string
       description: |-
@@ -12425,6 +12726,7 @@ components:
         * `reviews` - reviews
         * `deliverables` - deliverables
         * `payouts` - payouts
+        * `support.replied` - support.replied
         * `other` - other
     EventTypeSetting:
       type: object
@@ -12608,8 +12910,11 @@ components:
           type: boolean
         ai_safety_checks:
           type: boolean
+        closed_beta:
+          type: boolean
       required:
       - ai_safety_checks
+      - closed_beta
       - escrow_funding
       - sos_live_sharing
     GeocodeRequest:
@@ -13498,6 +13803,14 @@ components:
         * `scheduled` - Scheduled
         * `new_times_requested` - Talent asked for other times
         * `cancelled` - Cancelled
+    InviteRequiredForEnum:
+      enum:
+      - vendor
+      - talent
+      type: string
+      description: |-
+        * `vendor` - vendor
+        * `talent` - talent
     Invoice:
       type: object
       properties:
@@ -13612,11 +13925,13 @@ components:
     KeyEnum:
       enum:
       - ai_safety_checks
+      - closed_beta
       - escrow_funding
       - sos_live_sharing
       type: string
       description: |-
         * `ai_safety_checks` - ai_safety_checks
+        * `closed_beta` - closed_beta
         * `escrow_funding` - escrow_funding
         * `sos_live_sharing` - sos_live_sharing
     KillSwitch:
@@ -14389,6 +14704,46 @@ components:
       - offers
       - open_offer
       - your_turn
+    OpenSupportTicket:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/TicketKindEnum'
+        subject:
+          type: string
+          maxLength: 120
+        body:
+          type: string
+          maxLength: 5000
+        booking_id:
+          type: string
+          format: uuid
+          nullable: true
+        screen:
+          oneOf:
+          - type: string
+            pattern: ^[a-z0-9_/-]{0,60}$
+          - type: string
+            maxLength: 0
+        platform:
+          $ref: '#/components/schemas/OpenSupportTicketPlatformEnum'
+        app_version:
+          type: string
+          maxLength: 20
+      required:
+      - body
+      - kind
+      - subject
+    OpenSupportTicketPlatformEnum:
+      enum:
+      - web
+      - android
+      - ios
+      type: string
+      description: |-
+        * `web` - web
+        * `android` - android
+        * `ios` - ios
     PaginatedAdminCaseList:
       type: object
       required:
@@ -14826,6 +15181,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/StayReview'
+    PaginatedSupportTicketList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupportTicket'
     PaginatedTrackedDeliverableList:
       type: object
       required:
@@ -17447,6 +17825,139 @@ components:
         * `halted` - Retries exhausted
         * `cancelled` - Cancelled
         * `completed` - Completed
+    SupportMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        from_staff:
+          type: boolean
+          readOnly: true
+        body:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - body
+      - created_at
+      - from_staff
+      - id
+    SupportReply:
+      type: object
+      properties:
+        body:
+          type: string
+          maxLength: 5000
+      required:
+      - body
+    SupportTicket:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        reference:
+          type: string
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/TicketKindEnum'
+          readOnly: true
+        subject:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/TicketStatusEnum'
+          readOnly: true
+        booking:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_message_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reply_expected_by:
+          type: string
+          nullable: true
+          readOnly: true
+          description: When we aim to answer, while we haven't yet; null once we have.
+      required:
+      - booking
+      - created_at
+      - id
+      - kind
+      - last_message_at
+      - reference
+      - reply_expected_by
+      - status
+      - subject
+    SupportTicketDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        reference:
+          type: string
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/TicketKindEnum'
+          readOnly: true
+        subject:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/TicketStatusEnum'
+          readOnly: true
+        booking:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_message_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reply_expected_by:
+          type: string
+          nullable: true
+          readOnly: true
+          description: When we aim to answer, while we haven't yet; null once we have.
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupportMessage'
+          readOnly: true
+      required:
+      - booking
+      - created_at
+      - id
+      - kind
+      - last_message_at
+      - messages
+      - reference
+      - reply_expected_by
+      - status
+      - subject
     SyncRequest:
       type: object
       properties:
@@ -17763,6 +18274,30 @@ components:
       required:
       - quantity
       - type
+    TicketKindEnum:
+      enum:
+      - help
+      - payment
+      - safety
+      - bug
+      - feedback
+      type: string
+      description: |-
+        * `help` - Help with something
+        * `payment` - Money or payments
+        * `safety` - A safety concern
+        * `bug` - Something isn't working
+        * `feedback` - Feedback or an idea
+    TicketStatusEnum:
+      enum:
+      - open
+      - waiting
+      - resolved
+      type: string
+      description: |-
+        * `open` - Waiting for us
+        * `waiting` - Waiting for the person
+        * `resolved` - Resolved
     TimelineEntry:
       type: object
       properties:

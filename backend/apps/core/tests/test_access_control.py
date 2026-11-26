@@ -53,6 +53,7 @@ PUBLIC = {
         "/api/v1/properties/{property_id}/public/",
     ): "Property page, approx. area only.",
     ("GET", "/api/v1/skills/"): "The public skills list.",
+    ("GET", "/api/v1/beta/"): "The closed-beta rules, shown before sign-up.",
     ("POST", "/api/v1/auth/exchange/"): "Sign-in: the Firebase token is the credential.",
     ("POST", "/api/v1/auth/refresh/"): "The refresh token is the credential.",
     ("POST", "/api/v1/auth/logout/"): "Revokes the refresh token it's given.",

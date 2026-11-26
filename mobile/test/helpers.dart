@@ -52,6 +52,16 @@ final Map<String, Handler> talentDefaults = {
   'GET /api/v1/applications/mine/': (_) => ok(<Object?>[]),
   'GET /api/v1/gigs/saved-searches/': (_) => ok(<Object?>[]),
   'GET /api/v1/notifications/unread-count/': (_) => ok({'unread': 0}),
+  // The closed beta's rules and analytics (no consent unless a test says so).
+  'GET /api/v1/beta/': (_) => ok({
+    'closed_beta': false,
+    'invite_required_for': <Object?>[],
+    'max_live_gigs': null,
+    'max_stipend_rupees': null,
+  }),
+  'GET /api/v1/privacy/consents/': (_) => ok(<Object?>[]),
+  'POST /api/v1/analytics/events/': (_) =>
+      ok({'accepted': 0, 'dropped': 0, 'consent': false}),
   'GET /api/v1/wallet/': (_) => ok(emptyWallet),
   'GET /api/v1/wallet/history/': (_) =>
       ok({'count': 0, 'next': null, 'previous': null, 'results': <Object?>[]}),

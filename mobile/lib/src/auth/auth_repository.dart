@@ -37,7 +37,10 @@ class AuthRepository {
   /// Sets the role once. Talent use this app; vendors use the web console.
   /// The person has declared they are 18 or older and accepted the terms and
   /// the privacy policy shown ([legalVersion]); each is recorded separately.
-  Future<User> chooseTalentRole() => guardApi(() async {
+  ///
+  /// During the closed beta the API may need an [inviteCode]
+  /// (GET /api/v1/beta/ says so); without one it answers `invite_required`.
+  Future<User> chooseTalentRole({String? inviteCode}) => guardApi(() async {
     final response = await _dio.post<Map<String, Object?>>(
       '/api/v1/me/role/',
       data: {
@@ -46,9 +49,22 @@ class AuthRepository {
         'terms_version': legalVersion,
         'privacy_version': legalVersion,
         'source': 'mobile',
+        if (inviteCode != null && inviteCode.isNotEmpty)
+          'invite_code': inviteCode,
       },
     );
     return User.fromJson(response.data!);
+  });
+
+  /// Which roles need an invite code right now (the closed beta's rules).
+  Future<List<String>> inviteRoles() => guardApi(() async {
+    final response = await _dio.get<Map<String, Object?>>('/api/v1/beta/');
+    return [
+      for (final r
+          in (response.data?['invite_required_for'] as List<Object?>?) ??
+              const [])
+        r! as String,
+    ];
   });
 
   /// Blacklists the refresh token if the API is reachable; always forgets it.

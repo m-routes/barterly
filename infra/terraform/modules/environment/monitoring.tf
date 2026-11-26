@@ -77,6 +77,8 @@ locals {
     notifications_dead_24h = { threshold = 100, runbook = "otp-provider-outage.md" }
     payouts_stuck          = { threshold = 1, runbook = "stuck-payouts.md" }
     jobs_failed_24h        = { threshold = 10, runbook = "stuck-payouts.md" }
+    support_overdue        = { threshold = 1, runbook = "support-backlog.md" }
+    safety_reviews_overdue = { threshold = 1, runbook = "safety-incident.md" }
   }
 }
 

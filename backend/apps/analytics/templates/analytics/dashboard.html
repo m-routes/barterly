@@ -1,0 +1,42 @@
+{% extends "backoffice/base.html" %}
+{% load analytics_tags %}
+{% block extrastyle %}{{ block.super }}
+<style>
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .kpi { border: 1px solid var(--hairline-color); border-radius: 6px; padding: 12px 16px; }
+  .kpi h3 { margin: 0 0 6px; font-size: 0.95em; }
+  .kpi .kpi-value { font-size: 1.8em; font-weight: 600; margin: 0; }
+  .kpi--bad { border-left: 4px solid #b3261e; }
+  .kpi--ok { border-left: 4px solid #0b6e4f; }
+</style>
+{% endblock %}
+{% block content %}
+<form method="get" class="bo-filters">
+  <div><label for="days">Window</label>
+    <select name="days" id="days">{% for value, label in windows %}<option value="{{ value }}"{% if value == days %} selected{% endif %}>Last {{ label }}</option>{% endfor %}</select></div>
+  <div><input type="submit" value="Show"></div>
+</form>
+<p>{{ start|date:"d M Y" }} to {{ end|date:"d M Y" }} (IST). Definitions: docs/beta/kpis.md. Go/no-go thresholds: docs/beta/go-no-go.md.</p>
+<div class="kpi-grid">
+{% for kpi in metrics %}
+  <section class="kpi kpi--{{ kpi.status }}" aria-labelledby="kpi-{{ kpi.key }}">
+    <h3 id="kpi-{{ kpi.key }}">{{ kpi.label }}</h3>
+    <p class="kpi-value">{{ kpi|kpi_value }}</p>
+    <p class="help">{% if kpi.target is not None %}Target {% if kpi.direction == "up" %}≥{% else %}&lt;{% endif %} {{ kpi|kpi_target }} · {% endif %}{% if kpi.status == "ok" %}<span class="bo-flag bo-flag--ok">On target</span>{% elif kpi.status == "bad" %}<span class="bo-flag bo-flag--bad">Below target</span>{% elif kpi.status == "no_data" %}Not enough data yet{% endif %}</p>
+    <p class="help">Based on {{ kpi.sample }}.{% if kpi.note %} {{ kpi.note }}{% endif %}</p>
+  </section>
+{% endfor %}
+</div>
+<h2>Trend (28-day windows, weekly)</h2>
+{% if trend %}
+<div class="results"><table id="result_list">
+  <thead><tr><th scope="col">To</th>{% for label in trend_labels %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead>
+  <tbody>{% for day, values in trend %}<tr><th scope="row">{{ day|date:"d M" }}</th>{% for m in values %}<td>{{ m|kpi_value }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+</table></div>
+{% else %}<p>No snapshots yet: the analytics_kpi_snapshot job keeps one a day.</p>{% endif %}
+<h2>Product events (people who agreed to analytics)</h2>
+<div class="results"><table id="result_list">
+  <thead><tr><th scope="col">Event</th><th scope="col">Events</th><th scope="col">People</th></tr></thead>
+  <tbody>{% for name, events, people in funnel %}<tr><th scope="row">{{ name }}</th><td>{{ events }}</td><td>{{ people }}</td></tr>{% empty %}<tr><td colspan="3">None in this window.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% endblock %}

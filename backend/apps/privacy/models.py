@@ -21,6 +21,7 @@ class Purpose(models.TextChoices):
     LOCATION = "location", "Location use"
     SOCIAL = "social", "Social account access"
     MARKETING = "marketing", "Marketing messages"
+    ANALYTICS = "analytics", "Product analytics"
 
 
 # Needed to use Barterly at all. Withdrawing them means closing the account.

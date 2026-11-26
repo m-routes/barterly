@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:barterly/src/analytics/analytics.dart';
 import 'package:barterly/src/api/api_error.dart';
 import 'package:barterly/src/apply/application.dart';
 import 'package:barterly/src/apply/outbox.dart';
@@ -285,7 +286,13 @@ class _ApplyFormState extends ConsumerState<ApplyForm> {
     if (!valid || !_agreed || _sending) return;
 
     final draft = _draft();
+    final analytics = ref.read(analyticsProvider)
+      ..track('apply_started', {'gig_id': widget.gig.id});
     if (!await ref.read(networkStatusProvider).isOnline()) {
+      analytics.track('apply_submitted', {
+        'gig_id': widget.gig.id,
+        'offline': true,
+      });
       await _queue(draft);
       return;
     }
@@ -314,6 +321,10 @@ class _ApplyFormState extends ConsumerState<ApplyForm> {
     });
     switch (outcome) {
       case Sent():
+        analytics.track('apply_submitted', {
+          'gig_id': widget.gig.id,
+          'offline': false,
+        });
         ref.invalidate(myApplicationsProvider);
         _done('Application sent. The host usually replies within a few days.');
       case Offline(:final draft):

@@ -22,6 +22,8 @@ from apps.accounts.serializers import (
 )
 from apps.accounts.services.auth import AccountDisabled, RoleAlreadySet, choose_role, sign_in
 from apps.accounts.throttles import ExchangeIPThrottle, ExchangePhoneThrottle
+from apps.beta import invites
+from apps.beta import rules as beta_rules
 from apps.common.serializers import ErrorSerializer
 from apps.common.services.audit import log_action
 from apps.privacy.errors import consent_error
@@ -45,6 +47,17 @@ class ProviderUnavailable(exceptions.APIException):
     status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     default_detail = "Sign-in is temporarily unavailable. Try again shortly."
     default_code = "auth_provider_unavailable"
+
+
+class InviteRefused(exceptions.APIException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    default_code = "invite_invalid"
+
+
+def invite_error(exc: invites.InviteError) -> InviteRefused:
+    error = InviteRefused(exc.message, exc.code)
+    error.status_code = exc.status
+    return error
 
 
 class RoleAlreadySetError(exceptions.APIException):
@@ -187,13 +200,16 @@ class MeRoleView(APIView):
             "granted only in the Django admin. The person must declare they are 18 or "
             "older (`confirm_adult`) and accept the current terms and privacy policy, "
             "each recorded as a separate consent with its version. A stale version is "
-            "409 `document_changed`."
+            "409 `document_changed`. During the closed beta (GET /api/v1/beta/) the "
+            "role may need `invite_code`: missing is 403 `invite_required`; wrong, used "
+            "up, expired or for the other role is 400 `invite_invalid`."
         ),
         request=ChooseRoleSerializer,
         responses={
             200: UserSerializer,
             400: ErrorSerializer,
             401: ErrorSerializer,
+            403: ErrorSerializer,
             409: ErrorSerializer,
         },
         tags=["accounts"],
@@ -205,6 +221,13 @@ class MeRoleView(APIView):
         try:
             with transaction.atomic():
                 user = choose_role(request.user, data["role"], request=request)
+                if beta_rules.invite_required(data["role"]):
+                    invites.redeem(
+                        data.get("invite_code", ""),
+                        user=user,
+                        role=data["role"],
+                        request=request,
+                    )
                 log_action(
                     actor=user,
                     action="user.declared_adult",
@@ -221,6 +244,8 @@ class MeRoleView(APIView):
                 )
         except RoleAlreadySet as exc:
             raise RoleAlreadySetError from exc
+        except invites.InviteError as exc:
+            raise invite_error(exc) from exc
         except consents.ConsentError as exc:
             raise consent_error(exc) from exc
         return Response(UserSerializer(user).data)

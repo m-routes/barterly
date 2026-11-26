@@ -16,6 +16,7 @@ from django.utils.module_loading import import_string
 class Plan:
     name: str
     max_live_gigs: int | None  # None: no limit
+    note: str = ""  # why the limit is what it is, when it isn't the plan's (the beta)
 
 
 class PlanPolicy(Protocol):

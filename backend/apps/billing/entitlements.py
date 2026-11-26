@@ -73,19 +73,23 @@ class Decision:
 
 
 def can_post_gig(vendor, now=None) -> Decision:
+    from apps.beta import rules as beta
+
     plan = current_plan(vendor, now)
     used = live_gig_count(vendor)
-    if plan.max_live_gigs is None or used < plan.max_live_gigs:
-        return Decision(True, limit=plan.max_live_gigs, used=used)
-    return Decision(
-        False,
-        reason=(
+    limit, reason = (
+        plan.max_live_gigs,
+        (
             f"Your {plan.name} plan allows {plan.max_live_gigs} live gig"
             f"{'' if plan.max_live_gigs == 1 else 's'}. Pause one, or upgrade, to go live."
         ),
-        limit=plan.max_live_gigs,
-        used=used,
     )
+    cap = beta.live_gig_cap()
+    if cap is not None and (limit is None or cap < limit):
+        limit, reason = cap, beta.live_gig_message(cap)
+    if limit is None or used < limit:
+        return Decision(True, limit=limit, used=used)
+    return Decision(False, reason=reason, limit=limit, used=used)
 
 
 def can_use_feature(vendor, flag: str, now=None) -> bool:
@@ -101,7 +105,7 @@ def summary(vendor, now=None) -> dict:
     return {
         "plan": plan.code,
         "plan_name": plan.name,
-        "max_live_gigs": plan.max_live_gigs,
+        "max_live_gigs": gigs.limit,
         "live_gigs": gigs.used,
         "can_post_gig": gigs.allowed,
         "reason": gigs.reason,

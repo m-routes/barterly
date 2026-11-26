@@ -12,6 +12,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
+from apps.common.events import DomainEvent, publish
 from apps.common.services.audit import log_action
 from apps.privacy.models import REQUIRED_PURPOSES, ConsentRecord, ConsentSource, Purpose
 
@@ -143,6 +144,13 @@ def record(
                 "source": source,
             },
             request=request,
+        )
+        publish(
+            DomainEvent(
+                "privacy.consent_changed",
+                {"user_id": user.pk, "purpose": purpose, "granted": granted},
+                occurred_at=now,
+            )
         )
     return entry
 

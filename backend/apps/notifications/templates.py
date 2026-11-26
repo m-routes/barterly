@@ -234,6 +234,10 @@ TEMPLATES: dict[str, Template] = {
         ),
         "hi": ("समीक्षा के दो दिन बाक़ी", "{gig_title}: समय ख़त्म होने से पहले अपनी समीक्षा लिखें।"),
     },
+    "support.replied": {
+        "en": ("Support replied", '{reference}: we\'ve answered "{subject}". Tap to read it.'),
+        "hi": ("सहायता टीम का जवाब", '{reference}: "{subject}" का जवाब आ गया है। पढ़ने के लिए टैप करें।'),
+    },
     catalog.OTHER: {
         "en": ("{label}", "{gig_title}"),
         "hi": ("{label}", "{gig_title}"),
@@ -277,6 +281,7 @@ VARIABLES: dict[str, tuple[str, ...]] = {
     "reviews.published": ("gig_title",),
     "reviews.awaiting_yours": ("gig_title",),
     "reviews.window_closing": ("gig_title",),
+    "support.replied": ("reference", "subject"),
     catalog.OTHER: ("label", "gig_title"),
 }
 

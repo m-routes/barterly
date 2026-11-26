@@ -35,6 +35,14 @@ VERIFICATION_READ = [
     "verification.view_verificationdocument",
     "verification.view_badge",
 ]
+# Answering support requests: the inbox, people's timelines and the canned replies.
+SUPPORT_DESK = [
+    "support.handle_tickets",
+    "support.view_timeline",
+    "support.view_cannedresponse",
+    "support.add_cannedresponse",
+    "support.change_cannedresponse",
+]
 
 PERMISSIONS: dict[str, list[str]] = {
     # Everything below, plus staff and role management.
@@ -49,6 +57,15 @@ PERMISSIONS: dict[str, list[str]] = {
         "appversions.set_app_version",
         "attendance.view_checkin",
         "attendance.review_checkin",
+        # The closed beta: invites, onboarding, KPIs, and the support inbox as backup.
+        "beta.manage_invites",
+        "beta.view_onboarding",
+        "beta.view_invitecode",
+        "beta.view_inviteredemption",
+        "beta.review_safety",
+        "beta.view_safetyreview",
+        "analytics.view_kpis",
+        *SUPPORT_DESK,
     ],
     # Verification, fraud and reviews: decides cases, sees badges and provider events,
     # moderates held and reported reviews.
@@ -64,6 +81,11 @@ PERMISSIONS: dict[str, list[str]] = {
         "reviews.view_review",
         "reviews.view_reviewreport",
         "reviews.moderate_review",
+        # Every dispute and safety report gets the weekly review.
+        "beta.review_safety",
+        "beta.view_safetyreview",
+        "analytics.view_kpis",
+        *SUPPORT_DESK,
     ],
     # Money: reads gigs (stipends), the ledger and escrows, and the audit trail of money
     # changes; decides held escrows and runs the kill switch.
@@ -88,9 +110,10 @@ PERMISSIONS: dict[str, list[str]] = {
         "money.view_payoutrun",
         "money.view_payout",
         "money.run_payouts",
+        "analytics.view_kpis",
     ],
-    # Helps people: looks things up, changes nothing.
-    AdminRole.SUPPORT: [*LOOKUP, *VERIFICATION_READ],
+    # Helps people: looks things up and answers requests; changes nothing else.
+    AdminRole.SUPPORT: [*LOOKUP, *VERIFICATION_READ, *SUPPORT_DESK, "beta.view_onboarding"],
 }
 PERMISSIONS[AdminRole.SUPER_ADMIN] = sorted(
     {p for role, perms in PERMISSIONS.items() for p in perms}

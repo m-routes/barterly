@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, use, useCallback, useEffect, useMemo, useState } from "react";
 
+import { flush, resetAnalytics } from "@/lib/analytics/track";
 import { api, unwrap } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
 import { onApiEvent } from "@/lib/api/events";
@@ -54,6 +55,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    await flush();
+    resetAnalytics();
     await fetch("/api/v1/auth/logout/", { method: "POST", credentials: "same-origin" }).catch(
       () => undefined,
     );

@@ -119,6 +119,7 @@ FEATURED: tuple[EventType, ...] = (
         configurable=False,
         aliases=("money.payout_account_changed",),
     ),
+    EventType("support.replied", "Support replied", "सहायता टीम का जवाब"),
     EventType(OTHER, "Other updates", "अन्य अपडेट", defaults=frozenset({C.IN_APP})),
 )
 BY_KEY = {t.key: t for t in FEATURED}
@@ -196,6 +197,9 @@ def links(kind: str, side: str, payload: dict) -> tuple[str, str]:
     application = payload.get("application_id", "")
     agreement = payload.get("agreement_id", "")
     conversation = payload.get("conversation_id", "")
+    if kind.startswith("support.") and payload.get("ticket_id"):
+        ticket = payload["ticket_id"]
+        return f"/profile/help/{ticket}", _web(f"/account/help/{ticket}")
     if kind == "chat.message" and conversation:
         return f"/trips/chat/{conversation}", _web(f"/console/messages/{conversation}")
     if agreement or kind.startswith(("agreement.", "booking.", "money.", "attendance.")):

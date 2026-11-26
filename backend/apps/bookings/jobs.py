@@ -16,6 +16,7 @@ from django.db import connection, transaction
 from django.utils import timezone
 
 from apps.agreements.services import render_pending
+from apps.analytics.kpis import snapshot as kpi_snapshot
 from apps.applications import services as applications
 from apps.applications.constants import ApplicationStatus
 from apps.applications.models import Application
@@ -157,6 +158,7 @@ JOBS: dict[str, Callable[..., dict]] = {
     "ops_backlog": lambda now: backlog.report(now),
     "privacy_retention": lambda now: privacy_retention.purge(now),
     "privacy_deletions": lambda now: privacy_erasure.run_due(now),
+    "analytics_kpi_snapshot": lambda now: kpi_snapshot(now),
 }
 
 

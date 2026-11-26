@@ -107,6 +107,14 @@ export const CONSOLE_SECTIONS: readonly ConsoleSection[] = [
     },
   },
   {
+    href: "/console/help",
+    label: "Help",
+    empty: {
+      title: "Help and feedback",
+      description: "Write to the Barterly team and see their replies.",
+    },
+  },
+  {
     href: "/console/analytics",
     label: "Analytics",
     empty: {

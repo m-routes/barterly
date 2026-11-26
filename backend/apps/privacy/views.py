@@ -47,6 +47,7 @@ DOCUMENT_PATHS = {
     Purpose.LOCATION: "/legal/privacy#location",
     Purpose.SOCIAL: "/legal/privacy#social",
     Purpose.MARKETING: "/legal/privacy#marketing",
+    Purpose.ANALYTICS: "/legal/privacy#analytics",
 }
 
 

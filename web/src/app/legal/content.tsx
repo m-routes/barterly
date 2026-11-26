@@ -124,32 +124,40 @@ function Privacy() {
         We send offers and news only if you ask for them, and you can stop them at any time. Service
         messages about your bookings and payments are not marketing.
       </p>
-      <h2>6. Who we share it with</h2>
+      <h2 id="analytics">6. Product analytics (only with your consent)</h2>
+      <p>
+        If you allow it, the app and website count which screens and steps you use (for example,
+        that someone opened a gig and started an application), so we can fix what&rsquo;s confusing.
+        We never record what you type, your messages, your location or your contacts, and the
+        records name you only by a random code. They are kept for 13 months. Withdraw in your
+        privacy settings and we stop at once and delete what we have.
+      </p>
+      <h2>7. Who we share it with</h2>
       <p>
         The other side of a booking (what they need for the stay), our processors (hosting, SMS and
         email, payments, KYC, e-signatures), and authorities when the law requires it. We do not
         sell personal data.
       </p>
-      <h2>7. How long we keep it</h2>
+      <h2>8. How long we keep it</h2>
       <p>
         Only as long as we need it. Payment and tax records are kept for eight years and signed
         agreements for the length of the agreement plus three years, because the law requires it.
         When you delete your account, those records are kept with your personal details removed.
         Details for each kind of data are in our retention schedule [link once published].
       </p>
-      <h2>8. Your rights</h2>
+      <h2>9. Your rights</h2>
       <p>
         You can see and download your data, correct it, withdraw consent and delete your account
         from your privacy settings. Withdrawing consent is as easy as giving it. You can nominate
         someone to exercise your rights if you die or cannot act [process to be confirmed]. If we
         don&rsquo;t resolve a complaint, you can approach the Data Protection Board of India.
       </p>
-      <h2>9. Children</h2>
+      <h2>10. Children</h2>
       <p>
         Barterly is only for people aged 18 and over. We do not knowingly process children&rsquo;s
         data.
       </p>
-      <h2>10. Security and breaches</h2>
+      <h2>11. Security and breaches</h2>
       <p>
         We protect data with encryption, access controls and logging. If a breach affects you, we
         tell you and the Data Protection Board as the law requires.

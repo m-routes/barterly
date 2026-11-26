@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { FormError, TextArea, TextField } from "@/components/ui/fields";
 import { ErrorState, LoadingState } from "@/components/ui/states";
+import { setAnalyticsConsent } from "@/lib/analytics/track";
 import { api, unwrap } from "@/lib/api/client";
 import { describeError } from "@/lib/api/errors";
 import type { ConsentState, DataExport, DeletionStatus } from "@/lib/api/types";
@@ -18,6 +19,9 @@ const PURPOSE_TEXT: Record<string, string> = {
   location: "Record where you are when you open your check-in pass. Check-in works without it.",
   social: "Read public numbers for posts you hand in, and check your handle.",
   marketing: "Offers and news from Barterly. Booking and payment messages aren't marketing.",
+  analytics:
+    "Count which screens and steps you use, so we can fix what's confusing. Never your messages, " +
+    "location or contacts; you're a random code, not a name. Withdrawing deletes what we have.",
 };
 
 function when(iso: string | null | undefined): string {
@@ -72,6 +76,7 @@ function Consents() {
         }),
       );
       setData(() => updated);
+      if (consent.purpose === "analytics") setAnalyticsConsent(granted);
     } catch (err) {
       setError(describeError(err));
     } finally {

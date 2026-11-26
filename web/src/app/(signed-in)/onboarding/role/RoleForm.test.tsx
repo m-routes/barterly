@@ -88,3 +88,51 @@ describe("RoleForm", () => {
     );
   });
 });
+
+describe("RoleForm during the closed beta", () => {
+  async function chooseHost(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole("radio", { name: /I run a place/ }));
+    await agreeToEverything(user);
+  }
+
+  it("asks for the invite code and sends it", async () => {
+    network.mockResolvedValueOnce(jsonResponse(200, vendorUser));
+    const onChosen = vi.fn();
+    const user = userEvent.setup();
+    render(<RoleForm onChosen={onChosen} inviteRoles={["vendor", "talent"]} />);
+    await chooseHost(user);
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByText("Enter the invite code we sent you.")).toBeVisible();
+    expect(network).not.toHaveBeenCalled();
+
+    await user.type(screen.getByRole("textbox", { name: /Invite code/ }), "abcd-2345");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await vi.waitFor(() => expect(onChosen).toHaveBeenCalledWith(vendorUser));
+    const sent = await (network.mock.calls[0]![0] as Request).json();
+    expect(sent.invite_code).toBe("abcd-2345");
+  });
+
+  it("shows the field when the server asks for a code", async () => {
+    network.mockResolvedValueOnce(
+      jsonResponse(403, errorBody("invite_required", "Barterly is invite-only for now.")),
+    );
+    const user = userEvent.setup();
+    render(<RoleForm onChosen={vi.fn()} />);
+    await chooseHost(user);
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByRole("textbox", { name: /Invite code/ })).toBeVisible();
+    expect(screen.getByText("Barterly is invite-only for now.")).toBeVisible();
+  });
+
+  it("explains a wrong code next to the field", async () => {
+    network.mockResolvedValueOnce(
+      jsonResponse(400, errorBody("invite_invalid", "That code has already been used.")),
+    );
+    const user = userEvent.setup();
+    render(<RoleForm onChosen={vi.fn()} inviteRoles={["vendor"]} />);
+    await chooseHost(user);
+    await user.type(screen.getByRole("textbox", { name: /Invite code/ }), "ABCD2345");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByText("That code has already been used.")).toBeVisible();
+  });
+});

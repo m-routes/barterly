@@ -130,6 +130,67 @@ void main() {
     expect(find.text('Set up your profile'), findsOneWidget);
   });
 
+  testWidgets('during the closed beta, joining asks for the invite code', (
+    tester,
+  ) async {
+    var role = '';
+    final sent = <Object?>[];
+    final api = FakeApi({
+      'GET /api/v1/me/': (_) => ok(userJson(role: role, complete: false)),
+      'GET /api/v1/beta/': (_) => ok({
+        'closed_beta': true,
+        'invite_required_for': ['vendor', 'talent'],
+        'max_live_gigs': 2,
+        'max_stipend_rupees': 20000,
+      }),
+      'POST /api/v1/me/role/': (r) {
+        sent.add(r.data);
+        final code = (r.data as Map)['invite_code'];
+        if (code != 'ABCD-2345') {
+          return apiError(400, 'invite_invalid', "That code isn't right.");
+        }
+        role = 'talent';
+        return ok(userJson(complete: false));
+      },
+      'GET /api/v1/profiles/talent/me/': (_) =>
+          apiError(404, 'profile_not_found'),
+      'GET /api/v1/profiles/skills/': (_) => ok(skillsJson),
+    });
+    usePhoneScreen(tester);
+    await pumpApp(tester, api: api, tokens: MemoryTokenStore(signedInTokens));
+    Future<void> tapIn(Finder finder) async {
+      await tester.scrollUntilVisible(
+        finder,
+        100,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.tap(finder);
+      await tester.pumpAndSettle();
+    }
+
+    final invite = find.widgetWithText(TextField, 'Invite code');
+    expect(
+      invite,
+      findsOneWidget,
+      reason: 'the beta rules say talent need one',
+    );
+    await tapIn(find.text('I am 18 or older'));
+    await tapIn(find.text('I agree to the terms of service'));
+    await tapIn(find.text('I have read the privacy policy'));
+    final join = find.widgetWithText(FilledButton, 'Join as talent');
+    await tapIn(join);
+    expect(find.text('Enter the invite code we sent you.'), findsOneWidget);
+    expect(sent, isEmpty);
+
+    await tester.enterText(invite, 'WRONG-CODE');
+    await tapIn(join);
+    expect(find.text("That code isn't right."), findsOneWidget);
+
+    await tester.enterText(invite, 'ABCD-2345');
+    await tapIn(join);
+    expect(find.text('Set up your profile'), findsOneWidget);
+  });
+
   testWidgets('vendors are pointed at the web console', (tester) async {
     final api = FakeApi({
       'GET /api/v1/me/': (_) => ok(userJson(role: 'vendor')),

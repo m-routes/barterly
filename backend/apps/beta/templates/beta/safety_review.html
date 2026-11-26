@@ -1,0 +1,36 @@
+{% extends "backoffice/base.html" %}
+{% block content %}
+<p><a href="?week={{ previous|date:'Y-m-d' }}">&larr; Week before</a> · <a href="?week={{ following|date:'Y-m-d' }}">Week after &rarr;</a></p>
+{% if overdue %}
+<p class="errornote">{{ overdue|length }} item{{ overdue|length|pluralize }} from earlier weeks {{ overdue|length|pluralize:"has,have" }} no review yet:
+{% for item in overdue|slice:":10" %}<a href="?week={{ item.raised_at|date:'Y-m-d' }}">{{ item.kind_label }} ({{ item.raised_at|date:"d M" }})</a>{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+{% endif %}
+<p>{{ reviewed }} of {{ items|length }} reviewed. Every dispute and safety report is looked at in the weekly review (docs/beta/weekly-review.md).</p>
+<div class="results">
+<table id="result_list" class="bo-rules">
+  <thead><tr><th scope="col">Raised</th><th scope="col">What</th><th scope="col">Summary</th><th scope="col">Review</th></tr></thead>
+  <tbody>
+  {% for item, form in items %}
+    <tr>
+      <td>{{ item.raised_at|date:"D d M, H:i" }}</td>
+      <th scope="row">{% if item.link %}<a href="{{ item.link }}">{{ item.kind_label }}</a>{% else %}{{ item.kind_label }}{% endif %}</th>
+      <td>{{ item.summary|default:"–" }}</td>
+      <td>
+        {% if item.review %}<p><span class="bo-flag {% if item.review.outcome == 'no_action' %}bo-flag--ok{% else %}bo-flag--warn{% endif %}">{{ item.review.get_outcome_display }}</span> by {{ item.review.reviewed_by }}{% if item.review.notes %}<br>{{ item.review.notes }}{% endif %}</p>{% endif %}
+        <form method="post" class="bo-actions">{% csrf_token %}<input type="hidden" name="week" value="{{ week|date:'Y-m-d' }}">
+          {{ form.kind }}{{ form.object_id }}
+          <label for="outcome-{{ forloop.counter }}" class="visually-hidden">Outcome</label>
+          <select name="outcome" id="outcome-{{ forloop.counter }}">{% for value, label in form.fields.outcome.choices %}<option value="{{ value }}"{% if item.review.outcome == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+          <label for="notes-{{ forloop.counter }}" class="visually-hidden">Notes</label>
+          <textarea name="notes" id="notes-{{ forloop.counter }}" rows="2" placeholder="What was done (needed unless no action)">{{ item.review.notes }}</textarea>
+          <div class="submit-row"><input type="submit" value="{% if item.review %}Update{% else %}Mark reviewed{% endif %}"></div>
+        </form>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="4">Nothing was raised this week.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

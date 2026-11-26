@@ -45,6 +45,9 @@ INSTALLED_APPS = [
     "apps.appversions",
     "apps.qa",
     "apps.privacy",
+    "apps.beta",
+    "apps.analytics",
+    "apps.support",
     "apps.backoffice.apps.BackofficeConfig",
 ]
 
@@ -143,6 +146,8 @@ REST_FRAMEWORK = {
         "geocode": env_str("THROTTLE_GEOCODE", "30/hour"),
         "property_public": env_str("THROTTLE_PROPERTY_PUBLIC", "600/hour"),
         "chat_send": env_str("THROTTLE_CHAT_SEND", "30/minute"),
+        "analytics": env_str("THROTTLE_ANALYTICS", "120/hour"),
+        "support": env_str("THROTTLE_SUPPORT", "20/hour"),
     },
     # Proxies in front of Django that append to X-Forwarded-For. 0 = use REMOTE_ADDR.
     "NUM_PROXIES": env_int("TRUSTED_PROXY_COUNT", 0),
@@ -188,6 +193,8 @@ SPECTACULAR_SETTINGS = {
         "AppPlatformEnum": "apps.appversions.models.Platform",
         "ConsentPurposeEnum": "apps.privacy.models.Purpose",
         "ConsentSourceEnum": "apps.privacy.models.CLIENT_SOURCES",
+        "TicketKindEnum": "apps.support.models.TicketKind",
+        "TicketStatusEnum": "apps.support.models.TicketStatus",
         "VerificationStatusEnum": "apps.verification.constants.CaseStatus",
         "VerificationDocumentStatusEnum": "apps.verification.constants.DocumentStatus",
         "VerificationDocumentTypeEnum": "apps.verification.constants.DocumentType",
@@ -534,6 +541,7 @@ PRIVACY_DOCUMENT_VERSIONS = {
     "location": env_str("PRIVACY_LOCATION_VERSION", "2026-11-draft-1"),
     "social": env_str("PRIVACY_SOCIAL_VERSION", "2026-11-draft-1"),
     "marketing": env_str("PRIVACY_MARKETING_VERSION", "2026-11-draft-1"),
+    "analytics": env_str("PRIVACY_ANALYTICS_VERSION", "2026-11-draft-1"),
 }
 # How long each kind of data is kept, in days (apps.privacy.retention, run daily by the
 # privacy_retention job). Each purge writes an audit entry.
@@ -545,6 +553,7 @@ PRIVACY_RETENTION_DAYS = {
     "attendance_locations": env_int("RETAIN_ATTENDANCE_LOCATIONS_DAYS", 30),
     "verification_references": env_int("RETAIN_VERIFICATION_REFERENCES_DAYS", 365),
     "job_runs": env_int("RETAIN_JOB_RUNS_DAYS", 90),
+    "analytics_events": env_int("RETAIN_ANALYTICS_EVENTS_DAYS", 395),
 }
 # Exports: the file is kept this long, and each download link lasts this many seconds.
 PRIVACY_EXPORT_KEEP_HOURS = env_int("PRIVACY_EXPORT_KEEP_HOURS", 24)
@@ -566,3 +575,31 @@ GRIEVANCE_OFFICER = {
 }
 # Who hears about an account that turns out to belong to a minor.
 TRUST_TEAM_EMAILS = env_list("TRUST_TEAM_EMAILS", "")
+
+# Closed beta (apps.beta, docs/beta/README.md). These apply while the `closed_beta` flag
+# is on; turning it off lifts them all.
+BETA_INVITE_ROLES = env_list("BETA_INVITE_ROLES", "vendor,talent")
+BETA_MAX_LIVE_GIGS_PER_VENDOR = env_int("BETA_MAX_LIVE_GIGS_PER_VENDOR", 2)
+BETA_MAX_STIPEND_RUPEES = env_int("BETA_MAX_STIPEND_RUPEES", 20000)
+# The beta's live-gig cap wraps the billing plan's limit.
+BETA_BASE_PLAN_POLICY = GIG_PLAN_POLICY
+GIG_PLAN_POLICY = "apps.beta.rules.BetaPlanPolicy"
+
+# Analytics (apps.analytics, docs/beta/analytics.md). Events are keyed by an HMAC of the
+# user id; a separate key (Secret Manager) means the table can't be joined back to
+# accounts with SECRET_KEY alone. Empty: SECRET_KEY is used.
+ANALYTICS_PSEUDONYM_KEY = env_str("ANALYTICS_PSEUDONYM_KEY", "")
+
+# Support SLAs in hours: (first answer, resolution). None: no resolution target.
+# docs/beta/support.md. Staffed 8am to 10pm IST during the beta.
+SUPPORT_SLA_HOURS = {
+    "urgent": (
+        env_int("SUPPORT_SLA_URGENT_FIRST_HOURS", 2),
+        env_int("SUPPORT_SLA_URGENT_RESOLVE_HOURS", 24),
+    ),
+    "normal": (
+        env_int("SUPPORT_SLA_NORMAL_FIRST_HOURS", 24),
+        env_int("SUPPORT_SLA_NORMAL_RESOLVE_HOURS", 72),
+    ),
+    "low": (env_int("SUPPORT_SLA_LOW_FIRST_HOURS", 72), None),
+}

@@ -105,3 +105,9 @@ export type DeletionStatus = Schemas["DeletionStatus"];
 export type DeletionBlocker = Schemas["Blocker"];
 export type CorrectionRequest = Schemas["CorrectionRequest"];
 export type GrievanceOfficer = Schemas["GrievanceOfficer"];
+
+export type BetaRules = Schemas["BetaRules"];
+export type SupportTicket = Schemas["SupportTicket"];
+export type SupportTicketDetail = Schemas["SupportTicketDetail"];
+export type SupportMessage = Schemas["SupportMessage"];
+export type SupportKind = Schemas["TicketKindEnum"];

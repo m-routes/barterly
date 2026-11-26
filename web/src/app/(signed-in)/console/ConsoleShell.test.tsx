@@ -46,6 +46,7 @@ describe("ConsoleShell", () => {
       "Content",
       "Billing",
       "Privacy",
+      "Help",
       "Analytics",
     ]);
     expect(sidebar.getByRole("link", { name: "Gigs" })).toHaveAttribute("aria-current", "page");

@@ -90,6 +90,15 @@ class ChooseRoleSerializer(serializers.Serializer):
         max_length=40, help_text="Version of the privacy policy shown."
     )
     source = serializers.ChoiceField(choices=CLIENT_SOURCES, default="api")
+    invite_code = serializers.CharField(
+        max_length=20,
+        required=False,
+        allow_blank=True,
+        help_text=(
+            "During the closed beta: the invite code (GET /api/v1/beta/ says which roles "
+            "need one). With or without the dash, any case."
+        ),
+    )
 
     def validate_confirm_adult(self, value: bool) -> bool:
         if not value:
