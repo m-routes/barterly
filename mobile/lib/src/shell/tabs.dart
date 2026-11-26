@@ -1,7 +1,9 @@
 import 'package:barterly/src/auth/session.dart';
 import 'package:barterly/src/profile/talent_profile.dart';
 import 'package:barterly/src/providers.dart';
+import 'package:barterly/src/router.dart';
 import 'package:barterly/src/theme/tokens.dart';
+import 'package:barterly/src/wallet/wallet_screen.dart';
 import 'package:barterly/src/widgets/states.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,14 +16,7 @@ class WalletTab extends StatelessWidget {
   const new({super.key});
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Wallet')),
-    body: const EmptyState(
-      icon: Icons.account_balance_wallet_outlined,
-      title: 'Nothing here yet',
-      message: 'Stipends and payments for paid gigs will be tracked here.',
-    ),
-  );
+  Widget build(BuildContext context) => const WalletScreen();
 }
 
 final FutureProvider<TalentProfile?> myProfileProvider =
@@ -100,11 +95,41 @@ class _ProfileSummary extends ConsumerWidget {
         const SizedBox(height: BarterlySpace.md),
         ListTile(
           contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.notifications_outlined),
+          title: const Text('Notifications'),
+          subtitle: Text(switch (ref.watch(unreadCountProvider)) {
+            AsyncData(:final value) when value > 0 => '$value unread',
+            _ => 'Inbox, language and quiet hours',
+          }),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () async {
+            await context.push(Routes.notifications);
+            ref.invalidate(unreadCountProvider);
+          },
+        ),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.star_outline),
+          title: const Text('Reviews and reputation'),
+          subtitle: const Text('What hosts said, your rating and badges'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push(Routes.myReviews),
+        ),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.verified_user_outlined),
           title: const Text('Verification and badges'),
           subtitle: const Text('ID, selfie and Instagram'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.push('/profile/verification'),
+        ),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.privacy_tip_outlined),
+          title: const Text('Privacy and your data'),
+          subtitle: const Text('Consents, download, correct or delete'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push(Routes.privacy),
         ),
         const SizedBox(height: BarterlySpace.md),
         const Divider(),
@@ -114,7 +139,10 @@ class _ProfileSummary extends ConsumerWidget {
           subtitle: Text(phone),
         ),
         TextButton(
-          onPressed: () => ref.read(sessionProvider.notifier).signOut(),
+          onPressed: () async {
+            await ref.read(pushRegistrarProvider).stop();
+            await ref.read(sessionProvider.notifier).signOut();
+          },
           child: const Text('Sign out'),
         ),
       ],

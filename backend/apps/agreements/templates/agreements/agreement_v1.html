@@ -1,0 +1,116 @@
+{% comment %}
+  Barterly stay-and-work agreement, template agreement_v1.
+
+  PLACEHOLDER LEGAL TEXT. Not reviewed by a lawyer. A lawyer qualified in Indian contract,
+  labour and consumer law must review and replace the clause wording below before launch.
+  When the reviewed wording lands, add it as a new template (agreement_v2.html), register it
+  in apps.agreements.pdf.TEMPLATES with reviewed=True and make it the CURRENT_TEMPLATE.
+  Never edit a template that agreements have already been drawn up with: each version
+  records the template's name and SHA-256.
+{% endcomment %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Agreement {{ reference }} · version {{ version_number }}</title>
+<style>
+  @page {
+    size: A4;
+    margin: 22mm 20mm 24mm;
+    @bottom-left { content: "Barterly agreement {{ reference }} · version {{ version_number }}{% if not reviewed %} · PLACEHOLDER TEXT, NOT LEGALLY REVIEWED{% endif %}"; font-family: "DejaVu Sans", sans-serif; font-size: 7.5pt; color: #555; }
+    @bottom-right { content: "Page " counter(page) " of " counter(pages); font-family: "DejaVu Sans", sans-serif; font-size: 7.5pt; color: #555; }
+  }
+  body { font-family: "DejaVu Sans", sans-serif; font-size: 9.5pt; line-height: 1.45; color: #111; }
+  h1 { font-size: 16pt; margin: 0 0 4pt; }
+  h2 { font-size: 11pt; margin: 14pt 0 4pt; border-bottom: 0.5pt solid #999; padding-bottom: 2pt; }
+  p, li { margin: 0 0 4pt; }
+  .placeholder { border: 1.5pt solid #b00; color: #b00; padding: 6pt 8pt; margin: 0 0 10pt; font-weight: bold; }
+  .meta { color: #444; margin-bottom: 8pt; }
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0; }
+  th, td { text-align: left; vertical-align: top; padding: 3pt 4pt; border-bottom: 0.5pt solid #ddd; }
+  th { width: 34%; font-weight: normal; color: #444; }
+  .clause { margin-left: 0; padding-left: 14pt; }
+  .signing { margin-top: 14pt; padding: 6pt 8pt; background: #f3f3f3; }
+</style>
+</head>
+<body>
+{% if not reviewed %}
+<div class="placeholder">
+  PLACEHOLDER LEGAL TEXT: NOT REVIEWED BY A LAWYER. This template must be reviewed and
+  replaced before Barterly launches. Do not rely on it.
+</div>
+{% endif %}
+
+<h1>Stay and work agreement</h1>
+<p class="meta">Reference {{ reference }} · Version {{ version_number }} · Drawn up {{ drawn_up|date:"j F Y" }}
+{% if version_number > 1 %}· Replaces version {{ version_number|add:"-1" }} once both parties sign{% endif %}</p>
+
+<h2>1. The parties</h2>
+<table>
+  <tr><th>Host</th><td>{{ host_name }}, for {{ property_name }}, {{ property_city }}, {{ property_state }}</td></tr>
+  <tr><th>Talent</th><td>{{ talent_name }}</td></tr>
+  <tr><th>Gig</th><td>{{ gig_title }}</td></tr>
+  <tr><th>Platform</th><td>Barterly connects the parties. It is not a party to this agreement and does not employ either party.</td></tr>
+</table>
+
+<h2>2. Dates and working hours</h2>
+<table>
+  <tr><th>Arrive</th><td>{{ start_date|date:"l j F Y" }}</td></tr>
+  <tr><th>Leave</th><td>{{ end_date|date:"l j F Y" }} ({{ nights }} night{{ nights|pluralize }})</td></tr>
+  <tr><th>Hours</th><td>At most {{ terms.hours_per_day }} hour{{ terms.hours_per_day|pluralize }} a day, {{ terms.days_per_week }} day{{ terms.days_per_week|pluralize }} a week: no more than {{ weekly_cap }} hours in any week.</td></tr>
+</table>
+<p class="clause">2.1 Hour cap. The host will not ask the talent to work more than the hours above. Hours not used in one day or week do not carry over. Time spent on the host's request counts as working time.</p>
+<p class="clause">2.2 Rest. The talent has at least {{ days_off }} full day{{ days_off|pluralize }} off each week, and at least 10 consecutive hours off between working days.</p>
+
+<h2>3. What the host provides</h2>
+<table>
+  <tr><th>Stay</th><td>{{ stay_label }}</td></tr>
+  <tr><th>Meals</th><td>{{ meals_label }}</td></tr>
+  <tr><th>Arrangement</th><td>{{ compensation_label }}</td></tr>
+  {% if stipend %}<tr><th>Stipend</th><td>INR {{ stipend }} {{ stipend_period_label|lower }}</td></tr>{% endif %}
+</table>
+{% if stipend %}<p class="clause">3.1 The stipend is paid as recorded on Barterly. Barterly may hold and release it according to its payment terms.</p>{% endif %}
+
+<h2>4. Deliverables</h2>
+{% if deliverables %}
+<table>
+  {% for d in deliverables %}<tr><th>{{ d.quantity }} × {{ d.label }}</th><td>{{ d.notes|default:"" }}</td></tr>{% endfor %}
+</table>
+<p class="clause">4.1 The talent delivers the work above by the last day of the stay unless both parties agree a later date in writing on Barterly.</p>
+{% else %}
+<p>This arrangement has no content deliverables. The talent helps as described in the gig, within the hours in section 2.</p>
+{% endif %}
+
+<h2>5. Content and usage rights</h2>
+{% if usage %}
+<p class="clause">5.1 Ownership. The talent keeps the copyright in everything they create.</p>
+<p class="clause">5.2 Licence. The talent grants the host a non-exclusive, non-transferable licence to use the deliverables on {{ usage.scope_label|lower }}, for {{ usage.duration_months }} month{{ usage.duration_months|pluralize }} from the end of the stay. Any other use needs the talent's written consent.</p>
+<p class="clause">5.3 Credit. {% if usage.credit_required %}The host credits the talent (by name or handle) wherever practical when using the content.{% else %}The host need not credit the talent.{% endif %}</p>
+<p class="clause">5.4 The host will not edit the content in a way that misrepresents the talent, and will stop using it within 30 days of a reasonable request from the talent after the licence ends.</p>
+{% else %}
+<p class="clause">5.1 The host gets no rights to any photos, videos or writing the talent creates during the stay. Anything the talent publishes remains the talent's own.</p>
+{% endif %}
+
+<h2>6. Safety and conduct</h2>
+<p class="clause">6.1 Both parties treat each other with respect. Harassment, discrimination, threats and violence are not allowed and may end this agreement at once.</p>
+<p class="clause">6.2 The host provides safe accommodation that matches its description, a lockable place for the talent's belongings, drinking water, and the safety equipment and instructions any task needs. The talent is not asked to do work that is dangerous or that needs a licence they do not have.</p>
+<p class="clause">6.3 The talent follows reasonable house rules shared in advance, and the law.</p>
+<p class="clause">6.4 Either party can report a safety concern to Barterly at any time. In an emergency, call 112 first.</p>
+<p class="clause">6.5 The talent may leave at any time if they feel unsafe. Barterly will review what happened before any cancellation counts against either party.</p>
+
+<h2>7. Cancellation</h2>
+<p class="clause">7.1 Policy: {{ cancellation_label }}. Either party may cancel without it counting against them up to {{ notice_days }} day{{ notice_days|pluralize }} before the arrival date, by cancelling on Barterly.</p>
+<p class="clause">7.2 A later cancellation, or not turning up, is recorded on Barterly and may affect the cancelling party's standing.{% if stipend %} Any stipend already paid for days not worked is refunded under Barterly's payment terms.{% endif %}</p>
+<p class="clause">7.3 Safety reasons under section 6, illness with evidence, and events outside either party's control are not counted against the cancelling party.</p>
+
+<h2>8. Changes and the whole agreement</h2>
+<p class="clause">8.1 Changes to these terms are made on Barterly as a new version of this agreement. A new version takes effect only once both parties sign it; until then this version stays in force.</p>
+<p class="clause">8.2 This agreement, with the gig as described on Barterly and Barterly's terms of use, is the whole agreement between the parties about the stay.</p>
+
+<div class="signing">
+  Both parties sign this agreement electronically on Barterly. Each signature records the
+  signer, the time, the IP address and device, and a fresh one-time-password
+  confirmation of the signer's phone number, against this document's SHA-256
+  fingerprint. The agreement is valid only when both parties have signed.
+</div>
+</body>
+</html>

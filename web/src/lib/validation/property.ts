@@ -26,6 +26,7 @@ export const propertySchema = z.object({
     .trim()
     .min(1, "Enter the street address.")
     .max(500, "Keep the address under 500 characters."),
+  directions: z.string().trim().max(1000, "Keep the directions under 1,000 characters."),
   city: z
     .string()
     .trim()
@@ -35,7 +36,7 @@ export const propertySchema = z.object({
   pincode: z
     .string()
     .trim()
-    .regex(/^([1-9][0-9]{5})?$/, "A PIN code is 6 digits and doesn't start with 0."),
+    .regex(/^$|^[1-9][0-9]{5}$/, "A PIN code is 6 digits and doesn't start with 0."),
   amenities: z.array(z.enum(AMENITIES)),
   house_rules: z
     .string()
@@ -61,6 +62,7 @@ export function propertyDefaults(property: Property | null): PropertyValues {
     name: property?.name ?? "",
     property_type: property?.property_type ?? "",
     address: property?.address ?? "",
+    directions: property?.directions ?? "",
     city: property?.city ?? "",
     state: property?.state ?? "",
     pincode: property?.pincode ?? "",

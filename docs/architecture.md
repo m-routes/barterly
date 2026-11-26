@@ -67,10 +67,18 @@ Surfaces: the vendor console (web), the talent app (mobile) and the admin consol
 | `gigs` | `Gig` (role template, compensation model, dates, hours, stay, meals, stipend, deliverables, eligibility, screening questions), the business rules, the status machine and review, plan limits, auto-close |
 | `discovery` | Gig search for talent (`GET /api/v1/gigs/`): hard filters, the fit score, cursor pages; saved searches and their alert job |
 | `applications` | `Application` and its attachments, the apply rules (with every blocking reason), the status table, applicant views for vendors |
-| `notifications` | Queued `Notification` rows, created from domain events; delivery arrives later in Phase 3 |
-| `bookings` | The transition table, bookings, the append-only booking event log and scheduled jobs |
+| `notifications` | The in-app inbox, delivery on push (FCM), email, SMS and WhatsApp behind provider interfaces, English and Hindi templates, preferences and quiet hours, reminders, the delivery log and dead letters |
+| `bookings` | The transition table, bookings, the append-only booking event log, confirmation and cancellation (with the step-in offer), and scheduled jobs |
 | `hiring` | Rejection reasons, bulk actions, auto-reject rules, private notes and tags, saved filters, interviews |
 | `chat` | One conversation per application, messages with cursors and read receipts, the contact-sharing guard, blocks, reports, the profanity filter hook |
+| `offers` | `Offer`: the frozen terms snapshot a vendor sends, the talent's one counter, and the terms schema (`apps/offers/terms.py`) |
+| `agreements` | `Agreement`, its versions and signatures, the PDF template and WeasyPrint renderer, the `ESignProvider` interface (in-app OTP provider and a fake) |
+| `billing` | Plans as data, subscriptions through Razorpay (behind `PaymentGateway`), entitlements, GST invoices and dunning |
+| `money` | Double-entry ledger (append-only, integer paise), escrow for paid and hybrid bookings, deliverables, payout accounts, payout runs, the talent wallet, statements and TDS records, webhooks, reconciliation and the kill switch ([money.md](money.md)) |
+| `attendance` | Signed check-in passes (Ed25519 QR + six-digit code), offline check-in sync, the soft geofence, check-out, no-show grace, volunteer hour logs ([attendance.md](attendance.md)) |
+| `deliverables` | Barter and hybrid deliverables: one per unit of the agreement, submissions with the collaboration-label check, two rounds of changes, post stats (YouTube/Instagram APIs or self-reported), usage rights, the host's content library, reminders, and escrow's 72-hour window ([deliverables.md](deliverables.md)) |
+| `reviews` | Double-blind reviews of completed stays with category scores, moderation (flagged words, contact details, reports), one reply, reputation (rating, completion rate, response time) and configurable badges ([reviews.md](reviews.md)) |
+| `reliability` | The reliability score v1 (a pure function, [reliability.md](reliability.md)) and each person's stored score per side |
 | `verification` | Verification cases per check, evidence (provider references and masked numbers only), badges, the KYC provider interface and webhook, re-verification on profile edits, the review API |
 
 ### Users and permissions
@@ -224,8 +232,8 @@ Talent apply with `POST /api/v1/gigs/{id}/applications/`. An application has a p
 A database constraint also allows only one active application per talent per gig (`applied`, `shortlisted`, `interview`, `offered`).
 
 **Statuses.** Every move, who makes it and its guard are in the one transition table, `apps.bookings.lifecycle.TRANSITIONS` (see Bookings).
-- **Vendor:** shortlist, interview, offer and reject, with `POST /api/v1/applications/{id}/status/`. An offer needs a running gig with an open slot, and expires 48 hours after it's made.
-- **Talent:** withdraw (from any active status, up to accepting an offer), decline an offer (`/decline/`) or accept it (`/accept/`, which creates the booking).
+- **Vendor:** shortlist, interview and reject, with `POST /api/v1/applications/{id}/status/`. Offers carry terms, so they have their own endpoint (see Offers and agreements). An offer needs a running gig with an open slot.
+- **Talent:** withdraw (from any active status, up to accepting an offer), decline the open offer (`/decline/`) or accept it (`/accept/`, which creates the booking). Both act on the offer waiting for the talent's answer.
 - **System:** expire unanswered offers, and expire the rest when a gig closes.
 
 Every change writes an audit row `application.<status>` and publishes the domain event of the same name.
@@ -238,34 +246,65 @@ Every change writes an audit row `application.<status>` and publishes the domain
 
 **One transition table.** `lifecycle.TRANSITIONS` covers the whole engagement, from application to booking:
 - Application: applied → shortlisted → interview → offered.
-- Accepting the offer (offered → confirmed) creates the `Booking`.
-- Booking: confirmed → checked_in → delivering → completed → reviewed, with cancelled, no_show, disputed and refunded along the way.
+- Accepting the offer (offered → confirmed) creates the `Booking` awaiting signatures (`signing`), with the offer's dates. The talent accepts the host's offer; the host confirms only by accepting the talent's counter.
+- Booking: signing → confirmed (by the system, when both have signed the agreement) → checked_in → delivering → completed → reviewed, with cancelled, no_show, disputed and refunded along the way.
 
-Each row lists the actors allowed to make the move (talent, vendor, system, admin), whether a reason is needed, and a guard. Guards include: an open slot to offer or accept, an unexpired offer, no overlapping booking for the talent, check-in from the day before the stay, the stay has started for no-shows and completion, disputes within 14 days, and refunds only where money changed hands. `lifecycle.check()` is the only place a move is allowed or refused. The services call it, and the API answers 409 with the reason.
+Each row lists the actors allowed to make the move (talent, vendor, system, admin), whether a reason is needed, and a guard. Guards include: an open slot to offer or accept, an unexpired offer, no overlapping booking for the talent, check-in from the day before the stay and only once both sides have signed the agreement, the stay has started for no-shows and completion, disputes within 14 days, and refunds only where money changed hands. `lifecycle.check()` is the only place a move is allowed or refused. The services call it, and the API answers 409 with the reason.
 
-**Slots.** A booking holds one of its gig's slots while it's confirmed, checked in, delivering, completed, disputed or reviewed. Every status change locks the gig row first (`SELECT … FOR UPDATE`), then the application or booking, and counts slots while holding that lock. Two people accepting the last slot at the same moment can't both get it, and a test runs that race with two threads. When the count reaches the gig's slots, the gig becomes `filled`. A cancellation reopens it while applications are still open.
+**Slots.** A booking holds one of its gig's slots while it's confirmed, checked in, delivering, completed, disputed or reviewed: not while it's awaiting signatures. Every status change locks the gig row first (`SELECT … FOR UPDATE`), then the application or booking, and counts slots while holding that lock. Two bookings whose last signatures land at the same moment can't both take the last slot, and a test runs that race with two threads. When the count reaches the gig's slots, the gig becomes `filled`. A cancellation reopens it while applications are still open. A booking awaiting signatures still keeps the talent's dates: no second booking may overlap it.
+
+**When both sign** (`apps/bookings/confirmation.py`, called inside signing):
+1. The booking moves signing → confirmed and takes its slot; the gig is marked filled when its slots are full.
+2. If it's full, the other offers for the gig are settled by `BOOKING_WHEN_FULL` (an environment setting): `hold` (the default) puts open offers on hold until a place opens (they lapse when the stay would have started) and leaves other bookings awaiting signatures waiting, unable to complete signing until a place opens; `expire` ends those applications and calls off those bookings, with no effect on anyone's reliability. Audited as `gig.full_settled`.
+3. The details unlock: `GET /api/v1/bookings/{id}/details/` gives both sides each other's verified phone (the one they sign in with by OTP) and the talent the exact address, the property's directions and a Google Maps directions link. 409 before both have signed; nothing once the stay has ended or been cancelled. The property's exact location follows the same rule.
+
+**Cancelling before check-in** (`apps/bookings/cancellation.py`): `GET /api/v1/bookings/{id}/cancel/` lists the reasons for your side and what cancelling now would do; `POST` with `{reason, note}` cancels (a note is required for "other"). The transition endpoint refuses `cancelled` before check-in for talent and hosts; admins cancelling there are recorded with reason `admin`. Each cancellation is recorded (`Cancellation`) with its effect under the agreement's cancellation policy (flexible 3, moderate 7, strict 14 days' notice):
+
+| When | Effect on the canceller |
+|---|---|
+| Before both signed, or by Barterly | None |
+| Before the notice period | Free |
+| Inside the notice period | Late |
+| A day or less before the stay | Last minute |
+
+A confirmed booking gives its slot back. The place is then offered on: offers held when the gig filled open again first, with a fresh 48 hours; if nobody is in line (no open offer, no booking awaiting signatures), the best-fitting shortlisted applicant who is free on those dates gets an offer on the terms the host agreed for that place (`STEP_IN_OFFERS`, on by default; never once the stay has started). It is still the host's offer: the host signs its agreement like any other. The host hears `booking.place_opened` and `offer.step_in`.
 
 **Event log.** Each booking move appends a `BookingEvent`: from and to state, actor, the person, reason, metadata and time. A database trigger (migration `bookings.0002`) refuses every UPDATE and DELETE on that table, whichever database user tries, the app's own included. Moves also write an AuditLog row.
 
-**Domain events.** Every application and booking move publishes `application.<status>` or `booking.<status>` (`apps.common.events`). Handlers run inside the same transaction, so a rolled-back move leaves no event, notification or audit row behind. `apps.notifications.handlers` turns events into queued notifications. A booking move goes to the other party, and a move by the system or an admin goes to both.
+**Domain events.** Every application and booking move publishes `application.<status>` or `booking.<status>` (`apps.common.events`). Handlers run inside the same transaction, so a rolled-back move leaves no event, notification or audit row behind. `apps.notifications.handlers` turns events into notifications (see Notifications). A booking move goes to the other party, and a move by the system or an admin goes to both.
 
 **API.**
 - `POST /api/v1/applications/{id}/accept/`
 - `GET /api/v1/bookings/`, as talent or as the vendor
 - `GET /api/v1/bookings/{id}/`, with its events and the `next_moves` you can make
 - `POST /api/v1/bookings/{id}/transition/` with `{status, reason, metadata}`
+- `GET`/`POST /api/v1/bookings/{id}/cancel/`, `GET /api/v1/bookings/{id}/details/`
+- `GET /api/v1/reliability/me/`; the score also appears on applicants (`applicant.reliability`) and offer threads (`host_reliability`)
 
 **Scheduled jobs.** Cloud Scheduler calls `POST /api/v1/jobs/<name>/` with a Google-signed OIDC token. The API accepts only tokens whose audience is its own URL and that were issued to the scheduler service account (`SCHEDULER_AUDIENCE`, `SCHEDULER_INVOKER_EMAIL`, set by `infra/terraform/modules/environment/scheduler.tf`). The jobs, with their India-time schedules:
 
 | Job | Runs | What it does |
 |---|---|---|
-| `expire_offers` | Every 15 minutes | Offers with no reply after 48 hours expire |
+| `expire_offers` | Every 15 minutes | Offers with no reply 48 hours after the last offer or counter expire, as do offers held for a place that never opened; bookings still awaiting signatures when the stay starts are cancelled |
 | `flag_stale_interviews` | Daily at 9:00 | Interviews with no movement for 7 days are flagged once, and the vendor is told |
 | `close_expired_gigs` | Daily at 0:15 | Gigs whose apply-by date has passed are closed |
 | `expire_verifications` | Daily at 0:30 | Verifications past their validity expire |
 | `sync_kyc_results` | Every 30 minutes | The KYC provider is asked for missing results |
 | `run_search_alerts` | Every 6 hours | Saved-search alerts go out for new gigs |
 | `send_interview_reminders` | Every 5 minutes | Interview reminders go out a day and an hour before |
+| `render_agreements` | Every 10 minutes | Agreement PDFs a failed render left behind are drawn up |
+| `send_reminders` | Hourly at :05 | Offers about to expire, agreements still to sign, stays starting tomorrow |
+| `billing_dunning` | Daily at 10:00 | Payment-failed reminders before the grace period ends; paid features lock after it |
+| `billing_invoices` | Every 30 minutes | GST invoices left unrendered or unsent are finished |
+| `escrow_auto_release` | Hourly at :15 | Release escrow 72 hours after the latest unanswered submission, or after an approval that couldn't release then |
+| `reviews_close_windows` | Hourly at :20 | Publish reviews whose 14-day window closed; remind those yet to review |
+| `reputation_recompute` | Daily at 03:00 | Ratings, completion, response times, badges and reliability for everyone recent |
+| `deliverable_reminders` | Daily at 09:00 | Deliverables due in two days, today, or overdue |
+| `deliverable_stats` | Daily at 06:00 | Views, likes and comments for handed-in posts |
+| `payout_run` | Every 20 minutes | Pay what releases owe talent; retry failed payouts after their back-off; resend stuck ones |
+| `payout_validations` | Every 10 minutes | Ask the payout provider about account validations still pending |
+| `escrow_reconcile` | Daily at 02:30 | Yesterday's ledger totals against the gateway's; alert on any difference |
+| `dispatch_notifications` | Every 5 minutes | Notifications held for quiet hours, or whose task went missing, are queued |
 
 Every job is idempotent: it re-checks each row under a lock before changing it. A Postgres advisory lock skips overlapping runs of the same job, and each run is recorded as a `JobRun` (shown in the admin). Run one by hand with `manage.py run_job <name>`.
 
@@ -299,7 +338,7 @@ Each user has one `VerificationCase` per check, kept across attempts. Statuses: 
 Vendor actions on applicants. Every status change still goes through `apps.applications.services` and the one transition table.
 
 - **Rejecting** needs a reason code (`GET /api/v1/hiring/rejection-reasons/`): not a fit, dates, filled, language, missing information, or other. The applicant reads the template's text plus the vendor's optional message. Both are stored, in `status_reason` (shown to the applicant) and `rejection_code` (for the vendor).
-- **Status moves:** `POST /api/v1/applications/{id}/status/` shortlists, moves to interview, offers or rejects.
+- **Status moves:** `POST /api/v1/applications/{id}/status/` shortlists, moves to interview or rejects. Offers go through `POST /api/v1/applications/{id}/offer/`.
 - **Bulk:** `POST /api/v1/gigs/{id}/applications/bulk/` shortlists or rejects up to 100 at once. Each application is its own change, and the response lists which worked and why the others didn't.
 - **Auto-reject rules** live on the gig (`GET`/`PUT /api/v1/gigs/{id}/auto-reject-rules/`), up to 10. The types are a language, a skill, a minimum number of followers and a minimum stay. They run when someone applies: an application that misses a rule is let in and rejected at once by the system (`rejection_code` `auto_rule`), and the reason names each requirement it missed. They're different from the hard eligibility checks, which stop an application being sent at all.
 - **Private notes and tags:** `/applications/{id}/notes/` (add, list, delete your own) and `PUT /applications/{id}/tags/` (up to 10, lower-cased). The applicant list can filter by `tag` and shows tags and note counts. They appear only in the vendor serializers (`VendorApplicationSerializer` and the list item). Tests check that no applicant response contains them.
@@ -320,23 +359,146 @@ One conversation per application, between its talent and the gig's vendor.
 - **Messages:** each has a `seq` (1, 2, 3... in its conversation), given under a lock on the conversation row, so there are no gaps and the API exposes it as an opaque `cursor`. `client_id` makes a resend return the same message. Up to 2,000 characters and 3 attachments (confirmed uploads: JPEG, PNG, WebP or PDF, 10 MB each).
 - **Transport:** REST only. `POST /conversations/{id}/messages/` sends; `GET .../messages/?after=<cursor>` returns what's new (or `before=` for history, or the newest page), plus `other_read_up_to` for read receipts. `POST .../read/` marks the other side's messages read up to a cursor. Clients poll every 4 seconds, only while a chat screen is open and visible, with backoff after errors. Both clients hide this behind a `ChatTransport` interface (`web/src/lib/chat/transport.ts`, `mobile/lib/src/chat/chat_transport.dart`), so a WebSocket transport can replace polling without changing screens.
 - **Unread counts:** a message is unread while `read_at` is empty. `GET /conversations/` gives each conversation's count and last message; `GET /conversations/unread/` gives the total; application lists carry `conversation` and `unread_messages`.
-- **Push:** `chat.message` events queue a notification for the recipient. While one for the same conversation is still waiting to go out, it is updated (count, latest preview) instead of adding another. Delivery arrives with the rest of notifications in Phase 3.
+- **Push:** `chat.message` events notify the recipient. While the last one for the same conversation is unread and its push hasn't gone out, it is updated (count, latest preview) instead of adding another.
 - **Contact-sharing guard** (`apps/chat/leakage.py`): until the application has a booking that isn't cancelled, messages are scanned for phone numbers (digits with any spacing, or spelt out in English or Hindi number words), emails (including "at ... dot com"), links, @handles, UPI IDs and phrases such as WhatsApp, Telegram, "insta id", "call me on" or GPay. Matches become `[hidden]`, and the sender is told why (`notice`). The original text is kept only in a `LeakageEvent` for trust review; the audit log records the kinds, never the text. After confirmation, contact details go through untouched.
 - **Safety:** blocking (`POST`/`DELETE /conversations/{id}/block/`) stops both sides sending. `POST /messages/{id}/report/` reports the other side's message with a reason. Reports and leakage events are reviewed in Django admin ("Mark as reviewed" is audited). Sending is rate-limited (`THROTTLE_CHAT_SEND`, 30/minute). `CHAT_PROFANITY_FILTER` names a filter class that can allow, mask or refuse a message. The default allows everything; `WordListProfanityFilter` masks `CHAT_PROFANITY_WORDS`.
 - **Audit:** opening, masking, blocking, unblocking and reporting are all logged.
 
+### Offers and agreements (`apps/offers`, `apps/agreements`)
+
+**Offers.** An offer is a frozen snapshot of the terms: dates, hours a day and days a week (hour caps), stay, meals, stipend, deliverables, content usage rights and the cancellation policy (`apps/offers/terms.py`). They're checked against the gig's pay model, stored in one canonical JSON form with its SHA-256, and a database trigger (migration `offers.0002`) refuses any change to them, or a delete.
+
+- The vendor starts from `GET /applications/{id}/offer-draft/` (the gig's terms with the applicant's dates) and sends `POST /applications/{id}/offer/`. The application becomes `offered`.
+- The talent accepts (`POST /offers/{id}/accept/`), declines (`/decline/`, which declines the application), or asks for one change (`/counter/`). A counter may only change the dates, hours, stipend, deliverables and usage rights, once per application.
+- The vendor accepts the counter (which books it) or declines it; declining sends the original terms back as a final offer the talent can only accept or decline.
+- Each answer gives the other side a fresh 48 hours (`offer_expires_at`); `expire_offers` ends the application after that. An application that ends lapses its open offer.
+- `GET /applications/{id}/offers/` returns every revision with `changed_fields`, whose turn it is and whether a counter is still allowed. All moves are audited (`offer.sent`, `offer.accepted`, ...) and notify the other side (`offer.countered`, `offer.counter_declined`).
+
+**Agreements.** Accepting an offer creates the booking (awaiting signatures) and agreement version 1 from the accepted terms, in the same transaction.
+
+- **PDF:** after the transaction commits, the version is drawn up from a registered template (`apps/agreements/templates/agreements/agreement_v1.html`) with WeasyPrint, stored in the private media bucket under `agreements/<id>/v<n>-<hash>.pdf`, and its SHA-256, size and template hash recorded. A render that fails doesn't undo the booking: `render_agreements` retries it. The PDF covers the parties, dates and hour caps, what the host provides, deliverables, the content usage rights clause, safety and conduct, the cancellation policy, and how changes work. The API image installs Pango and DejaVu fonts for it.
+- **Legal text: placeholder.** The template's wording has not been reviewed by a lawyer. Every PDF prints a warning on its first section and in every page footer, `TEMPLATES[...].reviewed` is `False`, and the API returns `template_reviewed: false` so the web console and app say so too. A lawyer must review it before launch; the reviewed wording goes in a new template file (templates are never edited once used, since each version records its template's hash).
+- **Signing:** `GET /agreement-versions/{id}/sign/` returns the consent statement and what's needed; `POST` signs. The `ESignProvider` interface (`apps/agreements/esign/`) decides what proves consent. The in-app provider (`ESIGN_PROVIDER`, a code setting) needs the consent box ticked and a fresh OTP re-confirmation: the client re-runs Firebase phone sign-in and sends the new ID token, which must be for the signer's own phone and less than 5 minutes old (`auth_time`). Each signature stores the time, IP address, user agent, device (`X-Client-Device`), the phone confirmed, the consent text word for word and the SHA-256 of the PDF the signer saw, which must match the version's. `FakeESignProvider` is for tests.
+- **Valid only when both have signed.** A version is in force once both sides sign it; the one before is then superseded. Version 1 in force confirms the booking (see Bookings). Check-in needs an agreement in force.
+- **Changes after signing:** `POST /bookings/{id}/agreement/changes/` (`{changes, reason}`) draws up a new version that both must sign again; the version in force stays in force until then. A newer change replaces one still unsigned, the other side can decline it (`/agreement-versions/{id}/decline/`), and dates can't change once the stay has started. When a version with new dates comes into force, the booking's dates follow (audited as `booking.dates_changed`).
+- **Record:** database triggers (migration `agreements.0002`) keep a version's terms, template and people fixed, let its PDF fields be set once only, and make signatures append-only. Drawing up, signing, coming into force, proposing and declining are audited and notify the other side.
+- **Clients:** the web console's Agreements section lists agreements and shows each version with its PDF, signing (with OTP re-confirmation) and changes; the applicant page has the offer form and answers counters. The mobile app's My trips opens the offer (accept, decline, ask for a change) and the agreement (PDF, signing).
+
+### Notifications (`apps/notifications`)
+
+**From events to notifications.** Domain events become notifications in `handlers.py`, inside the transaction of the change: each person concerned gets one `Notification`, rendered in their language. That notification is their in-app inbox item. Who hears about what is the recipients table in `handlers.py`; reminders name their recipients in the event (`notify`).
+
+| Event type (preference key) | Events | On by default |
+|---|---|---|
+| New applicant | `application.applied` | in-app, push, email |
+| Shortlisted | `application.shortlisted` | in-app, push, email |
+| Interview scheduled | `interview.scheduled` | in-app, push, email |
+| Offer sent | `application.offered`, `offer.reopened`, `offer.counter_declined` | in-app, push, email, SMS |
+| Offer about to expire (urgent) | `offer.expiring` | all five |
+| Agreement to sign | `agreement.ready`, `agreement.sign_reminder` | in-app, push, email |
+| Booking confirmed | `booking.confirmed` | all five |
+| New message | `chat.message` | in-app, push |
+| New gigs for a saved search | `gigs.search_alert` | in-app, push |
+| Reminders | `interview.reminder_day`, `interview.reminder_hour` (urgent), `booking.starts_soon` | in-app, push, email |
+| Other updates | every other event that reaches someone | in-app |
+
+**Templates** (`templates.py`): a title and body with `{variables}` per event, in English and Hindi. A test renders every template in both languages and checks it only uses its listed variables. Other updates share one template with a translated label. The Hindi is a first draft for a native speaker to review. Push and in-app show the title and body; email uses the title as subject and adds the link and a note on settings; SMS is "title: body link"; WhatsApp sends the approved template `barterly_<event>_<locale>` with the variables in order.
+
+**Preferences** (`GET`/`PUT /api/v1/notifications/preferences/`): language (English or Hindi), quiet hours (India time, 22:00 to 08:00 by default), and each event type on or off per channel. Only changes from the defaults are stored. In-app can't be switched off. Quiet hours hold back push, SMS and WhatsApp until they end; urgent reminders ignore them, and email and in-app aren't held.
+
+**Channels** (`channels/`): one provider per channel, set in `NOTIFICATION_PROVIDERS`; a channel with none is off for everyone.
+
+| Channel | Provider | Notes |
+|---|---|---|
+| Push | `FcmPushProvider` (firebase-admin, the API's own credentials) | Tokens FCM rejects are switched off |
+| Email | `DjangoEmailProvider` (Django mail, SMTP) | Off in deployed settings until `EMAIL_HOST` is set |
+| SMS | none yet | MSG91, Gupshup or Twilio go behind `ChannelProvider` |
+| WhatsApp | none yet | Needs approved templates named as above |
+
+Fakes for all four (`channels/fake.py`) are used in tests. A provider raises `TemporaryFailure` to be retried, or `PermanentFailure` to stop.
+
+**Delivery.** Each channel gets a `Delivery` row: the delivery log. It starts queued, then becomes sent, failed (permanent), dead (retries used up), skipped (no provider, device, email or phone) or read. Once the transaction commits, each queued delivery becomes a Cloud Task (`notifications.deliver`, delayed to the end of quiet hours if held). Cloud Tasks POSTs it to `/api/v1/tasks/notifications.deliver/` with an OIDC token for the tasks service account. The task sends while holding the delivery's row lock, so a duplicate task can't send twice. A temporary failure answers 503 and Cloud Tasks retries with exponential backoff (10 s to 10 min; `infra/terraform/modules/environment/tasks.tf`). After `NOTIFICATION_MAX_ATTEMPTS` (6) the delivery is dead. The `dispatch_notifications` job (every 5 minutes) queues anything due whose task went missing.
+
+**Deduplication.** A notification's `dedup_key` is unique per person. Events get one from the event and the moment it happened, so handling an event twice makes one notification; reminders bring their own (`offer.expiring:<offer>`), so each goes out once however often the job runs.
+
+**Reminders** (`reminders.py`, the hourly `send_reminders` job):
+- an open offer with 12 hours or less left, to whoever must answer;
+- a version still unsigned by someone a day after it was drawn up;
+- a confirmed stay starting tomorrow, to both sides.
+
+Interview reminders stay in hiring's own job.
+
+**Deep links.** Every notification carries `app_path` (the mobile app's route, for example `/trips/offer/<application>`) and `web_url` (the console page, for example `/console/applicants/<application>`). Push puts them in `data.path` and `data.url`, and in `webpush.fcm_options.link`, along with `data.notification_id`. The mobile app opens `path` when a push is tapped and marks the notification read (`from_push`).
+
+**API.**
+- `GET /api/v1/notifications/` (`?unread=true`), `GET /notifications/unread-count/`, `POST /notifications/{id}/read/`, `POST /notifications/read-all/`
+- `GET`/`PUT /notifications/preferences/`
+- `POST /notifications/devices/` (register an FCM token), `POST /notifications/devices/remove/`
+
+**Admin.** Notifications (with their deliveries), the delivery log, push devices, settings, and **Dead letters**: deliveries whose retries ran out, with a "Send again" action once the cause is fixed.
+
+### Billing (`apps/billing`)
+
+**Plans** are rows (`Plan`, seeded by migration `billing.0002`; edit in admin): price per month before GST, the live gig limit, feature flags, and the Razorpay plan id. The prices are placeholders to set before launch.
+
+| Plan | Live gigs | Talent search | Agreements | AI fit scores | Team roles |
+|---|---|---|---|---|---|
+| Free (no subscription) | 1 | no | yes | no | no |
+| Starter | 1 | no | yes | no | no |
+| Growth | 5 | yes | yes | yes | no |
+| Pro | unlimited | yes | yes | yes | yes |
+
+Agreements are on for every plan: a booking can't be confirmed without one.
+
+**Entitlements** (`entitlements.py`) are the only place that answers what a vendor may do:
+- `current_plan(vendor)`: the subscription's plan while it's authenticated (trial), active, or past due or halted inside its grace period; otherwise Free.
+- `can_post_gig(vendor)`: whether one more gig may go live. Gigs ask through `GIG_PLAN_POLICY = BillingPlanPolicy`, which replaces the unlimited stub.
+- `can_use_feature(vendor, flag)`. Enforced today: AI fit scores (the vendor applicant APIs drop the fit breakdown without it) and talent search (the console page). Team roles has no feature yet.
+
+A downgrade never takes gigs down: live ones keep running, and new ones are refused until the vendor is under the new limit. Upgrades apply at once; downgrades at the end of the period (`pending_plan`, applied on the next `subscription.charged`).
+
+**Razorpay** (`gateway/razorpay.py`, behind `PaymentGateway`; `FakeGateway` in tests):
+- `POST /api/v1/billing/subscribe/ {plan, coupon?}` creates the subscription and returns the hosted checkout link (`checkout_url`).
+- Trials: a coupon's `trial_days`, or `BILLING_LAUNCH_TRIAL_DAYS` for a vendor's first subscription (the launch cohort: set it to 90 to give everyone three months). The card is set up at checkout and the first charge waits (`start_at`).
+- `POST /api/v1/billing/webhooks/razorpay/` takes `subscription.authenticated`, `activated`, `charged`, `pending`, `halted`, `cancelled` and `completed`. The signature (`X-Razorpay-Signature`, HMAC-SHA256 of the body with the webhook secret) is checked first; each event id is recorded once (`WebhookEvent`), so repeats change nothing. Every status change is audited (`billing.subscription_<status>`).
+- Keys live in Secret Manager (`razorpay-key-id-<env>`, `razorpay-key-secret-<env>`, `razorpay-webhook-secret-<env>`; set them with `infra/scripts/set-razorpay-secrets.sh`). Create the three plans in the Razorpay dashboard with the price including GST, and put their ids on the Plan rows.
+
+**GST invoices** (`invoices.py`): one per `subscription.charged` payment (the payment id is unique). The taxable value is worked back from the GST-inclusive charge at 18% (SAC 998314); CGST + SGST when the vendor's state (from their GSTIN, else their profile) matches the supplier's, IGST otherwise. Numbers are sequential per financial year (`BRT/2026-27/000042`) from a locked counter. The supplier's details are settings (`BILLING_SUPPLIER_*`, placeholders until set); the buyer's are copied from the vendor profile at issue. After commit the PDF is drawn with WeasyPrint, stored in Cloud Storage (`invoices/<vendor>/<number>.pdf`) and emailed with the PDF attached; the `billing_invoices` job retries anything left. Vendors list them at `GET /api/v1/billing/invoices/` and download through a 10-minute signed link.
+
+**Dunning:** Razorpay retries a failed charge itself. The first failure (`subscription.pending`) starts a grace period (`BILLING_GRACE_DAYS`, 7) and notifies the vendor (`billing.payment_failed`); paid features stay on, even if Razorpay halts before the grace ends. The daily `billing_dunning` job reminds them two days before it ends (`billing.grace_ending`) and tells them when features lock (`billing.features_locked`). Locked means Free: live gigs keep running, new ones over the limit and paid features wait. A successful charge clears it all.
+
+### Money (`apps/money`)
+
+Escrow for paid and hybrid bookings on a double-entry ledger. The host funds the stipend before check-in; approval of the deliverables (or 72 hours without an answer) releases it as commission + GST + TDS + the talent's payout; disputes freeze it until a finance admin decides. See [money.md](money.md) for the rules, accounts, webhooks, reconciliation and kill switch.
+
+### Attendance (`apps/attendance`)
+
+Talent show a signed QR pass (or read a six-digit code); the console's Arrivals screen, an installable PWA, verifies it offline and queues the check-in until it can sync. Check-in records the talent's distance from the property (flagged over 1 km, never blocking). Check-out completes the stay; a no-show waits for a grace period into the first day. Talent log daily hours, which the host confirms or disputes, within the agreement's weekly cap and day off. See [attendance.md](attendance.md).
+
+### Deliverables (`apps/deliverables`)
+
+For barter and hybrid gigs, each item the agreement lists becomes a deliverable per unit at check-in, due on the last day unless the host moves it. Talent hand in a post link or files; public posts need the collaboration label, which the talent confirms and the platform's caption is checked for. Hosts approve or ask for changes (twice at most). Post stats come from YouTube and, after Meta app review, Instagram, or are self-reported with a screenshot. Approved content shows its usage rights and appears in the host's library. For hybrid gigs, the last submission starts escrow's 72-hour window. See [deliverables.md](deliverables.md).
+
+### Reviews (`apps/reviews`)
+
+After a completed stay each side reviews the other once (overall stars, four category scores, text), double-blind: both publish together when both are in, or when the 14-day window closes. Flagged words and contact details hold a review for moderation, as do reports; published reviews can't be edited (a database trigger enforces it) and get one reply. Reputation (rating, completion rate, response time, badges from rules in settings) and reliability v2 follow. See [reviews.md](reviews.md).
+
+### Privacy (`apps/privacy`)
+
+Consent per purpose (terms, privacy policy, location, social accounts, marketing), each tied to a document version and recorded append-only; withdrawal is the same call as giving. The 18+ declaration and the two required consents are taken at the role step. People export their data (JSON, short-lived signed link), ask for corrections, and delete their account (a grace period, then anonymisation that keeps payments, agreements, disputes and the audit log with personal fields replaced). A daily job purges data past its retention period, auditing each purge. Suspected minors are suspended and go to the trust team. See [privacy.md](privacy.md) and [breach-runbook.md](breach-runbook.md).
+
 ### Audit log
 
-Money and status changes write an `AuditLog` entry through `apps.common.services.audit.log_action()`, in the same transaction as the change. Each entry records the actor, a dotted action (`user.role_changed`), the target's type and id, JSON before/after, the client IP and the request id. Entries are append-only: updates and deletes raise, and the admin is read-only. Users with audit history can't be hard-deleted (`PROTECT`); deactivate them. Role and `is_active` changes go through `apps.accounts.services.users` (and the admin's save hook), which audit them.
+Money and status changes write an `AuditLog` entry through `apps.common.services.audit.log_action()`, in the same transaction as the change. Each entry records the actor, a dotted action (`user.role_changed`), the target's type and id, JSON before/after, the client IP and the request id. Entries are append-only: updates and deletes raise, and the admin is read-only. The one sanctioned rewrite is account anonymisation, which replaces personal values inside an entry's before/after (and is itself audited). Users with audit history can't be hard-deleted (`PROTECT`); deactivate them. Role and `is_active` changes go through `apps.accounts.services.users` (and the admin's save hook), which audit them.
 
 ### Back office (`apps/backoffice`)
 
 Staff work in the Django admin at `/admin/`, served by `BarterlyAdminSite`, which adds review queues. Decisions go through the same services as the API, so they are checked, keep badges in step and write AuditLog rows.
 
 - **Roles.** `super_admin`, `ops`, `trust`, `finance` and `support` are auth groups whose permissions are exactly the lists in `apps/backoffice/roles.py`. They are re-synced after every migrate, so hand edits to a group don't stick. Give or take a role with `manage.py grant_admin_role <phone> <role> [--remove]`; it makes the account a staff admin and is audited. Vendor and talent accounts can't be given a role. Changing someone's groups in the user admin is audited as `user.admin_roles_changed`.
-  - ops: approves gigs, reads accounts, gigs, properties and applications, and reads the audit log.
-  - trust: decides verification cases, reads verification records and KYC events, and reads the audit log.
-  - finance: reads users, gigs, applications and the audit log.
+  - ops: approves gigs, reads accounts, gigs, properties and applications, reads the audit log, and reviews check-ins flagged as far from the property.
+  - trust: decides verification cases, reads verification records and KYC events, moderates held and reported reviews, and reads the audit log.
+  - finance: reads users, gigs, applications, the audit log and everything in money; decides held escrows, runs the escrow kill switch, and starts payout runs and retries.
   - support: read-only lookups, including verification records; no actions and no audit log.
   - super_admin: everything above, plus user and role management.
 - **Verification queue** (`/admin/queues/verification/`, needs `review_verification`). Cases waiting for a decision, oldest first, filterable by status and check. Cases waiting more than 48 hours are flagged overdue. The detail page shows the case facts, masked documents, the user's badges and other checks, and the case's audit history. Approve, request changes, reject and revoke all need a reason; starting a review doesn't.
@@ -359,7 +521,7 @@ Staff work in the Django admin at `/admin/`, served by `BarterlyAdminSite`, whic
 
 ## Web console
 
-Next.js 16 App Router with Cache Components. Pages: `/` (landing), `/login`, `/start` (sends a signed-in person to the right place), `/onboarding/role`, `/onboarding/vendor`, `/talent` (talent are pointed at the mobile app) and `/console/*` (Dashboard, Gigs, Applicants, Talent search, Agreements, Payments, Analytics; unbuilt sections show an empty state).
+Next.js 16 App Router with Cache Components. Pages: `/` (landing), `/login`, `/start` (sends a signed-in person to the right place), `/onboarding/role`, `/onboarding/vendor`, `/talent` (talent are pointed at the mobile app) and `/console/*` (Dashboard, Arrivals, Content, Gigs, Applicants, Talent search, Agreements, Payments, Analytics; unbuilt sections show an empty state).
 
 **Calling the API.** The browser only talks to its own origin. `src/app/api/v1/[...path]/route.ts` forwards `/api/v1/*` to `API_URL`, so the API needs no CORS.
 - The JWTs live in httpOnly, SameSite=Lax cookies (`barterly_access`, `barterly_refresh`) that expire with their tokens. Browser JavaScript never sees a token.
@@ -399,6 +561,24 @@ Flutter 3.47 with Riverpod 3, go_router 18 and Dio. Material comes from the stan
 - The providers wrap repositories: `AuthRepository`, `ProfileRepository`, `GigsRepository`, `ApplicationsRepository` (with `MediaUploader`) and `VerificationRepository`.
 - The repositories use one Dio client.
 - Tests override the providers, or swap in a fake HTTP adapter, so no screen needs a network.
+
+**Money and work screens.**
+- **Wallet tab:**
+  - Balances: held in escrow (with the estimated net), available, on its way, paid out, and TDS this financial year.
+  - Why payouts are on hold, and "Pay out now".
+  - The masked payout account with its verification status and any 24-hour change hold. Linking a UPI id or bank account is validated on the phone the same way the server validates it; full details go to the payout provider and are never shown again.
+  - History of releases and payouts, filterable and paged.
+- **Trip screens:**
+  - The check-in pass: a QR and live code that work offline.
+  - The hour log.
+  - Deliverables, each with its brief (where, when, the host's notes) and a hand-in checklist: matches the brief, the post is public, the collaboration label.
+  - Reviews.
+
+**Location permission.**
+- Location is asked for only when needed: on opening the check-in pass, after a screen explains why, with "Not now".
+- It's asked once per booking, and never again once refused.
+- It's always "while in use". Check-in never needs background location.
+- Background location is used only while a live location share is active (trust and safety).
 
 **Sign-in.**
 1. Firebase phone OTP proves the number. Android may read the SMS itself.

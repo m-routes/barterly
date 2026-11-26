@@ -1,7 +1,21 @@
 project_id   = "barterly-prod-123456"
 state_bucket = "barterly-prod-123456-tfstate"
+
+# Staging mirrors production's edge so changes to it are tried here first (docs/edge.md).
 api_domains  = ["api.staging.barterly.in"]
 web_domains  = ["staging.barterly.in"]
+media_domain = "media.staging.barterly.in"
+edge_enabled = true
+# media_cdn_signing_enabled = true   # after infra/scripts/set-cdn-key.sh staging
 
 # Firebase console -> Project settings -> Your apps -> Web app. Public values.
 # firebase_web = { api_key = "AIza...", app_id = "1:123456789:web:abc123" }
+# The Firebase project people sign in with, when it isn't this Google Cloud project
+# (Firebase console -> Project settings -> Project ID).
+# firebase_project_id = "barterly-17da0"
+# Razorpay and RazorpayX: set to true only after set-razorpay-secrets.sh has stored
+# every value; a secret with no version stops the API's revision starting.
+# razorpay_enabled = false
+
+# Monitoring alerts go here (an email channel each).
+alert_emails = ["ops@example.com"]

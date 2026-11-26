@@ -2,6 +2,8 @@
 # image and traffic split (infra/scripts/deploy.sh), so those are ignored here.
 
 locals {
+  # Firebase may live in its own project (variables.tf: firebase_project_id).
+  firebase_project_id = coalesce(var.firebase_project_id, var.project_id)
 
   deployed_env = {
     DJANGO_SETTINGS_MODULE      = local.settings_module
@@ -11,11 +13,36 @@ locals {
     GS_STATIC_BUCKET            = google_storage_bucket.static.name
     # Firebase Auth lives in the same Google Cloud project; ID tokens are checked
     # against it (public certificates only, no key).
-    FIREBASE_PROJECT_ID = var.project_id
+    FIREBASE_PROJECT_ID = local.firebase_project_id
     # Only Cloud Scheduler's service account may run jobs (see scheduler.tf).
     SCHEDULER_AUDIENCE      = local.api_url
     SCHEDULER_INVOKER_EMAIL = google_service_account.scheduler.email
+    # Background tasks and notification delivery (see tasks.tf).
+    TASK_QUEUE_CLASS     = "apps.media.tasks.CloudTasksQueue"
+    CLOUD_TASKS_PROJECT  = var.project_id
+    CLOUD_TASKS_LOCATION = var.region
+    CLOUD_TASKS_QUEUE    = google_cloud_tasks_queue.tasks.name
+    TASKS_AUDIENCE       = local.api_url
+    TASKS_INVOKER_EMAIL  = google_service_account.tasks.email
+    # Links in emails, SMS and web push open the web console.
+    WEB_APP_URL = local.web_origins[length(local.web_origins) - 1]
+    # Instagram post stats, after Meta app review (see docs/deliverables.md).
+    INSTAGRAM_STATS_ENABLED       = var.instagram_stats_enabled ? "true" : "false"
+    INSTAGRAM_BUSINESS_ACCOUNT_ID = var.instagram_business_account_id
   }
+
+  # Behind the load balancer (edge.tf): its address, so the API can drop its hop from
+  # X-Forwarded-For, and static files from the CDN on the API's own domain.
+  edge_env = var.edge_enabled ? {
+    EDGE_PROXY_IPS = google_compute_global_address.edge[0].address
+    STATIC_URL     = "https://${var.api_domains[0]}/static/"
+  } : {}
+
+  # Media through Cloud CDN once the signing key exists (set-cdn-key.sh).
+  media_cdn_env = local.media_cdn && var.media_cdn_signing_enabled ? {
+    MEDIA_CDN_HOST     = var.media_domain
+    MEDIA_CDN_KEY_NAME = var.media_cdn_key_name
+  } : {}
 }
 
 resource "google_cloud_run_v2_service" "api" {
@@ -58,11 +85,11 @@ resource "google_cloud_run_v2_service" "api" {
       }
 
       dynamic "env" {
-        for_each = merge(local.deployed_env, {
+        for_each = merge(local.deployed_env, local.edge_env, local.media_cdn_env, {
           GS_SA_EMAIL      = google_service_account.api.email
           WEB_CONCURRENCY  = tostring(var.api_workers)
           DB_POOL_MAX_SIZE = tostring(var.db_pool_max_size)
-        })
+        }, var.clamav_enabled ? { CLAMAV_HOST = "localhost" } : {})
         content {
           name  = env.key
           value = env.value
@@ -89,6 +116,105 @@ resource "google_cloud_run_v2_service" "api" {
         }
       }
 
+      # Payments, escrow and payouts (Razorpay, RazorpayX), wired once their secrets
+      # have values (var.razorpay_enabled).
+      dynamic "env" {
+        for_each = var.razorpay_enabled ? {
+          RAZORPAY_KEY_ID                = "razorpay_key_id"
+          RAZORPAY_KEY_SECRET            = "razorpay_key_secret"
+          RAZORPAY_WEBHOOK_SECRET        = "razorpay_webhook_secret"
+          RAZORPAY_ESCROW_WEBHOOK_SECRET = "razorpay_escrow_webhook_secret"
+          RAZORPAYX_WEBHOOK_SECRET       = "razorpayx_webhook_secret"
+          RAZORPAYX_ACCOUNT_NUMBER       = "razorpayx_account_number"
+        } : {}
+        content {
+          name = env.key
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.this[env.value].secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+
+      env {
+        name = "ATTENDANCE_SIGNING_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.this["attendance_signing_key"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "FIELD_ENCRYPTION_KEYS"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.this["field_encryption_keys"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      # Post stats. Each is wired only once its secret has a value (a secret with no
+      # version would stop the revision starting): set the variables after adding them.
+      dynamic "env" {
+        for_each = var.youtube_stats_enabled ? ["YOUTUBE_API_KEY"] : []
+        content {
+          name = env.value
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.this["youtube_api_key"].secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.instagram_stats_enabled ? ["INSTAGRAM_GRAPH_TOKEN"] : []
+        content {
+          name = env.value
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.this["instagram_graph_token"].secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+
+      # Optional integrations (secrets.tf), wired once the secret has a value.
+      dynamic "env" {
+        for_each = {
+          for name, secret in {
+            SENTRY_DSN          = var.sentry_enabled ? "sentry_dsn" : ""
+            EMAIL_HOST_PASSWORD = var.email_enabled ? "email_host_password" : ""
+            KYC_WEBHOOK_SECRET  = var.kyc_webhook_enabled ? "kyc_webhook_secret" : ""
+            MEDIA_CDN_KEY       = local.media_cdn && var.media_cdn_signing_enabled ? "media_cdn_key" : ""
+          } : name => secret if secret != ""
+        }
+        content {
+          name = env.key
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.this[env.value].secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.sentry_enabled ? ["1"] : []
+        content {
+          name  = "SENTRY_ENABLED"
+          value = env.value
+        }
+      }
+
       # TCP only: an HTTP probe would hit the database and fail during a Cloud SQL restart.
       volume_mounts {
         name       = "cloudsql"
@@ -102,6 +228,31 @@ resource "google_cloud_run_v2_service" "api" {
         period_seconds    = 2
         failure_threshold = 30
         timeout_seconds   = 1
+      }
+    }
+
+    # Optional ClamAV sidecar (apps.media.scanning.ClamdVirusScanner). The API reaches
+    # it on localhost:3310. clamd holds its signatures in memory, so it needs ~2 GiB.
+    dynamic "containers" {
+      for_each = var.clamav_enabled ? [1] : []
+      content {
+        name  = "clamav"
+        image = var.clamav_image
+        resources {
+          limits = {
+            cpu    = "1"
+            memory = "2Gi"
+          }
+          cpu_idle = true
+        }
+        startup_probe {
+          tcp_socket {
+            port = 3310
+          }
+          initial_delay_seconds = 10
+          period_seconds        = 10
+          failure_threshold     = 30
+        }
       }
     }
   }
@@ -156,7 +307,7 @@ resource "google_cloud_run_v2_service" "web" {
 
       env {
         name  = "API_URL"
-        value = local.api_url
+        value = local.web_api_url
       }
 
       env {
@@ -164,10 +315,34 @@ resource "google_cloud_run_v2_service" "web" {
         value = local.env
       }
 
+      # Error reporting (web/src/instrumentation*.ts), once the sentry-dsn secret has
+      # a value and sentry_enabled is set.
+      dynamic "env" {
+        for_each = var.sentry_enabled ? ["SENTRY_DSN"] : []
+        content {
+          name = env.value
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.this["sentry_dsn"].secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+
+      # Acceptance tests may sign in with Firebase test numbers (qa.tf).
+      dynamic "env" {
+        for_each = var.qa_enabled ? ["1"] : []
+        content {
+          name  = "FIREBASE_TEST_NUMBERS_ALLOWED"
+          value = env.value
+        }
+      }
+
       # Phone sign-in (Firebase web SDK). Read at request time by the login page.
       env {
         name  = "FIREBASE_PROJECT_ID"
-        value = var.project_id
+        value = local.firebase_project_id
       }
 
       env {
@@ -241,7 +416,7 @@ resource "google_cloud_run_v2_job" "migrate" {
         }
 
         dynamic "env" {
-          for_each = merge(local.deployed_env, { DB_POOL_MAX_SIZE = "2" })
+          for_each = merge(local.deployed_env, local.edge_env, { DB_POOL_MAX_SIZE = "2" })
           content {
             name  = env.key
             value = env.value
@@ -263,6 +438,28 @@ resource "google_cloud_run_v2_job" "migrate" {
           value_source {
             secret_key_ref {
               secret  = google_secret_manager_secret.this["database_url"].secret_id
+              version = "latest"
+            }
+          }
+        }
+
+        # Deployed settings require it (they load before `release` runs).
+        env {
+          name = "ATTENDANCE_SIGNING_KEY"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.this["attendance_signing_key"].secret_id
+              version = "latest"
+            }
+          }
+        }
+
+        # The migration's reverse step and reencrypt_fields need the keys.
+        env {
+          name = "FIELD_ENCRYPTION_KEYS"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.this["field_encryption_keys"].secret_id
               version = "latest"
             }
           }

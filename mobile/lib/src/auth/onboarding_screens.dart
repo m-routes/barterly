@@ -1,6 +1,7 @@
 import 'package:barterly/src/api/api_error.dart';
 import 'package:barterly/src/auth/session.dart';
 import 'package:barterly/src/auth/user.dart';
+import 'package:barterly/src/privacy/agreements_checklist.dart';
 import 'package:barterly/src/providers.dart';
 import 'package:barterly/src/theme/tokens.dart';
 import 'package:barterly/src/widgets/brand.dart';
@@ -43,6 +44,9 @@ class JoinAsTalentScreen extends ConsumerStatefulWidget {
 }
 
 class _JoinState extends ConsumerState<JoinAsTalentScreen> {
+  bool _adult = false;
+  bool _terms = false;
+  bool _privacy = false;
   bool _busy = false;
   String? _error;
 
@@ -91,6 +95,15 @@ class _JoinState extends ConsumerState<JoinAsTalentScreen> {
                 color: BarterlyColors.inkMuted,
               ),
             ),
+            const SizedBox(height: BarterlySpace.lg),
+            AgreementsChecklist(
+              adult: _adult,
+              terms: _terms,
+              privacy: _privacy,
+              onAdult: (v) => setState(() => _adult = v),
+              onTerms: (v) => setState(() => _terms = v),
+              onPrivacy: (v) => setState(() => _privacy = v),
+            ),
             if (_error != null) ...[
               const SizedBox(height: BarterlySpace.lg),
               Text(
@@ -100,7 +113,9 @@ class _JoinState extends ConsumerState<JoinAsTalentScreen> {
             ],
             const SizedBox(height: BarterlySpace.xl),
             FilledButton(
-              onPressed: _busy ? null : _join,
+              onPressed: _busy || !(_adult && _terms && _privacy)
+                  ? null
+                  : _join,
               child: Text(_busy ? 'Joining…' : 'Join as talent'),
             ),
             const SizedBox(height: BarterlySpace.md),

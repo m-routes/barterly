@@ -7,6 +7,7 @@ the second time. A Postgres advisory lock also stops two runs of the same job fr
 overlapping. Each run is recorded as a JobRun.
 """
 
+import logging
 import zlib
 from collections.abc import Callable
 from datetime import timedelta
@@ -14,25 +15,48 @@ from datetime import timedelta
 from django.db import connection, transaction
 from django.utils import timezone
 
+from apps.agreements.services import render_pending
 from apps.applications import services as applications
 from apps.applications.constants import ApplicationStatus
 from apps.applications.models import Application
+from apps.billing.invoices import finish_pending as finish_invoices
+from apps.billing.services import dunning as billing_dunning
+from apps.bookings.cancellation import cancel_unsigned
 from apps.bookings.lifecycle import OFFER_TTL, STALE_INTERVIEW_AFTER, Actor
 from apps.bookings.models import JobRun
+from apps.common import backlog
 from apps.common.events import DomainEvent, publish
+from apps.common.ops import ops_event
 from apps.common.services.audit import log_action
+from apps.deliverables import services as deliverables
 from apps.discovery.alerts import run_alerts
 from apps.gigs.services import close_expired_gigs
 from apps.hiring.services import send_reminders
+from apps.money import payout_accounts, payouts, reconciliation
+from apps.money.escrow import auto_release
+from apps.notifications.reminders import send_reminders as send_booking_reminders
+from apps.notifications.services import dispatch_due
+from apps.offers.models import Offer, OfferStatus
+from apps.privacy.services import erasure as privacy_erasure
+from apps.privacy.services import retention as privacy_retention
+from apps.reviews import reputation as reputations
+from apps.reviews import services as reviews
 from apps.verification.services.cases import expire_due_cases
 from apps.verification.services.kyc import sync_pending
 
 
 def expire_offers(now) -> dict[str, int]:
-    """Offers with no reply within 48 hours lapse (offered → expired)."""
+    """Offers with no reply within 48 hours lapse (offered → expired), as do offers held
+    for a place that never opened (their deadline is the stay's start). Bookings still
+    awaiting signatures when the stay starts are cancelled."""
     due = Application.objects.filter(
         status=ApplicationStatus.OFFERED, offer_expires_at__lte=now
     ).values_list("pk", flat=True)
+    held = set(
+        Offer.objects.filter(application_id__in=due, status=OfferStatus.HELD).values_list(
+            "application_id", flat=True
+        )
+    )
     expired = skipped = 0
     for pk in list(due):
         try:
@@ -40,13 +64,17 @@ def expire_offers(now) -> dict[str, int]:
                 pk,
                 ApplicationStatus.EXPIRED,
                 actor=Actor.SYSTEM,
-                reason=f"No reply within {int(OFFER_TTL.total_seconds() // 3600)} hours.",
+                reason=(
+                    "No place opened up before the stay."
+                    if pk in held
+                    else f"No reply within {int(OFFER_TTL.total_seconds() // 3600)} hours."
+                ),
                 now=now,
             )
             expired += 1
         except applications.InvalidApplicationTransition:
             skipped += 1  # answered (or already expired) since we looked
-    return {"expired": expired, "skipped": skipped}
+    return {"expired": expired, "skipped": skipped, **cancel_unsigned(now)}
 
 
 def flag_stale_interviews(now) -> dict[str, int]:
@@ -113,6 +141,22 @@ JOBS: dict[str, Callable[..., dict]] = {
     "sync_kyc_results": lambda now: sync_pending(timedelta(minutes=30)),
     "run_search_alerts": lambda now: run_alerts(now),
     "send_interview_reminders": lambda now: send_reminders(now),
+    "render_agreements": render_pending,
+    "send_reminders": lambda now: send_booking_reminders(now),
+    "dispatch_notifications": lambda now: dispatch_due(now),
+    "billing_dunning": lambda now: billing_dunning(now),
+    "billing_invoices": lambda now: finish_invoices(now),
+    "escrow_auto_release": lambda now: auto_release(now),
+    "reviews_close_windows": lambda now: reviews.close_windows(now),
+    "reputation_recompute": lambda now: reputations.recompute_all(now),
+    "deliverable_reminders": lambda now: deliverables.send_reminders(now),
+    "deliverable_stats": lambda now: deliverables.refresh_all(now),
+    "payout_run": lambda now: payouts.scheduled(now),
+    "payout_validations": lambda now: payout_accounts.sync_pending(now),
+    "escrow_reconcile": lambda now: reconciliation.run_job(now),
+    "ops_backlog": lambda now: backlog.report(now),
+    "privacy_retention": lambda now: privacy_retention.purge(now),
+    "privacy_deletions": lambda now: privacy_erasure.run_due(now),
 }
 
 
@@ -134,6 +178,7 @@ def run(name: str, *, trigger: str = "scheduler", now=None) -> JobRun:
         record.result = job(now or timezone.now())
     except Exception as exc:
         record.error = f"{type(exc).__name__}: {exc}"
+        ops_event("job_failed", level=logging.ERROR, job=name, error=type(exc).__name__)
         raise
     finally:
         record.finished_at = timezone.now()

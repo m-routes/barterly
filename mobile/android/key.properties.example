@@ -1,0 +1,7 @@
+# Copy to android/key.properties (gitignored) on the machine that builds releases.
+# The keystore lives outside the repo, e.g. in a password manager attachment.
+# docs/release.md, "Signing".
+storeFile=/absolute/path/to/barterly-upload.jks
+storePassword=
+keyAlias=upload
+keyPassword=

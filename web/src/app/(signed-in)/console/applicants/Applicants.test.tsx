@@ -2,7 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { applicant, application, gig, page } from "../../../../../test/fixtures";
+import { applicant, application, gig, offerThread, page } from "../../../../../test/fixtures";
 import { jsonResponse } from "../../../../../test/http";
 
 import { ApplicantDetail } from "./ApplicantDetail";
@@ -29,6 +29,9 @@ beforeEach(() => {
     }
     if (path === `/api/v1/applications/${application.id}/`) {
       return Promise.resolve(jsonResponse(200, application));
+    }
+    if (path === `/api/v1/applications/${application.id}/offers/`) {
+      return Promise.resolve(jsonResponse(200, offerThread()));
     }
     return Promise.resolve(jsonResponse(404, { code: "not_found", message: "No.", details: {} }));
   });
@@ -86,6 +89,7 @@ describe("ApplicantDetail", () => {
     expect(screen.getByText(application.pitch)).toBeVisible();
     expect(screen.getByText("Can you commit to the full dates?")).toBeVisible();
     expect(screen.getByText("1 of 1 skills match.")).toBeVisible();
+    expect(screen.getByText("Reliability 62/100 · Good")).toBeVisible();
     expect(screen.getByText("Not enough data yet.")).toBeVisible();
     expect(screen.getByRole("link", { name: "https://example.org/portfolio" })).toHaveAttribute(
       "rel",

@@ -97,7 +97,9 @@ class MessagePageSerializer(serializers.Serializer):
 
 
 class ReadSerializer(serializers.Serializer):
-    up_to = serializers.CharField(help_text="A message cursor; everything up to it is read.")
+    up_to = serializers.CharField(
+        max_length=200, help_text="A message cursor; everything up to it is read."
+    )
 
 
 class ReadResultSerializer(serializers.Serializer):

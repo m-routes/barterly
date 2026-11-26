@@ -1,0 +1,30 @@
+# Groups for GitHub's generated release notes (deploy.yml publishes them on each
+# production tag, infra/scripts/changelog.sh writes the same into CHANGELOG.md).
+# Label PRs before merging; unlabelled ones land under "Other changes".
+changelog:
+  exclude:
+    labels:
+      - skip-changelog
+  categories:
+    - title: Breaking changes
+      labels:
+        - breaking
+    - title: New features
+      labels:
+        - enhancement
+        - feature
+    - title: Fixes
+      labels:
+        - bug
+    - title: Security
+      labels:
+        - security
+    - title: Accessibility
+      labels:
+        - accessibility
+    - title: Documentation
+      labels:
+        - documentation
+    - title: Other changes
+      labels:
+        - "*"

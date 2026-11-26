@@ -28,6 +28,7 @@ LOOKUP = [
     "properties.view_propertyphoto",
     "gigs.view_gig",
     "applications.view_application",
+    "bookings.view_booking",
 ]
 VERIFICATION_READ = [
     "verification.view_verificationcase",
@@ -43,21 +44,50 @@ PERMISSIONS: dict[str, list[str]] = {
         *LOOKUP,
         "backoffice.review_gigs",
         "backoffice.view_audit_log",
+        "bookings.change_booking",
+        "flags.toggle_flag",
+        "appversions.set_app_version",
+        "attendance.view_checkin",
+        "attendance.review_checkin",
     ],
-    # Verification and fraud: decides cases, sees badges and provider events.
+    # Verification, fraud and reviews: decides cases, sees badges and provider events,
+    # moderates held and reported reviews.
     AdminRole.TRUST: [
         *LOOKUP,
         *VERIFICATION_READ,
         "verification.view_kycwebhookevent",
         "backoffice.review_verification",
         "backoffice.view_audit_log",
+        "bookings.change_booking",
+        "media.view_mediafile",
+        "flags.toggle_flag",
+        "reviews.view_review",
+        "reviews.view_reviewreport",
+        "reviews.moderate_review",
     ],
-    # Money: reads gigs (stipends) and the audit trail of money changes.
+    # Money: reads gigs (stipends), the ledger and escrows, and the audit trail of money
+    # changes; decides held escrows and runs the kill switch.
     AdminRole.FINANCE: [
         "accounts.view_user",
         "gigs.view_gig",
         "applications.view_application",
+        "bookings.view_booking",
         "backoffice.view_audit_log",
+        "money.view_account",
+        "money.view_ledgertransaction",
+        "money.view_ledgerentry",
+        "money.view_escrow",
+        "money.view_payoutaccount",
+        "money.view_deliverablesubmission",
+        "money.view_gatewayevent",
+        "money.view_reconciliationrun",
+        "money.view_escrowcontrol",
+        "money.decide_escrow",
+        "money.toggle_kill_switch",
+        "flags.toggle_flag",
+        "money.view_payoutrun",
+        "money.view_payout",
+        "money.run_payouts",
     ],
     # Helps people: looks things up, changes nothing.
     AdminRole.SUPPORT: [*LOOKUP, *VERIFICATION_READ],

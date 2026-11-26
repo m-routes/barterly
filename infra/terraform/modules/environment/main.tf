@@ -21,10 +21,16 @@ locals {
 
   api_hosts = concat([local.api_run_host, local.api_candidate_host], var.api_domains)
   api_url   = length(var.api_domains) > 0 ? "https://${var.api_domains[0]}" : "https://${local.api_run_host}"
+  web_url   = length(var.web_domains) > 0 ? "https://${var.web_domains[0]}" : "https://${local.web_run_host}"
   web_origins = concat(
     ["https://${local.web_run_host}"],
     [for d in var.web_domains : "https://${d}"],
   )
 
   settings_module = "config.settings.${local.env}"
+
+  # The web server calls the API server-to-server. Behind the edge it uses the run.app
+  # URL directly, so its traffic isn't counted against Cloud Armor's per-IP limits as if
+  # every browser were the web server (docs/edge.md).
+  web_api_url = var.edge_enabled ? "https://${local.api_run_host}" : local.api_url
 }

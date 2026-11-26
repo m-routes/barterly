@@ -17,6 +17,14 @@ export const CONSOLE_SECTIONS: readonly ConsoleSection[] = [
     },
   },
   {
+    href: "/console/arrivals",
+    label: "Arrivals",
+    empty: {
+      title: "No one arriving today",
+      description: "Check talent in by scanning their pass, even without signal.",
+    },
+  },
+  {
     href: "/console/gigs",
     label: "Gigs",
     empty: {
@@ -75,11 +83,27 @@ export const CONSOLE_SECTIONS: readonly ConsoleSection[] = [
     },
   },
   {
-    href: "/console/payments",
-    label: "Payments",
+    href: "/console/content",
+    label: "Content",
     empty: {
-      title: "No payments yet",
-      description: "Stipends and paid gigs will be tracked here, with receipts for each payment.",
+      title: "No content yet",
+      description: "Reels, posts and photos talent hand in for barter and hybrid gigs.",
+    },
+  },
+  {
+    href: "/console/billing",
+    label: "Billing",
+    empty: {
+      title: "No plan yet",
+      description: "Choose a plan, and find your GST invoices here.",
+    },
+  },
+  {
+    href: "/console/privacy",
+    label: "Privacy",
+    empty: {
+      title: "Your privacy settings",
+      description: "Consents, a copy of your data, corrections and deleting your account.",
     },
   },
   {

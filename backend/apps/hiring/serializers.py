@@ -1,11 +1,16 @@
 """Vendor-only serializers. Only views that check the requester is the gig's vendor
 (or an admin) use these: notes and tags must never reach an applicant."""
 
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.applications.serializers import ApplicationListItemSerializer, ApplicationSerializer
+from apps.discovery.serializers import FitSerializer
+from apps.hiring.autoreject import MAX_RULES
 from apps.hiring.models import MAX_SLOTS, MAX_TAGS, ApplicationNote, SavedApplicantFilter
 from apps.hiring.templates import MAX_MESSAGE, TEMPLATES, VENDOR_REASONS
+from apps.profiles.constants import MAX_LANGUAGES, MAX_SKILLS
+from apps.verification.constants import BadgeKind
 
 
 class NoteSerializer(serializers.ModelSerializer):
@@ -15,6 +20,24 @@ class NoteSerializer(serializers.ModelSerializer):
         model = ApplicationNote
         fields = ["id", "body", "author", "created_at"]
         read_only_fields = ["id", "author", "created_at"]
+
+
+def vendor_fit(serializer, application) -> dict:
+    """The fit score, with its AI breakdown only on plans that include AI fit scores
+    (asked once per response, not per row)."""
+    from apps.billing.entitlements import can_use_feature
+
+    context = serializer.context
+    if "ai_fit_scores" not in context:
+        request = context.get("request")
+        user = getattr(request, "user", None)
+        context["ai_fit_scores"] = bool(
+            user is None
+            or getattr(user, "is_admin_role", False)
+            or can_use_feature(user, "ai_fit_scores")
+        )
+    breakdown = application.fit_breakdown if context["ai_fit_scores"] else {}
+    return {"score": application.fit_score, "breakdown": breakdown}
 
 
 class VendorApplicationSerializer(ApplicationSerializer):
@@ -28,6 +51,10 @@ class VendorApplicationSerializer(ApplicationSerializer):
     class Meta(ApplicationSerializer.Meta):
         fields = [*ApplicationSerializer.Meta.fields, "rejection_code", "notes", "tags"]
         read_only_fields = fields
+
+    @extend_schema_field(FitSerializer)
+    def get_fit(self, application):
+        return vendor_fit(self, application)
 
 
 class VendorApplicationListItemSerializer(ApplicationListItemSerializer):
@@ -45,6 +72,10 @@ class VendorApplicationListItemSerializer(ApplicationListItemSerializer):
             "note_count",
         ]
         read_only_fields = fields
+
+    @extend_schema_field(FitSerializer)
+    def get_fit(self, application):
+        return vendor_fit(self, application)
 
 
 class BulkSerializer(serializers.Serializer):
@@ -75,10 +106,14 @@ class TagsSerializer(serializers.Serializer):
 
 
 class FilterParamsSerializer(serializers.Serializer):
-    status = serializers.CharField(required=False, allow_blank=True, help_text="Comma list.")
+    status = serializers.CharField(
+        required=False, allow_blank=True, max_length=200, help_text="Comma list."
+    )
     min_score = serializers.IntegerField(required=False, min_value=0, max_value=100)
     sort = serializers.ChoiceField(choices=["fit", "newest", "oldest"], required=False)
     tag = serializers.CharField(required=False, max_length=30)
+    q = serializers.CharField(required=False, allow_blank=True, max_length=80)
+    badge = serializers.ChoiceField(choices=BadgeKind.choices, required=False)
 
 
 class SavedFilterSerializer(serializers.ModelSerializer):
@@ -97,13 +132,17 @@ class SavedFilterSerializer(serializers.ModelSerializer):
 
 class RuleSerializer(serializers.Serializer):
     type = serializers.ChoiceField(choices=["language", "skill", "min_followers", "min_stay_days"])
-    languages = serializers.ListField(child=serializers.CharField(), required=False)
-    skills = serializers.ListField(child=serializers.CharField(), required=False)
+    languages = serializers.ListField(
+        child=serializers.CharField(max_length=10), max_length=MAX_LANGUAGES, required=False
+    )
+    skills = serializers.ListField(
+        child=serializers.CharField(max_length=60), max_length=MAX_SKILLS, required=False
+    )
     value = serializers.IntegerField(required=False)
 
 
 class RulesSerializer(serializers.Serializer):
-    rules = RuleSerializer(many=True)
+    rules = RuleSerializer(many=True, max_length=MAX_RULES)
 
 
 class ProposeInterviewSerializer(serializers.Serializer):

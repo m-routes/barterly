@@ -19,6 +19,7 @@ from apps.bookings.lifecycle import TRANSITIONS, Actor
 from apps.common.models import AuditLog
 from apps.gigs.constants import GigStatus, RequiredVerification
 from apps.notifications.models import Notification
+from apps.offers.tests.helpers import make_offer_for
 from apps.profiles.models import TalentProfile
 from apps.profiles.tests.factories import SkillFactory, TalentProfileFactory
 from apps.verification.tests.factories import MediaFileFactory
@@ -168,7 +169,7 @@ class TestTransitions:
         talent, gig = eligible_talent(), live_gig()
         application = do_apply(talent, gig)
         transition(application.pk, S.SHORTLISTED, actor=Actor.VENDOR, user=gig.vendor)
-        transition(application.pk, S.OFFERED, actor=Actor.VENDOR, user=gig.vendor)
+        make_offer_for(application)
         application = withdraw(application.pk, talent=talent)
         assert application.status == S.WITHDRAWN and application.decided_at
         entry = AuditLog.objects.filter(action="application.withdrawn").get()

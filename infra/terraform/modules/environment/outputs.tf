@@ -36,3 +36,26 @@ output "database_instance" {
   description = "Cloud SQL connection name (PROJECT:REGION:INSTANCE)."
   value       = google_sql_database_instance.main.connection_name
 }
+
+output "edge_ip" {
+  description = "The load balancer's address: point every domain's A record here."
+  value       = var.edge_enabled ? google_compute_global_address.edge[0].address : null
+}
+
+output "dns_records" {
+  description = "DNS records to create at the registrar (docs/edge.md)."
+  value = var.edge_enabled ? [
+    for domain in distinct(concat(var.api_domains, var.web_domains, var.media_domain == "" ? [] : [var.media_domain])) :
+    { name = domain, type = "A", value = google_compute_global_address.edge[0].address }
+  ] : []
+}
+
+output "certificate_name" {
+  description = "Check provisioning with: gcloud compute ssl-certificates describe <name> --global"
+  value       = var.edge_enabled ? google_compute_managed_ssl_certificate.edge[0].name : null
+}
+
+output "media_backend_bucket" {
+  description = "Backend bucket that holds the CDN signing key (set-cdn-key.sh)."
+  value       = var.edge_enabled && var.media_domain != "" ? google_compute_backend_bucket.media[0].name : null
+}

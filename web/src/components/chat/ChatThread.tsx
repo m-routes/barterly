@@ -159,10 +159,13 @@ export function ChatThread({
   conversationId,
   transport = defaultTransport(),
   backHref,
+  embedded = false,
 }: {
   conversationId: string;
   transport?: ChatTransport;
   backHref: string;
+  /** Inside another screen (the applicant drawer): no page frame or back link. */
+  embedded?: boolean;
 }) {
   const detail = useLoad(
     () =>
@@ -286,19 +289,27 @@ export function ChatThread({
   const c = detail.state.data;
 
   return (
-    <div className="page page--narrow chat">
-      <header className="page__header">
-        <Link href={backHref} className="back-link">
-          All messages
-        </Link>
+    <div className={embedded ? "chat chat--embedded" : "page page--narrow chat"}>
+      <header className={embedded ? "chat__header" : "page__header"}>
+        {embedded ? null : (
+          <Link href={backHref} className="back-link">
+            All messages
+          </Link>
+        )}
         <div className="page__title-row">
-          <h1 className="page__title">{c.other.name}</h1>
+          {embedded ? (
+            <h3 className="panel__title">Chat with {c.other.name}</h3>
+          ) : (
+            <h1 className="page__title">{c.other.name}</h1>
+          )}
           <ApplicationStatusChip status={c.application_status} />
         </div>
-        <p className="page__lead">
-          About {c.gig_title} ·{" "}
-          <Link href={`/console/applicants/${c.application}`}>View application</Link>
-        </p>
+        {embedded ? null : (
+          <p className="page__lead">
+            About {c.gig_title} ·{" "}
+            <Link href={`/console/applicants/${c.application}`}>View application</Link>
+          </p>
+        )}
         <div className="chat__actions">
           <Button variant="ghost" onClick={() => void toggleBlock(c)}>
             {c.blocked_by_me ? "Unblock" : "Block"}

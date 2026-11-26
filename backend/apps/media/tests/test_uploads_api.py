@@ -287,7 +287,7 @@ def test_owner_and_admins_get_fresh_signed_urls(api):
     url = reverse("media:detail", args=[media_id])
     assert api.get(url).json()["url"].startswith("https://storage.test/read/")
     admin = APIClient()
-    admin.force_authenticate(AdminUserFactory())
+    admin.force_authenticate(AdminUserFactory(roles=["trust"]))
     assert admin.get(url).json()["url"]
     # An admin can look, but can't confirm someone else's upload.
     assert admin.post(CONFIRM, {"media_id": media_id}, format="json").status_code == 404

@@ -118,6 +118,26 @@ variable "db_pool_max_size" {
   default     = 4
 }
 
+variable "firebase_project_id" {
+  description = <<-EOT
+    The Firebase project that signs people in (phone auth). Sign-in tokens are checked
+    against it, and the web console's Firebase SDK uses it. Empty = this Google Cloud
+    project (when Firebase was added to it rather than created separately).
+  EOT
+  type        = string
+  default     = ""
+}
+
+variable "razorpay_enabled" {
+  description = <<-EOT
+    Wire the Razorpay and RazorpayX secrets into the API. Add their values first
+    (infra/scripts/set-razorpay-secrets.sh): a secret with no version stops the
+    revision starting. Off, payments, escrow and payouts are unavailable.
+  EOT
+  type        = bool
+  default     = true
+}
+
 variable "firebase_web" {
   description = <<-EOT
     Firebase web app config for phone sign-in on the web console (Firebase console ->
@@ -129,4 +149,140 @@ variable "firebase_web" {
     app_id  = string
   })
   default = { api_key = "", app_id = "" }
+}
+
+variable "youtube_stats_enabled" {
+  description = "Wire YOUTUBE_API_KEY into the API (add the secret's value first)."
+  type        = bool
+  default     = false
+}
+
+variable "instagram_stats_enabled" {
+  description = "Fetch Instagram post stats. Needs Meta app review, the Graph token secret and the business account id."
+  type        = bool
+  default     = false
+}
+
+variable "instagram_business_account_id" {
+  description = "Barterly's Instagram business account id (for business discovery)."
+  type        = string
+  default     = ""
+}
+
+variable "sentry_enabled" {
+  description = "Send errors to Sentry (add the sentry-dsn secret's value first)."
+  type        = bool
+  default     = false
+}
+
+variable "email_enabled" {
+  description = "Wire EMAIL_HOST_PASSWORD (add the email-host-password secret's value first)."
+  type        = bool
+  default     = false
+}
+
+variable "kyc_webhook_enabled" {
+  description = "Wire KYC_WEBHOOK_SECRET (add the kyc-webhook-secret value first)."
+  type        = bool
+  default     = false
+}
+
+variable "clamav_enabled" {
+  description = "Run clamd beside the API and scan every upload before it's served."
+  type        = bool
+  default     = false
+}
+
+variable "clamav_image" {
+  description = "The clamd image (official ClamAV, pinned)."
+  type        = string
+  default     = "clamav/clamav:1.4.3"
+}
+
+# ---------- Monitoring (monitoring.tf) ----------
+
+variable "alert_emails" {
+  description = "Who gets alerts. Empty: metrics, uptime checks and the SLO exist, no alerts."
+  type        = list(string)
+  default     = []
+}
+
+variable "availability_slo" {
+  description = "Share of API requests that must succeed over 28 days (docs/slo.md)."
+  type        = number
+  default     = 0.995
+}
+
+variable "error_rate_alert" {
+  description = "5xx share of requests over 10 minutes that alerts."
+  type        = number
+  default     = 0.02
+}
+
+variable "latency_p95_alert_ms" {
+  description = "p95 request latency (ms) over 10 minutes that alerts."
+  type        = number
+  default     = 1500
+}
+
+variable "queue_depth_alert" {
+  description = "Cloud Tasks waiting for 15 minutes that alerts."
+  type        = number
+  default     = 200
+}
+
+variable "db_connection_alert" {
+  description = "Open database connections that alert (set near the tier's limit)."
+  type        = number
+  default     = 80
+}
+
+# ---------- Edge: load balancer, TLS, Cloud Armor, CDN (edge.tf) ----------
+
+variable "edge_enabled" {
+  description = "Put the domains behind a global HTTPS load balancer with Cloud Armor and Cloud CDN (docs/edge.md). Needs api_domains and web_domains."
+  type        = bool
+  default     = false
+}
+
+variable "media_domain" {
+  description = "Host for media through Cloud CDN, e.g. media.barterly.in. Empty: media stays on Cloud Storage signed URLs."
+  type        = string
+  default     = ""
+}
+
+variable "media_cdn_signing_enabled" {
+  description = "Serve media reads through the CDN. Set after infra/scripts/set-cdn-key.sh has added the signing key (it also creates Cloud CDN's fill account)."
+  type        = bool
+  default     = false
+}
+
+variable "media_cdn_key_name" {
+  description = "Name of the Cloud CDN signing key on the media backend bucket (set-cdn-key.sh)."
+  type        = string
+  default     = "media-key-1"
+}
+
+variable "armor_preview" {
+  description = "Cloud Armor WAF and rate-limit rules only log (preview) instead of blocking."
+  type        = bool
+  default     = false
+}
+
+variable "armor_requests_per_minute" {
+  description = "Requests per minute per client IP before Cloud Armor answers 429. High on purpose: mobile carriers share addresses (CGNAT)."
+  type        = number
+  default     = 3000
+}
+
+variable "armor_auth_requests_per_minute" {
+  description = "Requests per minute per client IP to /api/v1/auth/ before 429."
+  type        = number
+  default     = 120
+}
+
+variable "qa_enabled" {
+  description = "Acceptance testing: the QA job, its admin password secret and test-number sign-in (staging only)."
+  type        = bool
+  default     = false
 }

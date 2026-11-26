@@ -216,6 +216,69 @@ void main() {
     expect(container.read(outboxProvider), isEmpty);
   });
 
+  test(
+    'a retry after a lost answer is recognised as sent, not refused',
+    () async {
+      // The first try reached the server, but the answer never came back.
+      // The retry is refused as already_applied, and the application on
+      // file is this draft's.
+      var tries = 0;
+      final api =
+          uploadingApi(
+              onApply: (_) => ++tries == 1
+                  ? throw StateError(
+                      'connection dropped after the server saved it',
+                    )
+                  : apiError(422, 'application_blocked', "You can't apply.", {
+                      'reasons': [
+                        {
+                          'code': 'already_applied',
+                          'message': 'You already applied.',
+                        },
+                      ],
+                    }),
+            )
+            ..routes['GET /api/v1/applications/mine/'] = (_) => ok([
+              {...applicationJson(), 'applied_at': '2026-11-14T10:00:00Z'},
+            ]);
+      network.online = true;
+      final container = containerFor(api)..listen(outboxProvider, (_, _) {});
+      await container.read(outboxProvider.notifier).enqueue(draft());
+      await container.read(outboxProvider.notifier).flush();
+      await settle();
+
+      // Retried once (online), refused as already applied, recognised as sent.
+      expect(tries, 2);
+      expect(container.read(outboxProvider), isEmpty);
+    },
+  );
+
+  test('an application from before the draft still needs the talent', () async {
+    final api =
+        uploadingApi(
+            onApply: (_) =>
+                apiError(422, 'application_blocked', "You can't apply.", {
+                  'reasons': [
+                    {
+                      'code': 'already_applied',
+                      'message': 'You already applied.',
+                    },
+                  ],
+                }),
+          )
+          ..routes['GET /api/v1/applications/mine/'] = (_) => ok([
+            {...applicationJson(), 'applied_at': '2026-11-01T10:00:00Z'},
+          ]);
+    network.online = true;
+    final container = containerFor(api)..listen(outboxProvider, (_, _) {});
+    await container.read(outboxProvider.notifier).enqueue(draft());
+    await container.read(outboxProvider.notifier).flush();
+    expect(
+      container.read(outboxProvider).single.status,
+      DraftStatus.needsAttention,
+    );
+  });
+
   test('drafts saved by an earlier run are loaded and sent', () async {
     await store.writeJson(outboxKey, {
       'drafts': [draft(localId: 'old').toJson()],

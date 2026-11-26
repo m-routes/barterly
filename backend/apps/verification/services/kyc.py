@@ -5,6 +5,7 @@ directly for checks whose webhook never came.
 """
 
 import logging
+import re
 from datetime import timedelta
 
 from django.db import IntegrityError, transaction
@@ -22,6 +23,21 @@ from apps.verification.providers.base import KycOutcome, KycResult, KycSession, 
 from apps.verification.services.cases import InvalidTransition, locked_case, transition
 
 logger = logging.getLogger(__name__)
+
+
+# A run of 4+ digits or ID-like characters in a provider's free text could be part of an
+# Aadhaar, PAN or passport number. We keep only the last four of the ID, never more.
+_LONG_NUMBER = re.compile(r"[0-9][0-9 -]{3,}[0-9]|[A-Z]{5}[0-9]{4}[A-Z]")
+
+
+def masked_last_four(value: str) -> str:
+    """The last four letters or digits of an ID, whatever the provider sent."""
+    return "".join(ch for ch in (value or "") if ch.isalnum())[-4:].upper()
+
+
+def safe_reason(text: str) -> str:
+    """A provider's reason, with anything that looks like an ID number masked."""
+    return _LONG_NUMBER.sub("[number removed]", (text or "")[:1000])
 
 
 class WebhookOutcome:
@@ -112,13 +128,14 @@ def apply_result(provider_name: str, result: KycResult) -> str:
     if case.status not in (CaseStatus.SUBMITTED, CaseStatus.IN_REVIEW):
         return WebhookOutcome.IGNORED
 
-    if result.id_last_four:
-        doc.masked_value = result.id_last_four[-4:]
+    last_four = masked_last_four(result.id_last_four)
+    if last_four:
+        doc.masked_value = last_four
         case.details = {**case.details, "id_last_four": doc.masked_value}
     if result.outcome == KycOutcome.MANUAL_REVIEW:
         doc.save(update_fields=["masked_value", "updated_at"])
         if case.status == CaseStatus.SUBMITTED:
-            transition(case, CaseStatus.IN_REVIEW, actor=None, reason=result.reason)
+            transition(case, CaseStatus.IN_REVIEW, actor=None, reason=safe_reason(result.reason))
         else:
             case.save(update_fields=["details", "updated_at"])
         return WebhookOutcome.APPLIED
@@ -133,7 +150,8 @@ def apply_result(provider_name: str, result: KycResult) -> str:
             case,
             CaseStatus.REJECTED,
             actor=None,
-            reason=result.reason or "We couldn't verify your ID. Try again with a clear photo.",
+            reason=safe_reason(result.reason)
+            or "We couldn't verify your ID. Try again with a clear photo.",
         )
     return WebhookOutcome.APPLIED
 

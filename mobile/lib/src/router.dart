@@ -1,15 +1,25 @@
+import 'package:barterly/src/agreements/agreement_screen.dart';
+import 'package:barterly/src/agreements/offer_screen.dart';
 import 'package:barterly/src/apply/apply_screen.dart';
 import 'package:barterly/src/apply/my_applications_screen.dart';
+import 'package:barterly/src/attendance/hours_screen.dart';
+import 'package:barterly/src/attendance/pass_screen.dart';
 import 'package:barterly/src/auth/login_screen.dart';
 import 'package:barterly/src/auth/onboarding_screens.dart';
 import 'package:barterly/src/auth/session.dart';
 import 'package:barterly/src/auth/user.dart';
 import 'package:barterly/src/chat/chat_screen.dart';
+import 'package:barterly/src/deliverables/deliverables_screen.dart';
 import 'package:barterly/src/discover/discover_screen.dart';
 import 'package:barterly/src/discover/gig_detail_screen.dart';
+import 'package:barterly/src/notifications/notifications_screen.dart';
+import 'package:barterly/src/privacy/consent_screen.dart';
+import 'package:barterly/src/privacy/privacy_screen.dart';
 import 'package:barterly/src/profile/profile_setup_screen.dart';
+import 'package:barterly/src/reviews/review_screens.dart';
 import 'package:barterly/src/shell/app_shell.dart';
 import 'package:barterly/src/shell/tabs.dart';
+import 'package:barterly/src/trips/trip_screen.dart';
 import 'package:barterly/src/verification/verification_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,18 +31,40 @@ abstract final class Routes {
   static const join = '/join';
   static const wrongApp = '/wrong-app';
   static const setup = '/setup';
+  static const consent = '/consent';
+  static const privacy = '/profile/privacy';
   static const discover = '/discover';
   static const trips = '/trips';
   static const wallet = '/wallet';
   static const profile = '/profile';
   static const editProfile = '/profile/edit';
   static const verification = '/profile/verification';
+  static const notifications = '/profile/notifications';
+  static const notificationSettings = '/profile/notifications/settings';
   static String gig(String id) => '/discover/gig/$id';
   static String apply(String id) => '/discover/gig/$id/apply';
   static String chat(String conversationId) => '/trips/chat/$conversationId';
+  static String offer(String applicationId) => '/trips/offer/$applicationId';
+  static String trip(String applicationId) =>
+      '/trips/application/$applicationId';
+  static String agreement(String agreementId) =>
+      '/trips/agreement/$agreementId';
+  static String checkInPass(String bookingId) => '/trips/pass/$bookingId';
+  static String hours(String bookingId) => '/trips/hours/$bookingId';
+  static String deliverables(String bookingId) =>
+      '/trips/deliverables/$bookingId';
+  static String review(String bookingId) => '/trips/review/$bookingId';
+  static const myReviews = '/profile/reviews';
 
   /// Screens that only make sense before the person is fully in.
-  static const Set<String> gates = {splash, login, join, wrongApp, setup};
+  static const Set<String> gates = {
+    splash,
+    login,
+    join,
+    wrongApp,
+    setup,
+    consent,
+  };
 }
 
 /// Where the person should be, given the session, or null to stay put.
@@ -47,6 +79,7 @@ String? redirectFor(SessionState session, String location) {
     SignedIn(:final user) => switch (user.role) {
       UserRole.none => goTo(Routes.join),
       UserRole.vendor || UserRole.admin => goTo(Routes.wrongApp),
+      UserRole.talent when user.needsConsent => goTo(Routes.consent),
       UserRole.talent when !user.profileComplete => goTo(Routes.setup),
       UserRole.talent =>
         Routes.gates.contains(location) ? Routes.discover : null,
@@ -71,6 +104,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: Routes.login, builder: (_, _) => const LoginScreen()),
       GoRoute(path: Routes.join, builder: (_, _) => const JoinAsTalentScreen()),
       GoRoute(path: Routes.wrongApp, builder: (_, _) => const WrongAppScreen()),
+      GoRoute(path: Routes.consent, builder: (_, _) => const ConsentScreen()),
       GoRoute(
         path: Routes.setup,
         builder: (_, _) => const ProfileSetupScreen(),
@@ -111,6 +145,45 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (_, state) =>
                         ChatScreen(conversationId: state.pathParameters['id']!),
                   ),
+                  GoRoute(
+                    path: 'application/:id',
+                    builder: (_, state) =>
+                        TripScreen(applicationId: state.pathParameters['id']!),
+                  ),
+                  GoRoute(
+                    path: 'offer/:id',
+                    builder: (_, state) =>
+                        OfferScreen(applicationId: state.pathParameters['id']!),
+                  ),
+                  GoRoute(
+                    path: 'agreement/:id',
+                    builder: (_, state) => AgreementScreen(
+                      agreementId: state.pathParameters['id']!,
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'pass/:id',
+                    builder: (_, state) => CheckInPassScreen(
+                      bookingId: state.pathParameters['id']!,
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'review/:id',
+                    builder: (_, state) => StayReviewScreen(
+                      bookingId: state.pathParameters['id']!,
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'deliverables/:id',
+                    builder: (_, state) => DeliverablesScreen(
+                      bookingId: state.pathParameters['id']!,
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'hours/:id',
+                    builder: (_, state) =>
+                        HoursScreen(bookingId: state.pathParameters['id']!),
+                  ),
                 ],
               ),
             ],
@@ -134,8 +207,26 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (_, _) => const ProfileSetupScreen(editing: true),
                   ),
                   GoRoute(
+                    path: 'reviews',
+                    builder: (_, _) => const MyReviewsScreen(),
+                  ),
+                  GoRoute(
                     path: 'verification',
                     builder: (_, _) => const VerificationScreen(),
+                  ),
+                  GoRoute(
+                    path: 'privacy',
+                    builder: (_, _) => const PrivacyScreen(),
+                  ),
+                  GoRoute(
+                    path: 'notifications',
+                    builder: (_, _) => const NotificationsScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'settings',
+                        builder: (_, _) => const NotificationSettingsScreen(),
+                      ),
+                    ],
                   ),
                 ],
               ),

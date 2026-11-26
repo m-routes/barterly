@@ -1,5 +1,6 @@
 import 'package:barterly/src/api/token_store.dart';
 import 'package:barterly/src/auth/phone_auth.dart';
+import 'package:barterly/src/privacy/legal.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -47,7 +48,8 @@ void main() {
     await tester.tap(find.text('Verify and continue'));
     await tester.pumpAndSettle();
     expect(find.textContaining("That code isn't right"), findsOneWidget);
-    expect(api.requests, isEmpty);
+    // Only the launch version check went out: no sign-in attempt.
+    expect(api.calls, ['GET /api/v1/app/version/']);
   });
 
   testWidgets('the right code signs in, stores tokens and moves on', (
@@ -97,7 +99,13 @@ void main() {
     final api = FakeApi({
       'GET /api/v1/me/': (_) => ok(userJson(role: role, complete: false)),
       'POST /api/v1/me/role/': (r) {
-        expect(r.data, {'role': 'talent'});
+        expect(r.data, {
+          'role': 'talent',
+          'confirm_adult': true,
+          'terms_version': legalVersion,
+          'privacy_version': legalVersion,
+          'source': 'mobile',
+        });
         role = 'talent';
         return ok(userJson(complete: false));
       },
@@ -105,8 +113,19 @@ void main() {
           apiError(404, 'profile_not_found'),
       'GET /api/v1/profiles/skills/': (_) => ok(skillsJson),
     });
+    usePhoneScreen(tester);
     await pumpApp(tester, api: api, tokens: MemoryTokenStore(signedInTokens));
-    await tester.tap(find.widgetWithText(FilledButton, 'Join as talent'));
+    final join = find.widgetWithText(FilledButton, 'Join as talent');
+    // Nothing is pre-ticked: 18+, the terms and the privacy policy, each.
+    expect(tester.widget<FilledButton>(join).onPressed, isNull);
+    await tester.tap(find.text('I am 18 or older'));
+    await tester.tap(find.text('I agree to the terms of service'));
+    await tester.pump();
+    expect(tester.widget<FilledButton>(join).onPressed, isNull);
+    await tester.tap(find.text('I have read the privacy policy'));
+    await tester.pump();
+    await tester.ensureVisible(join);
+    await tester.tap(join);
     await tester.pumpAndSettle();
     expect(find.text('Set up your profile'), findsOneWidget);
   });

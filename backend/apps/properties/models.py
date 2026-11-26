@@ -125,6 +125,12 @@ class Property(TimeStampedModel):
     name = models.CharField(max_length=150)
     property_type = models.CharField(max_length=20, choices=PropertyType.choices)
     address = models.TextField(max_length=500, help_text="Street address. Never shown publicly.")
+    directions = models.TextField(
+        max_length=1000,
+        blank=True,
+        help_text="How to find the place (landmarks, which gate, where to park). Shown only "
+        "to talent with a confirmed booking, like the address.",
+    )
     city = models.CharField(max_length=80)
     state = models.CharField(max_length=80, choices=STATE_CHOICES)
     pincode = models.CharField(max_length=6, blank=True, validators=[PINCODE_VALIDATOR])

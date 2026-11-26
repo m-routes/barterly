@@ -4,6 +4,419 @@
  */
 
 export interface paths {
+  "/api/v1/admin/app-versions/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** App version policies (admin) */
+    get: operations["app_versions_admin_list"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/app-versions/{platform}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Set a platform's minimum and latest versions (admin)
+     * @description Raising the minimum forces every older app to update before it can do anything. A reason is required; the change is audited. Takes effect on every instance within APP_VERSION_CACHE_SECONDS.
+     */
+    put: operations["app_versions_admin_set"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/attendance/{check_in_id}/review/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Mark a flagged check-in reviewed (admin) */
+    post: operations["attendance_admin_flag_review"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/attendance/flagged/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Check-ins flagged for review (admin)
+     * @description Far from the property, not yet reviewed. Oldest first.
+     */
+    get: operations["attendance_admin_flagged"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/flags/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Feature flags (admin) */
+    get: operations["flags_admin_list"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/flags/{key}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Turn a feature flag on or off (admin)
+     * @description A reason is required; the change is audited.
+     */
+    post: operations["flags_admin_set"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/money/escrows/{booking_id}/decide/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Decide a held escrow (admin)
+     * @description Release it all to the talent, refund it all to the host, or split it (talent_paise to the talent, the rest refunded). Works on a disputed (frozen) escrow. Audited, with the note.
+     */
+    post: operations["money_admin_decide"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/money/kill-switch/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The escrow kill switch (admin)
+     * @description Paused here or by the ESCROW_PAUSED setting: no funding or payouts.
+     */
+    get: operations["money_admin_kill_switch"];
+    /** Pause or resume escrow funding and payouts (admin) */
+    put: operations["money_admin_kill_switch_set"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/money/payout-runs/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Payout runs (admin)
+     * @description Newest first: what each run sent, held back (and why) and failed.
+     */
+    get: operations["money_admin_payout_runs"];
+    put?: never;
+    /** Start a payout run now (admin) */
+    post: operations["money_admin_payout_run_start"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/money/payout-runs/{run_id}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One payout run and its payouts (admin) */
+    get: operations["money_admin_payout_run"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/money/payouts/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Payouts (admin)
+     * @description Newest first. `status=failed` with `needs_admin=true` lists the payouts that ran out of automatic retries.
+     */
+    get: operations["money_admin_payouts"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/money/payouts/{payout_id}/retry/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Retry a failed payout now (admin)
+     * @description The latest failed attempt of an escrow; skips the back-off. Audited.
+     */
+    post: operations["money_admin_payout_retry"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/money/reconciliation/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Recent daily reconciliations (admin)
+     * @description The last 30 days: ledger totals against the gateway's, in paise.
+     */
+    get: operations["money_admin_reconciliation"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/reviews/{review_id}/moderate/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Allow or remove a review (admin)
+     * @description Removing hides it and stops it counting. Audited, with the note.
+     */
+    post: operations["reviews_admin_moderate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/reviews/queue/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Reviews waiting for moderation (admin)
+     * @description Held for flagged words or contact details, or reported. Oldest first.
+     */
+    get: operations["reviews_admin_queue"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/agreement-versions/{version_id}/decline/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Decline a change
+     * @description Turn down a new version (or withdraw your own). The version in force stays.
+     */
+    post: operations["agreements_decline_change"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/agreement-versions/{version_id}/pdf/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Open a version's PDF
+     * @description A link valid for 10 minutes, with the SHA-256 the PDF must match.
+     */
+    get: operations["agreements_pdf"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/agreement-versions/{version_id}/sign/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * What signing needs
+     * @description The consent statement and how to prove it: method otp means re-run phone OTP sign-in just before signing and send the new ID token.
+     */
+    get: operations["agreements_sign_challenge"];
+    put?: never;
+    /**
+     * Sign a version
+     * @description Records your consent with the time, IP address and device. The agreement is in force once both sides have signed the same version.
+     */
+    post: operations["agreements_sign"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/agreements/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Your agreements
+     * @description Newest first, with whether one is waiting for your signature.
+     */
+    get: operations["agreements_list"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/agreements/{agreement_id}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** An agreement */
+    get: operations["agreements_retrieve"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/app/version/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Minimum and latest app versions
+     * @description The app calls this on launch. Below `minimum_version` it must block and send the person to `store_url`. Below `latest_version` it may offer the update.
+     *
+     *     The app also sends `X-Client-Platform` and `X-Client-Version` on every call. When that version is below the minimum, **any** endpoint answers `426 Upgrade Required` with code `upgrade_required` and `details` holding `minimum_version` and `store_url` (docs/api-versioning.md). This endpoint and the health check never do.
+     */
+    get: operations["app_version"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/applicant-filters/": {
     parameters: {
       query?: never;
@@ -72,7 +485,7 @@ export interface paths {
     put?: never;
     /**
      * Accept an offer
-     * @description Books a slot: the application becomes confirmed and a booking is created. Refused (409) when the offer has expired, the gig has no slot left, or you already have a booking for those dates.
+     * @description The application becomes confirmed and a booking is created awaiting signatures; it takes a slot once both sides sign the agreement. Refused (409) when the offer has expired, the gig has no slot left, or you already have a booking for those dates.
      */
     post: operations["applications_accept"];
     delete?: never;
@@ -110,7 +523,10 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Decline an offer */
+    /**
+     * Decline an offer
+     * @description Declines the host's offer waiting for your answer (see offers_decline).
+     */
     post: operations["applications_decline"];
     delete?: never;
     options?: never;
@@ -231,6 +647,66 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/applications/{application_id}/offer/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Make an offer
+     * @description Sends the terms to the applicant, frozen. The application becomes offered and the talent has 48 hours to accept, decline or ask for one change. Needs an open slot on a running gig.
+     */
+    post: operations["offers_make"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/applications/{application_id}/offer-draft/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Terms to start an offer from
+     * @description The gig's terms with the applicant's dates. Edit them, then make the offer.
+     */
+    get: operations["offers_draft"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/applications/{application_id}/offers/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Offers on an application
+     * @description Every offer and counter, oldest first, for the talent or the host.
+     */
+    get: operations["offers_thread"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/applications/{application_id}/status/": {
     parameters: {
       query?: never;
@@ -241,8 +717,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Shortlist, interview, offer or reject
-     * @description The gig's vendor moves an application along. Rejecting needs a reason_code (GET /api/v1/hiring/rejection-reasons/); the applicant reads its text and the optional message. An offer reserves nothing yet: the talent has 48 hours to accept (which books a slot) or decline, and offers need an open slot on a running gig.
+     * Shortlist, interview or reject
+     * @description The gig's vendor moves an application along. Rejecting needs a reason_code (GET /api/v1/hiring/rejection-reasons/); the applicant reads its text and the optional message. Offers carry terms, so they have their own endpoint: POST /api/v1/applications/{id}/offer/.
      */
     post: operations["applications_status_change"];
     delete?: never;
@@ -302,6 +778,106 @@ export interface paths {
     get: operations["applications_mine_list"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/attendance/arrivals/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The day's expected arrivals, for offline check-in
+     * @description Confirmed bookings in their check-in window on `date` (default today), each with what's needed to check its QR or code offline, and everyone in house (for check-out and hours). Cache it with the public keys.
+     */
+    get: operations["attendance_arrivals"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/attendance/check-ins/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Check a talent in
+     * @description By the QR pass (`token`), the six-digit `code`, or by hand (`reason`). `scanned_at` is when it happened, for a check-in queued offline (up to 72 hours). Repeating a `client_id` returns the first result. The talent's distance from the property is recorded and flagged if large, never blocking.
+     */
+    post: operations["attendance_check_in"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/attendance/hours/pending/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Hours waiting for you to confirm
+     * @description Oldest day first.
+     */
+    get: operations["attendance_hours_pending"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/attendance/keys/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Public keys that sign check-in passes
+     * @description Cache these to verify QR passes offline (Ed25519).
+     */
+    get: operations["attendance_keys"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/attendance/sync/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Sync check-ins queued offline
+     * @description Each is applied on its own, in order: `applied`, `duplicate` (already done) or `refused` with the reason. Safe to send again.
+     */
+    post: operations["attendance_sync"];
     delete?: never;
     options?: never;
     head?: never;
@@ -369,6 +945,154 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/billing/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My subscription and what my plan allows */
+    get: operations["billing_overview"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/billing/cancel/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Cancel the subscription (at the end of the period by default) */
+    post: operations["billing_cancel"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/billing/change-plan/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Upgrade now, or downgrade at the end of the period
+     * @description Downgrading keeps live gigs running; new ones over the new limit are refused.
+     */
+    post: operations["billing_change_plan"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/billing/invoices/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My GST invoices, newest first */
+    get: operations["billing_invoices"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/billing/invoices/{invoice_id}/pdf/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A short-lived link to the invoice PDF */
+    get: operations["billing_invoice_pdf"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/billing/plans/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The plans on offer
+     * @description Prices are per month in paise, before GST.
+     */
+    get: operations["billing_plans"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/billing/subscribe/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Start a subscription (returns the hosted checkout link)
+     * @description Send the vendor to `checkout_url` to pay. A coupon (or the launch trial) sets the card up now and starts charging when the trial ends.
+     */
+    post: operations["billing_subscribe"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/billing/webhooks/razorpay/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Razorpay subscription events (webhook)
+     * @description Signed with X-Razorpay-Signature (HMAC-SHA256 of the body). Each event is applied once; repeats answer 200 and change nothing.
+     */
+    post: operations["billing_razorpay_webhook"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/bookings/": {
     parameters: {
       query?: never;
@@ -406,6 +1130,319 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/bookings/{booking_id}/agreement/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A booking's agreement
+     * @description Every version, newest first, with its signatures.
+     */
+    get: operations["agreements_for_booking"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/agreement/changes/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Change the terms
+     * @description Draws up a new version with your changes. Both sides must sign it; until then the version in force stays in force. Dates can't change once the stay starts.
+     */
+    post: operations["agreements_propose_change"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/attendance/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A booking's check-in record
+     * @description 404 until the talent is checked in.
+     */
+    get: operations["attendance_check_in_record"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/attendance/check-out/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Check a talent out (ends the stay) */
+    post: operations["attendance_check_out"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/attendance/no-show/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Mark a no-show
+     * @description From the grace period into the first day (`no_show_from` in arrivals). It counts against the talent's reliability score; they can dispute it.
+     */
+    post: operations["attendance_no_show"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/attendance/pass/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Your check-in pass
+     * @description A signed token to show as a QR code, and the secret for the six-digit fallback code. Valid offline until `valid_until`; ask again for a fresh one. Send your location to record your distance from the property at check-in (it never blocks check-in). The location is kept only if you have given location consent (POST /api/v1/privacy/consents/); otherwise it is ignored.
+     */
+    post: operations["attendance_pass"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/cancel/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * What cancelling now would do
+     * @description The reasons you can pick, and the effect on your reliability score under the agreement's cancellation policy if you cancel now.
+     */
+    get: operations["bookings_cancel_preview"];
+    put?: never;
+    /**
+     * Cancel before check-in
+     * @description Either side, while the booking is awaiting signatures or confirmed. Pick a reason (say more for other). A confirmed booking's place is freed and offered on: held offers open again, or the next shortlisted applicant is offered it.
+     */
+    post: operations["bookings_cancel"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/deliverables/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Work handed in for a booking
+     * @description Newest first. Both sides of the booking can see them.
+     */
+    get: operations["money_deliverables"];
+    put?: never;
+    /**
+     * Hand in work
+     * @description A note and/or links. The host approves (releasing the stipend) or asks for changes; with no answer for 72 hours after the latest submission the stipend is released automatically.
+     */
+    post: operations["money_deliverables_submit"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/deliverables/items/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A booking's deliverables
+     * @description Barter and hybrid gigs: one per unit of each item in the agreement, with the latest submission, post stats (self-reported ones marked), and once approved the usage rights. Empty before check-in.
+     */
+    get: operations["deliverables_for_booking"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/details/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Contact details and the exact address
+     * @description Once both sides have signed (until the stay ends or is cancelled): each side's verified phone, and for the talent the exact address, directions and a maps link. 409 before then.
+     */
+    get: operations["bookings_details"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/escrow/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A booking's escrow
+     * @description For paid and hybrid gigs: the stipend held for the booking, and what funding it costs now (stipend + the gateway's fee + GST on the fee). The host funds it before check-in. Amounts are whole paise.
+     */
+    get: operations["money_escrow"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/escrow/fund/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Start funding a booking's stipend
+     * @description Creates the gateway order for the host to pay at checkout (asking again before paying returns the same order). The money is held once the gateway confirms the payment. 503 while the kill switch is on or the escrow_funding flag is off.
+     */
+    post: operations["money_escrow_fund"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/hours/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Hours logged in one week of a stay
+     * @description Monday to Sunday containing `week` (default: this week), with the limits.
+     */
+    get: operations["attendance_hours_week"];
+    put?: never;
+    /**
+     * Log a day's hours
+     * @description One log per day (logging again replaces it until the host confirms). Refused if it breaks the weekly cap or leaves no day off; `check.warnings` says when you're close.
+     */
+    post: operations["attendance_hours_log"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/hours/check/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Check hours before logging them
+     * @description Whether a log would be allowed, why not, and any warnings. Saves nothing.
+     */
+    post: operations["attendance_hours_check"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/bookings/{booking_id}/reviews/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * This stay's reviews, as you see them
+     * @description Double-blind: the other side's review appears only once both are in (or the 14-day window has closed) and it's published.
+     */
+    get: operations["reviews_for_booking"];
+    put?: never;
+    /**
+     * Review the other side of a completed stay
+     * @description Once per side, within 14 days of completion. It stays hidden until the other side reviews too (or the window closes). It can't be edited after.
+     */
+    post: operations["reviews_submit"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/bookings/{booking_id}/transition/": {
     parameters: {
       query?: never;
@@ -417,9 +1454,49 @@ export interface paths {
     put?: never;
     /**
      * Move a booking
-     * @description Check in, start delivering, complete, cancel, report a no-show, dispute, review; admins also resolve disputes and refund. The transition table decides who may make each move and when (409 with the reason if not now).
+     * @description Check in, start delivering, complete, report a no-show, dispute, review; admins also resolve disputes and refund. Cancelling before check-in goes through bookings/{id}/cancel/ (a reason from the list). The transition table decides who may make each move and when (409 with the reason if not now).
      */
     post: operations["bookings_transition"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/content/library/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Your approved content
+     * @description Newest first, each with its usage rights from the agreement (and until when they last), the post link and download links (valid 10 minutes).
+     */
+    get: operations["deliverables_library"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/content/to-review/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Deliverables waiting for your review
+     * @description Oldest submission first, across your bookings.
+     */
+    get: operations["deliverables_to_review"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -531,6 +1608,126 @@ export interface paths {
     };
     /** Unread message count (for a badge) */
     get: operations["chat_unread"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/deliverables/{submission_id}/review/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Approve work, or ask for changes
+     * @description Approving releases the stipend: commission and GST to Barterly, TDS withheld, the rest paid out to the talent. Asking for changes needs a note.
+     */
+    post: operations["money_deliverables_review"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/deliverables/items/{deliverable_id}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Move a deliverable's due date
+     * @description During the stay or up to 30 days after it. The talent is told.
+     */
+    patch: operations["deliverables_due_date"];
+    trace?: never;
+  };
+  "/api/v1/deliverables/items/{deliverable_id}/review/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Approve a deliverable, or ask for changes
+     * @description Asking for changes needs a note and is allowed twice per deliverable; after that, approve or open a dispute. Approving the last one releases a hybrid gig's stipend.
+     */
+    post: operations["deliverables_review"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/deliverables/items/{deliverable_id}/stats/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Enter a post's numbers by hand
+     * @description With a screenshot of the numbers (an uploaded photo). Shown to the host as self-reported, beside any numbers from the platform.
+     */
+    post: operations["deliverables_report_stats"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/deliverables/items/{deliverable_id}/submit/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Hand in a deliverable
+     * @description A post link and/or uploaded files (media ids). Public posts must carry the collaboration label: confirm it with `disclosure_confirmed`. Handing in the last one starts the host's 72-hour approval window.
+     */
+    post: operations["deliverables_submit"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/flags/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Which risky features are on
+     * @description Apps hide a switched-off feature's entry points. The server enforces the flag regardless. Changes reach every instance within a minute.
+     */
+    get: operations["flags_values"];
     put?: never;
     post?: never;
     delete?: never;
@@ -819,6 +2016,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/hours/{log_id}/review/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirm or dispute a day's hours
+     * @description Disputing needs a note; the talent is told.
+     */
+    post: operations["attendance_hours_review"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/jobs/{job}/": {
     parameters: {
       query?: never;
@@ -830,7 +2047,7 @@ export interface paths {
     put?: never;
     /**
      * Run a scheduled job (Cloud Scheduler only)
-     * @description Jobs: close_expired_gigs, expire_offers, expire_verifications, flag_stale_interviews, run_search_alerts, send_interview_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
+     * @description Jobs: billing_dunning, billing_invoices, close_expired_gigs, deliverable_reminders, deliverable_stats, dispatch_notifications, escrow_auto_release, escrow_reconcile, expire_offers, expire_verifications, flag_stale_interviews, ops_backlog, payout_run, payout_validations, privacy_deletions, privacy_retention, render_agreements, reputation_recompute, reviews_close_windows, run_search_alerts, send_interview_reminders, send_reminders, sync_kyc_results. Needs a Google-signed OIDC token for the scheduler service account. Idempotent; overlapping runs of one job are skipped.
      */
     post: operations["jobs_run"];
     delete?: never;
@@ -867,7 +2084,7 @@ export interface paths {
     put?: never;
     /**
      * Choose vendor or talent (once)
-     * @description Sets the role of a user who signed up by OTP. Allowed once; admin roles are granted only in the Django admin.
+     * @description Sets the role of a user who signed up by OTP. Allowed once; admin roles are granted only in the Django admin. The person must declare they are 18 or older (`confirm_adult`) and accept the current terms and privacy policy, each recorded as a separate consent with its version. A stale version is 409 `document_changed`.
      */
     post: operations["accounts_me_role"];
     delete?: never;
@@ -947,6 +2164,409 @@ export interface paths {
     put?: never;
     /** Report a message for review */
     post: operations["chat_report"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/money/webhooks/razorpay/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Razorpay escrow events (webhook)
+     * @description payment.captured/failed, refund.processed/failed. Signed with X-Razorpay-Signature (HMAC-SHA256 of the body) and identified by X-Razorpay-Event-Id: each event is applied once; repeats answer 200 and change nothing.
+     */
+    post: operations["money_razorpay_webhook"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/money/webhooks/razorpayx/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * RazorpayX payout events (webhook)
+     * @description payout.processed/reversed/failed/rejected and fund_account.validation.completed/failed. Signed with X-Razorpay-Signature; each X-Razorpay-Event-Id is applied once.
+     */
+    post: operations["money_razorpayx_webhook"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My notifications, newest first */
+    get: operations["notifications_list"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/{notification_id}/read/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Mark one notification read */
+    post: operations["notifications_read"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/devices/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Register this device for push (an FCM token)
+     * @description A token already registered moves to whoever registers it last.
+     */
+    post: operations["notifications_devices_register"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/devices/remove/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Stop push to this device (on sign-out) */
+    post: operations["notifications_devices_remove"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/preferences/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** What I'm notified about, on which channels, and quiet hours */
+    get: operations["notifications_preferences"];
+    /**
+     * Change language, quiet hours or channels per event type
+     * @description Send only what changes. `changes` switches one event type on one channel. In-app can't be switched off. Urgent reminders (an offer about to expire, an interview within the hour) ignore quiet hours.
+     */
+    put: operations["notifications_preferences_update"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/read-all/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Mark every notification read */
+    post: operations["notifications_read_all"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/unread-count/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** How many notifications I haven't read */
+    get: operations["notifications_unread_count"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/offers/{offer_id}/accept/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Accept an offer
+     * @description Accept the open offer addressed to you: the talent accepts the host's offer, the host accepts the talent's counter. Books the slot and draws up version 1 of the agreement, for both of you to sign.
+     */
+    post: operations["offers_accept"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/offers/{offer_id}/counter/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Ask for a change
+     * @description Once per application, the talent proposes different terms: only the dates, hours, stipend, deliverables and usage rights. The host accepts the change (which books it) or declines it (the original terms come back as a final offer).
+     */
+    post: operations["offers_counter"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/offers/{offer_id}/decline/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Decline an offer
+     * @description Say no to the open offer addressed to you. The talent declining ends the application. The host declining the talent's counter sends the original terms back as a final offer, which the talent can only accept or decline.
+     */
+    post: operations["offers_decline"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/payout-account/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Your payout account
+     * @description Masked. 404 until one is linked.
+     */
+    get: operations["money_payout_account"];
+    /**
+     * Add or change your payout account
+     * @description A UPI id, or a bank account (number, IFSC, name on the account). The payout provider verifies it (a ₹1 deposit or an account check) before payouts use it: `validation_status` goes pending → verified or failed. Changing an account holds payouts for 24 hours and notifies you on every channel. Only a masked version is kept.
+     */
+    put: operations["money_payout_account_link"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/privacy/consents/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My consents, one per purpose */
+    get: operations["privacy_consents"];
+    put?: never;
+    /**
+     * Give or withdraw one consent
+     * @description `granted: true` with the version shown gives consent; `granted: false` withdraws it, effective at once. Terms and privacy policy can't be withdrawn on their own (409 `consent_required`): delete the account instead. Every change is audit-logged. Returns all consents.
+     */
+    post: operations["privacy_consents_change"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/privacy/consents/history/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Every consent I gave or withdrew, newest first */
+    get: operations["privacy_consents_history"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/privacy/corrections/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My correction requests */
+    get: operations["privacy_corrections"];
+    put?: never;
+    /**
+     * Ask us to correct something you can't edit yourself
+     * @description Your profile is edited directly (PATCH /api/v1/profiles/.../me/). Use this for the rest: your phone number, a name on a signed agreement, a verification result. The team replies within the grievance timelines.
+     */
+    post: operations["privacy_corrections_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/privacy/deletion/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Whether my account is scheduled for deletion, and what blocks it */
+    get: operations["privacy_deletion"];
+    put?: never;
+    /**
+     * Delete my account
+     * @description Schedules deletion after a grace period (cancel any time before). Then every personal field is erased; records the law makes us keep (payments, agreements, disputes, the audit log) stay, anonymised. 409 `deletion_blocked` lists what to finish first in `details.blockers`.
+     */
+    post: operations["privacy_deletion_request"];
+    /** Cancel my scheduled deletion */
+    delete: operations["privacy_deletion_cancel"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/privacy/documents/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Current versions of the documents people consent to */
+    get: operations["privacy_documents"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/privacy/exports/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My data exports */
+    get: operations["privacy_exports"];
+    put?: never;
+    /**
+     * Export my data as JSON
+     * @description Builds one machine-readable JSON file of everything Barterly holds about you and keeps it for a day. Fetch it with the export's link endpoint, which returns a signed URL valid for a few minutes. A few exports a day at most.
+     */
+    post: operations["privacy_exports_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/privacy/exports/{export_id}/link/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** A short-lived download link for one of my exports */
+    post: operations["privacy_exports_link"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/privacy/grievance-officer/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** How to reach the Grievance Officer */
+    get: operations["privacy_grievance_officer"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -1144,6 +2764,120 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/reliability/me/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Your reliability score on each side, with how it is made up */
+    get: operations["reliability_me"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/reviews/{review_id}/reply/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Answer a review of you (once) */
+    post: operations["reviews_reply"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/reviews/{review_id}/report/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Report a review
+     * @description A moderator looks at it. One report per person per review.
+     */
+    post: operations["reviews_report"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/tasks/{name}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Run a queued task (Cloud Tasks only)
+     * @description Needs a Google-signed OIDC token for the tasks service account. The body is the task's payload. 503 asks Cloud Tasks to retry.
+     */
+    post: operations["tasks_run"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/users/{user_id}/reputation/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Someone's reputation
+     * @description As talent and as a host: rating, completion rate, response time, badges.
+     */
+    get: operations["reviews_reputation"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/users/{user_id}/reviews/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Published reviews of someone
+     * @description Newest first, with their reply if they gave one.
+     */
+    get: operations["reviews_of_user"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/verification/admin/cases/": {
     parameters: {
       query?: never;
@@ -1332,10 +3066,153 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/wallet/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Your wallet
+     * @description Pending (held in escrow), available (released, not yet paid out), in transit, paid out, and TDS this financial year. Amounts in paise.
+     */
+    get: operations["money_wallet"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/wallet/history/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Your releases and payouts
+     * @description Newest first. Filter by kind, status, dates (India) or financial year.
+     */
+    get: operations["money_wallet_history"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/wallet/payout/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Pay out what's available now
+     * @description Starts a payout run for your available money. Payouts that must wait (no verified account, a recent account change, ID not verified) are held, and `held_reasons` says why. At most once every few minutes.
+     */
+    post: operations["money_wallet_request_payout"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/wallet/statements/{fy}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Your earnings statement for a financial year
+     * @description Releases (gross, commission, GST, TDS, net) and their payouts. fy: 2026-27.
+     */
+    get: operations["money_statement"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/wallet/statements/{fy}/{kind}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Download your statement (CSV or PDF) */
+    get: operations["money_statement_file"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/wallet/tds/{fy}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * TDS deducted from you in a financial year
+     * @description By quarter and by release, with the deductor's details. A summary for your records: the certificate itself is Form 16A.
+     */
+    get: operations["money_tds"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/wallet/tds/{fy}/{kind}/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Download your TDS summary (CSV or PDF) */
+    get: operations["money_tds_file"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    Accepted: {
+      /** Format: uuid */
+      booking: string;
+      /**
+       * Format: uuid
+       * @description Version 1 of the agreement, for both of you to sign.
+       */
+      agreement_version: string;
+    };
     /**
      * @description * `shortlist` - shortlist
      *     * `reject` - reject
@@ -1408,6 +3285,77 @@ export interface components {
        */
       provider_reference: string;
     };
+    Agreement: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly booking: string;
+      readonly booking_status: components["schemas"]["BookingStatusEnum"];
+      readonly gig_title: string;
+      readonly in_force: boolean;
+      readonly current_version: number | null;
+      readonly my_side: components["schemas"]["PartyEnum"];
+      readonly versions: components["schemas"]["AgreementVersion"][];
+      /** Format: date-time */
+      readonly created_at: string;
+    };
+    AgreementListItem: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly booking: string;
+      readonly booking_status: components["schemas"]["BookingStatusEnum"];
+      readonly gig_title: string;
+      readonly other_name: string;
+      /** Format: date */
+      readonly start_date: string;
+      /** Format: date */
+      readonly end_date: string;
+      readonly in_force: boolean;
+      readonly current_version: number | null;
+      /** @description The version waiting for signatures, if any. */
+      readonly awaiting_version: number | null;
+      readonly awaiting_my_signature: boolean;
+      /** Format: date-time */
+      readonly created_at: string;
+    };
+    AgreementVersion: {
+      /** Format: uuid */
+      readonly id: string;
+      readonly number: number;
+      readonly status: components["schemas"]["AgreementVersionStatusEnum"];
+      readonly status_reason: string;
+      readonly terms: components["schemas"]["Terms"];
+      readonly terms_sha256: string;
+      /** @description What this version changes. */
+      readonly changed_fields: string[];
+      readonly change_reason: string;
+      /** @description Which side asked for this change; empty for version 1. */
+      readonly proposed_by: components["schemas"]["PartyEnum"] | components["schemas"]["BlankEnum"];
+      /** @description The template the PDF was drawn up with (apps.agreements.pdf). */
+      readonly template: string;
+      /** @description False while the legal text is a placeholder no lawyer has reviewed. */
+      readonly template_reviewed: boolean;
+      readonly pdf_ready: boolean;
+      readonly pdf_sha256: string;
+      readonly pdf_size: number | null;
+      readonly signatures: components["schemas"]["Signature"][];
+      readonly signed_by_me: boolean;
+      readonly can_sign: boolean;
+      /** Format: date-time */
+      readonly created_at: string;
+      /** Format: date-time */
+      readonly in_force_at: string | null;
+    };
+    /**
+     * @description * `awaiting` - Waiting for signatures
+     *     * `active` - In force
+     *     * `superseded` - Replaced by a later version
+     *     * `declined` - Change declined
+     *     * `voided` - Replaced before it was signed
+     * @enum {string}
+     */
+    AgreementVersionStatusEnum: "awaiting" | "active" | "superseded" | "declined" | "voided";
     /**
      * @description * `air_conditioning` - Air conditioning
      *     * `breakfast` - Breakfast
@@ -1442,6 +3390,45 @@ export interface components {
       | "power_backup"
       | "wifi"
       | "workspace";
+    Answer: {
+      reason?: string;
+    };
+    /**
+     * @description * `android` - Android
+     *     * `ios` - iOS
+     * @enum {string}
+     */
+    AppPlatformEnum: "android" | "ios";
+    AppVersion: {
+      platform: components["schemas"]["AppPlatformEnum"];
+      /** @description Older apps get 426 upgrade_required on every call. */
+      minimum_version: string;
+      /** @description Older apps are offered an update. */
+      latest_version: string;
+      /** @description Where the update button goes. May be empty. */
+      store_url: string;
+      /** @description Shown on the update screen. May be empty. */
+      message: string;
+    };
+    AppVersionStatus: {
+      platform: components["schemas"]["AppPlatformEnum"];
+      /** @description Older apps get 426 upgrade_required on every call. */
+      minimum_version: string;
+      /** @description Older apps are offered an update. */
+      latest_version: string;
+      /** @description Where the update button goes. May be empty. */
+      store_url: string;
+      /** @description Shown on the update screen. May be empty. */
+      message: string;
+      /**
+       * @description For the `version` asked about; `none` when no version was given.
+       *
+       *     * `required` - required
+       *     * `available` - available
+       *     * `none` - none
+       */
+      update: components["schemas"]["UpdateEnum"];
+    };
     /**
      * @description Who applied. Deliberately no phone, email, emergency contact, birth date or
      *     social handle: contact happens on Barterly once there's a booking.
@@ -1458,6 +3445,10 @@ export interface components {
       instagram_followers: number | null;
       /** @description Active badge kinds. */
       badges: string[];
+      /** @description Their reliability as talent. */
+      reliability: components["schemas"]["Reliability"];
+      /** @description As talent: rating, completion rate, response time, badges. */
+      reputation: components["schemas"]["Reputation"];
     };
     /**
      * @description What the applicant (and the vendor) sees. Never the vendor's notes or tags:
@@ -1523,6 +3514,11 @@ export interface components {
       readonly conversation: string | null;
       /** @default 0 */
       readonly unread_messages: number;
+      /**
+       * Format: uuid
+       * @description The agreement, once the application is booked (apps.agreements).
+       */
+      readonly agreement: string | null;
       /** Format: date-time */
       readonly applied_at: string;
     };
@@ -1565,6 +3561,43 @@ export interface components {
       longitude: number;
       /** @description The property is within this distance. */
       radius_m: number;
+    };
+    Arrival: {
+      /** Format: uuid */
+      booking_id: string;
+      /** Format: uuid */
+      talent_id: string;
+      talent_name: string;
+      gig_title: string;
+      property_name: string;
+      /** Format: date */
+      start_date: string;
+      /** Format: date */
+      end_date: string;
+      status: string;
+      /** @description Why check-in would be refused now, or empty. */
+      problem: string;
+      /** Format: uuid */
+      pass_id: string;
+      /** @description To check the talent's code offline. */
+      code_secret: string;
+      /** Format: date-time */
+      pass_valid_from: string;
+      /** Format: date-time */
+      pass_valid_until: string;
+      /** Format: date-time */
+      no_show_from: string;
+    };
+    Arrivals: {
+      /** Format: date */
+      date: string;
+      /** Format: date-time */
+      generated_at: string;
+      public_keys: components["schemas"]["PublicKey"][];
+      code_period_seconds: number;
+      clock_skew_seconds: number;
+      arrivals: components["schemas"]["Arrival"][];
+      in_house: components["schemas"]["InHouse"][];
     };
     Attachment: {
       /** Format: uuid */
@@ -1625,6 +3658,10 @@ export interface components {
       | "social_verified"
       | "reference_checked"
       | "trusted_member";
+    BillingOverview: {
+      subscription: components["schemas"]["Subscription"] | null;
+      entitlements: components["schemas"]["Entitlements"];
+    };
     /** @enum {unknown} */
     BlankEnum: "";
     Blocked: {
@@ -1635,6 +3672,11 @@ export interface components {
       details: {
         [key: string]: unknown;
       };
+    };
+    Blocker: {
+      code: string;
+      count: number;
+      message: string;
     };
     Booking: {
       /** Format: uuid */
@@ -1654,8 +3696,11 @@ export interface components {
       readonly start_date: string;
       /** Format: date */
       readonly end_date: string;
-      /** Format: date-time */
-      readonly confirmed_at: string;
+      /**
+       * Format: date-time
+       * @description When both sides had signed and the slot was taken.
+       */
+      readonly confirmed_at: string | null;
       /** Format: date-time */
       readonly checked_in_at: string | null;
       /** Format: date-time */
@@ -1664,6 +3709,7 @@ export interface components {
       readonly cancelled_at: string | null;
       /** @description Statuses you could move this booking to (rules are checked on the move). */
       readonly next_moves: components["schemas"]["BookingStatusEnum"][];
+      readonly cancellation: components["schemas"]["Cancellation"] | null;
       readonly events: components["schemas"]["BookingEvent"][];
     };
     /**
@@ -1702,8 +3748,11 @@ export interface components {
       readonly start_date: string;
       /** Format: date */
       readonly end_date: string;
-      /** Format: date-time */
-      readonly confirmed_at: string;
+      /**
+       * Format: date-time
+       * @description When both sides had signed and the slot was taken.
+       */
+      readonly confirmed_at: string | null;
       /** Format: date-time */
       readonly checked_in_at: string | null;
       /** Format: date-time */
@@ -1712,9 +3761,34 @@ export interface components {
       readonly cancelled_at: string | null;
       /** @description Statuses you could move this booking to (rules are checked on the move). */
       readonly next_moves: components["schemas"]["BookingStatusEnum"][];
+      readonly cancellation: components["schemas"]["Cancellation"] | null;
     };
     /**
-     * @description * `confirmed` - Confirmed
+     * @description What one side of a booking sees: their own review, and the other's once both are
+     *     published (double-blind).
+     */
+    BookingReviews: {
+      /**
+       * @description Who you review.
+       *
+       *     * `talent` - talent
+       *     * `host` - host
+       */
+      reviewing: components["schemas"]["ReviewingEnum"];
+      can_review: boolean;
+      /** Format: date-time */
+      window_closes_at: string | null;
+      category_labels: {
+        [key: string]: string;
+      };
+      mine: components["schemas"]["StayReview"] | null;
+      /** @description Only once published. */
+      theirs: components["schemas"]["StayReview"] | null;
+      they_have_reviewed: boolean;
+    };
+    /**
+     * @description * `signing` - Awaiting signatures
+     *     * `confirmed` - Confirmed
      *     * `checked_in` - Checked in
      *     * `delivering` - Delivering
      *     * `completed` - Completed
@@ -1726,6 +3800,7 @@ export interface components {
      * @enum {string}
      */
     BookingStatusEnum:
+      | "signing"
       | "confirmed"
       | "checked_in"
       | "delivering"
@@ -1790,6 +3865,93 @@ export interface components {
       | "tour_operator"
       | "coworking"
       | "other";
+    Cancel: {
+      reason: components["schemas"]["CancellationReasonEnum"];
+      /** @description Required for other. */
+      note?: string;
+    };
+    /** @description What cancelling now would do, to show before the person confirms. */
+    CancelPreview: {
+      /** @description The reasons you can give, in order. */
+      reasons: components["schemas"]["CancellationReasonOption"][];
+      effect: components["schemas"]["CancellationEffectEnum"];
+      effect_label: string;
+      /** @description The agreement's cancellation policy. */
+      policy: string;
+      notice_days: number | null;
+      days_before_start: number;
+    };
+    CancelSubscription: {
+      /** @default true */
+      at_period_end: boolean;
+    };
+    Cancellation: {
+      readonly by: components["schemas"]["CancelledByEnum"];
+      readonly reason: components["schemas"]["CancellationReasonEnum"];
+      readonly note: string;
+      readonly effect: components["schemas"]["CancellationEffectEnum"];
+      /** @description The agreement's policy. */
+      readonly policy: string;
+      readonly notice_days: number | null;
+      readonly days_before_start: number;
+      /** Format: date-time */
+      readonly created_at: string;
+    };
+    /**
+     * @description * `none` - No effect (not yet confirmed, or not cancelled by either side)
+     *     * `free` - Free: before the policy's notice period
+     *     * `late` - Late: inside the policy's notice period
+     *     * `last_minute` - Last minute: a day or less before the stay
+     * @enum {string}
+     */
+    CancellationEffectEnum: "none" | "free" | "late" | "last_minute";
+    /**
+     * @description * `flexible` - Flexible
+     *     * `moderate` - Moderate
+     *     * `strict` - Strict
+     * @enum {string}
+     */
+    CancellationPolicyEnum: "flexible" | "moderate" | "strict";
+    /**
+     * @description * `emergency` - A personal or family emergency
+     *     * `safety` - A safety or conduct concern
+     *     * `plans_changed` - Plans changed
+     *     * `other` - Something else
+     *     * `illness` - Illness or injury
+     *     * `travel` - Travel disruption
+     *     * `other_work` - Took up other work
+     *     * `property_unavailable` - The property can't host (repairs, closure)
+     *     * `staffing` - Staffing needs changed
+     *     * `slots_filled` - Every place was filled before both sides signed
+     *     * `not_signed` - Not signed by both before the stay started
+     *     * `admin` - Cancelled by Barterly support
+     * @enum {string}
+     */
+    CancellationReasonEnum:
+      | "emergency"
+      | "safety"
+      | "plans_changed"
+      | "other"
+      | "illness"
+      | "travel"
+      | "other_work"
+      | "property_unavailable"
+      | "staffing"
+      | "slots_filled"
+      | "not_signed"
+      | "admin";
+    CancellationReasonOption: {
+      code: components["schemas"]["CancellationReasonEnum"];
+      label: string;
+    };
+    /**
+     * @description * `talent` - The talent
+     *     * `vendor` - The host
+     *     * `system` - Barterly, automatically
+     *     * `admin` - Barterly admin
+     * @enum {string}
+     */
+    CancelledByEnum: "talent" | "vendor" | "system" | "admin";
     Case: {
       /** Format: uuid */
       readonly id: string;
@@ -1812,6 +3974,12 @@ export interface components {
       readonly expires_at: string | null;
       readonly documents: components["schemas"]["Document"][];
     };
+    CategoryScore: {
+      key: string;
+      /** @description Depends on who was reviewed. */
+      label: string;
+      score: number;
+    };
     CertificateItem: {
       /**
        * Format: uuid
@@ -1822,6 +3990,38 @@ export interface components {
     };
     CertificatesCheck: {
       certificates: components["schemas"]["CertificateItem"][];
+    };
+    Challenge: {
+      method: components["schemas"]["MethodEnum"];
+      consent_text: string;
+      phone_hint: string;
+      max_age_seconds: number;
+      document_sha256: string;
+    };
+    ChangePlan: {
+      plan: string;
+    };
+    /** @description Send only the terms that should change. */
+    Changes: {
+      /** Format: date */
+      start_date?: string;
+      /** Format: date */
+      end_date?: string;
+      hours_per_day?: number;
+      days_per_week?: number;
+      stay_type?: string;
+      meals?: string;
+      /** Format: decimal */
+      stipend_amount?: string | null;
+      stipend_period?: string;
+      deliverables?: components["schemas"]["TermsDeliverable"][];
+      usage_rights?: components["schemas"]["UsageRights"] | null;
+      cancellation_policy?: components["schemas"]["CancellationPolicyEnum"];
+    };
+    ChannelSetting: {
+      enabled: boolean;
+      /** @description In-app can't be switched off: it's the inbox. */
+      locked: boolean;
     };
     ChatAttachment: {
       /** Format: uuid */
@@ -1867,6 +4067,64 @@ export interface components {
      */
     ChatReportReasonEnum:
       "spam" | "harassment" | "scam" | "contact_sharing" | "inappropriate" | "other";
+    CheckIn: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly booking_id: string;
+      readonly method: components["schemas"]["CheckInMethodEnum"];
+      /** Format: date-time */
+      readonly checked_in_at: string;
+      /** Format: date-time */
+      readonly recorded_at: string;
+      /** @description For a manual check-in. */
+      readonly reason: string;
+      /** @description The talent's distance from the property, if known. */
+      readonly distance_m: number | null;
+      readonly location_age_minutes: number | null;
+      readonly flag: components["schemas"]["FlagEnum"] | components["schemas"]["BlankEnum"];
+      /** Format: date-time */
+      readonly reviewed_at: string | null;
+      readonly review_note: string;
+      /** Format: date-time */
+      readonly checked_out_at: string | null;
+    };
+    /**
+     * @description * `qr` - QR scanned
+     *     * `code` - Six-digit code
+     *     * `manual` - Confirmed by hand
+     *     * `other` - Booking status changed directly
+     * @enum {string}
+     */
+    CheckInMethodEnum: "qr" | "code" | "manual" | "other";
+    CheckInRequest: {
+      /**
+       * Format: uuid
+       * @description Made on the device; a re-sync applies once.
+       */
+      client_id: string;
+      /** Format: uuid */
+      booking_id?: string | null;
+      method: components["schemas"]["CheckInRequestMethodEnum"];
+      /** @default  */
+      token: string;
+      /** @default  */
+      code: string;
+      /** @default  */
+      reason: string;
+      /**
+       * Format: date-time
+       * @description When it was scanned (offline).
+       */
+      scanned_at?: string | null;
+    };
+    /**
+     * @description * `qr` - qr
+     *     * `code` - code
+     *     * `manual` - manual
+     * @enum {string}
+     */
+    CheckInRequestMethodEnum: "qr" | "code" | "manual";
     CheckSummary: {
       check_type: components["schemas"]["CheckTypeEnum"];
       label: string;
@@ -1892,8 +4150,17 @@ export interface components {
       | "social_account"
       | "certificate"
       | "reference";
+    /** @description Sign-up's last step: the role, the 18+ declaration and the two required consents. */
     ChooseRole: {
       role: components["schemas"]["ChooseRoleRoleEnum"];
+      /** @description The person declares they are 18 or older. Must be true. */
+      confirm_adult: boolean;
+      /** @description Version of the terms shown (GET /api/v1/privacy/documents/). */
+      terms_version: string;
+      /** @description Version of the privacy policy shown. */
+      privacy_version: string;
+      /** @default api */
+      source: components["schemas"]["ConsentSourceEnum"];
     };
     /**
      * @description * `vendor` - Vendor
@@ -1929,6 +4196,69 @@ export interface components {
     ConfirmRequest: {
       /** Format: uuid */
       media_id: string;
+    };
+    ConsentChange: {
+      purpose: components["schemas"]["ConsentPurposeEnum"];
+      /** @description true to give, false to withdraw. */
+      granted: boolean;
+      /** @description The document version shown. Required when giving consent. */
+      version?: string;
+      /** @default api */
+      source: components["schemas"]["ConsentSourceEnum"];
+    };
+    /**
+     * @description * `terms` - Terms of service
+     *     * `privacy` - Privacy policy
+     *     * `location` - Location use
+     *     * `social` - Social account access
+     *     * `marketing` - Marketing messages
+     * @enum {string}
+     */
+    ConsentPurposeEnum: "terms" | "privacy" | "location" | "social" | "marketing";
+    ConsentRecord: {
+      readonly id: number;
+      readonly purpose: components["schemas"]["ConsentPurposeEnum"];
+      /** @description True when given, False when withdrawn. */
+      readonly granted: boolean;
+      /** @description The document version shown. */
+      readonly version: string;
+      readonly source: components["schemas"]["ConsentRecordSourceEnum"];
+      /** Format: date-time */
+      readonly recorded_at: string;
+    };
+    /**
+     * @description * `web` - Web
+     *     * `mobile` - Mobile app
+     *     * `api` - API
+     *     * `system` - System
+     * @enum {string}
+     */
+    ConsentRecordSourceEnum: "web" | "mobile" | "api" | "system";
+    /**
+     * @description * `web` - Web
+     *     * `mobile` - Mobile app
+     *     * `api` - API
+     * @enum {string}
+     */
+    ConsentSourceEnum: "web" | "mobile" | "api";
+    ConsentState: {
+      purpose: components["schemas"]["ConsentPurposeEnum"];
+      label: string;
+      /** @description Needed to use Barterly at all. */
+      required: boolean;
+      granted: boolean;
+      /** @description The version agreed to; "" if never asked. */
+      version: string;
+      current_version: string;
+      /** @description Given for an older version. */
+      needs_renewal: boolean;
+      /** Format: date-time */
+      recorded_at: string | null;
+    };
+    Contact: {
+      name: string;
+      /** @description Verified by OTP at sign-in. */
+      phone: string;
     };
     /**
      * @description * `application/pdf` - application/pdf
@@ -1974,6 +4304,65 @@ export interface components {
       readonly contact_sharing_allowed: boolean;
       readonly blocked_by_me: boolean;
     };
+    CorrectionCreate: {
+      field: string;
+      correct_value: string;
+      note?: string;
+    };
+    CorrectionRequest: {
+      /** Format: uuid */
+      readonly id: string;
+      /** @description What is wrong, e.g. 'phone'. */
+      field: string;
+      correct_value: string;
+      note?: string;
+      readonly status: components["schemas"]["CorrectionRequestStatusEnum"];
+      /** Format: date-time */
+      readonly created_at: string;
+      /** Format: date-time */
+      readonly resolved_at: string | null;
+      readonly resolution_note: string;
+    };
+    /**
+     * @description * `open` - Open
+     *     * `done` - Corrected
+     *     * `rejected` - Not changed
+     * @enum {string}
+     */
+    CorrectionRequestStatusEnum: "open" | "done" | "rejected";
+    Counter: {
+      changes: components["schemas"]["CounterChanges"];
+      message?: string;
+    };
+    /** @description The terms the talent may change. Send only the ones you want different. */
+    CounterChanges: {
+      /** Format: date */
+      start_date?: string;
+      /** Format: date */
+      end_date?: string;
+      hours_per_day?: number;
+      days_per_week?: number;
+      /** Format: decimal */
+      stipend_amount?: string | null;
+      deliverables?: components["schemas"]["TermsDeliverable"][];
+      usage_rights?: components["schemas"]["UsageRights"] | null;
+    };
+    DataExport: {
+      /** Format: uuid */
+      readonly id: string;
+      readonly status: components["schemas"]["DataExportStatusEnum"];
+      readonly size_bytes: number;
+      /** Format: date-time */
+      readonly created_at: string;
+      /** Format: date-time */
+      readonly expires_at: string;
+    };
+    /**
+     * @description * `ready` - Ready to download
+     *     * `expired` - Expired and deleted
+     * @enum {string}
+     */
+    DataExportStatusEnum: "ready" | "expired";
     /**
      * @description * `ok` - ok
      *     * `unavailable` - unavailable
@@ -1994,10 +4383,91 @@ export interface components {
      * @enum {string}
      */
     DecisionEnum: "start_review" | "approve" | "reject" | "request_changes" | "revoke";
+    DeclineChange: {
+      reason?: string;
+    };
+    Deductee: {
+      name: string;
+      id: string;
+      pan_on_file: boolean;
+    };
+    Deductor: {
+      name: string;
+      address: string;
+      tan: string;
+    };
+    DeletionCreate: {
+      /** @description Must be true. */
+      confirm: boolean;
+      reason?: string;
+    };
+    DeletionRequest: {
+      /** Format: uuid */
+      readonly id: string;
+      readonly status: components["schemas"]["DeletionRequestStatusEnum"];
+      /** Format: date-time */
+      readonly requested_at: string;
+      /** Format: date-time */
+      readonly scheduled_for: string;
+      /** Format: date-time */
+      readonly cancelled_at: string | null;
+      /** Format: date-time */
+      readonly completed_at: string | null;
+    };
+    /**
+     * @description * `scheduled` - Scheduled
+     *     * `cancelled` - Cancelled
+     *     * `completed` - Completed
+     * @enum {string}
+     */
+    DeletionRequestStatusEnum: "scheduled" | "cancelled" | "completed";
+    DeletionStatus: {
+      request: components["schemas"]["DeletionRequest"] | null;
+      blockers: components["schemas"]["Blocker"][];
+      grace_days: number;
+    };
     Deliverable: {
       type: components["schemas"]["DeliverableTypeEnum"];
       quantity: number;
       notes?: string;
+    };
+    /**
+     * @description * `reel` - Reel
+     *     * `story` - Story
+     *     * `photo_set` - Photo set
+     *     * `google_review` - Google review
+     *     * `custom` - Custom
+     * @enum {string}
+     */
+    DeliverableKindEnum: "reel" | "story" | "photo_set" | "google_review" | "custom";
+    /**
+     * @description * `instagram` - Instagram
+     *     * `youtube` - YouTube
+     *     * `google` - Google
+     *     * `other` - Other
+     * @enum {string}
+     */
+    DeliverablePlatformEnum: "instagram" | "youtube" | "google" | "other";
+    /**
+     * @description * `pending` - Not submitted yet
+     *     * `submitted` - Waiting for the host
+     *     * `changes_requested` - Changes asked for
+     *     * `approved` - Approved
+     * @enum {string}
+     */
+    DeliverableStatusEnum: "pending" | "submitted" | "changes_requested" | "approved";
+    DeliverableSubmission: {
+      /** Format: uuid */
+      readonly id: string;
+      note?: string;
+      links?: unknown;
+      /** Format: date-time */
+      readonly submitted_at: string;
+      readonly review:
+        components["schemas"]["SubmissionReviewEnum"] | components["schemas"]["BlankEnum"];
+      readonly review_note: string;
+      /** Format: date-time */
+      readonly reviewed_at: string | null;
     };
     /**
      * @description * `instagram_post` - Instagram post
@@ -2007,6 +4477,7 @@ export interface components {
      *     * `blog_post` - Blog post
      *     * `photo_set` - Edited photo set
      *     * `mural` - Mural / artwork
+     *     * `google_review` - Google review
      *     * `other` - Other
      * @enum {string}
      */
@@ -2018,7 +4489,22 @@ export interface components {
       | "blog_post"
       | "photo_set"
       | "mural"
+      | "google_review"
       | "other";
+    Device: {
+      token: string;
+      platform: components["schemas"]["DevicePlatformEnum"];
+    };
+    /**
+     * @description * `android` - Android
+     *     * `ios` - iOS
+     *     * `web` - Web
+     * @enum {string}
+     */
+    DevicePlatformEnum: "android" | "ios" | "web";
+    DeviceToken: {
+      token: string;
+    };
     Document: {
       /** Format: uuid */
       readonly id: string;
@@ -2033,6 +4519,17 @@ export interface components {
       /** Format: date-time */
       readonly created_at: string;
     };
+    Entitlements: {
+      plan: string;
+      plan_name: string;
+      max_live_gigs: number | null;
+      live_gigs: number;
+      can_post_gig: boolean;
+      reason: string;
+      features: {
+        [key: string]: boolean;
+      };
+    };
     /** @description Shape of every error response. Use it in extend_schema(responses=...). */
     Error: {
       /** @description Stable machine-readable code, e.g. 'not_found'. */
@@ -2043,8 +4540,131 @@ export interface components {
         [key: string]: unknown;
       };
     };
+    /** @description All amounts are whole paise. */
+    Escrow: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly booking_id: string;
+      readonly status: components["schemas"]["EscrowStatusEnum"];
+      readonly stipend_paise: number;
+      /** @description Gateway fee charged to the host. */
+      readonly fee_paise: number;
+      readonly fee_gst_paise: number;
+      /** @description What the host pays. */
+      readonly total_paise: number;
+      /** Format: date-time */
+      readonly funded_at: string | null;
+      /** @description A dispute: no release. */
+      readonly frozen: boolean;
+      /** @description Stipend released to talent. */
+      readonly released_paise: number;
+      readonly commission_paise: number;
+      readonly commission_gst_paise: number;
+      readonly tds_paise: number;
+      readonly payout_paise: number;
+      readonly refund_paise: number;
+      readonly unreleased_paise: number;
+      /** Format: date-time */
+      readonly released_at: string | null;
+      readonly released_by: string;
+      readonly payout_status:
+        components["schemas"]["PayoutStatusEnum"] | components["schemas"]["BlankEnum"];
+    };
+    /** @description Open the gateway's checkout with these. */
+    EscrowCheckout: {
+      escrow: components["schemas"]["Escrow"];
+      order_id: string;
+      amount_paise: number;
+      currency: string;
+      /** @description The gateway's public key for checkout. */
+      key_id: string;
+    };
+    EscrowDecision: {
+      decision: components["schemas"]["EscrowDecisionEnum"];
+      /** @description For a split: the talent's share, in paise. */
+      talent_paise?: number;
+      note: string;
+    };
+    /**
+     * @description * `release` - Release to the talent
+     *     * `split` - Split
+     *     * `refund` - Refund the host
+     * @enum {string}
+     */
+    EscrowDecisionEnum: "release" | "split" | "refund";
+    EscrowOverview: {
+      needs_escrow: boolean;
+      /** @description The kill switch: no funding or payouts now. */
+      paused: boolean;
+      escrow: components["schemas"]["Escrow"] | null;
+      /** @description What funding would cost now. */
+      quote: components["schemas"]["EscrowQuote"] | null;
+    };
+    EscrowQuote: {
+      stipend_paise: number;
+      fee_paise: number;
+      fee_gst_paise: number;
+      total_paise: number;
+    };
+    /**
+     * @description * `awaiting_funding` - Waiting for the host to fund
+     *     * `funding` - Payment started
+     *     * `held` - Funded and held
+     *     * `released` - Released (payout to follow)
+     *     * `paid_out` - Paid out
+     *     * `refunded` - Refunded
+     *     * `split` - Split by an admin
+     * @enum {string}
+     */
+    EscrowStatusEnum:
+      "awaiting_funding" | "funding" | "held" | "released" | "paid_out" | "refunded" | "split";
+    /**
+     * @description * `application.applied` - application.applied
+     *     * `application.shortlisted` - application.shortlisted
+     *     * `interview.scheduled` - interview.scheduled
+     *     * `application.offered` - application.offered
+     *     * `offer.expiring` - offer.expiring
+     *     * `agreement.ready` - agreement.ready
+     *     * `booking.confirmed` - booking.confirmed
+     *     * `chat.message` - chat.message
+     *     * `gigs.search_alert` - gigs.search_alert
+     *     * `reminder` - reminder
+     *     * `billing` - billing
+     *     * `reviews` - reviews
+     *     * `deliverables` - deliverables
+     *     * `payouts` - payouts
+     *     * `other` - other
+     * @enum {string}
+     */
+    EventTypeEnum:
+      | "application.applied"
+      | "application.shortlisted"
+      | "interview.scheduled"
+      | "application.offered"
+      | "offer.expiring"
+      | "agreement.ready"
+      | "booking.confirmed"
+      | "chat.message"
+      | "gigs.search_alert"
+      | "reminder"
+      | "billing"
+      | "reviews"
+      | "deliverables"
+      | "payouts"
+      | "other";
+    EventTypeSetting: {
+      key: string;
+      label: string;
+      /** @description Not held back by quiet hours. */
+      urgent: boolean;
+      channels: {
+        [key: string]: components["schemas"]["ChannelSetting"];
+      };
+    };
     ExactLocation: {
       address: string;
+      directions: string;
       pincode: string;
       /** Format: double */
       latitude: number | null;
@@ -2066,12 +4686,33 @@ export interface components {
       needs_role: boolean;
       user: components["schemas"]["User"];
     };
+    ExportLink: {
+      /**
+       * Format: uri
+       * @description Signed; works once fetched, for a few minutes.
+       */
+      url: string;
+      expires_in_seconds: number;
+    };
+    FileLink: {
+      /** Format: uuid */
+      id: string;
+      content_type: string;
+      size_bytes: number;
+      /**
+       * Format: uri
+       * @description Valid for 10 minutes.
+       */
+      url: string;
+    };
     FilterParams: {
       /** @description Comma list. */
       status?: string;
       min_score?: number;
       sort?: components["schemas"]["SortEnum"];
       tag?: string;
+      q?: string;
+      badge?: components["schemas"]["BadgeKindEnum"];
     };
     Fit: {
       /** @description 0 to 100. */
@@ -2079,6 +4720,27 @@ export interface components {
       breakdown: {
         [key: string]: components["schemas"]["Component"];
       };
+    };
+    Flag: {
+      key: components["schemas"]["KeyEnum"];
+      enabled: boolean;
+      description: string;
+      when_off: string;
+    };
+    /**
+     * @description * `` - Not flagged
+     *     * `far` - Far from the property
+     * @enum {string}
+     */
+    FlagEnum: "far";
+    FlagReview: {
+      note: string;
+    };
+    /** @description For apps and the web: which risky features are on right now. */
+    FlagValues: {
+      escrow_funding: boolean;
+      sos_live_sharing: boolean;
+      ai_safety_checks: boolean;
     };
     GeocodeRequest: {
       /** @description A full address. */
@@ -2297,6 +4959,16 @@ export interface components {
      * @enum {string}
      */
     GigStatusEnum: "draft" | "in_review" | "live" | "paused" | "filled" | "closed" | "archived";
+    GrievanceOfficer: {
+      name: string;
+      /** Format: email */
+      email: string;
+      phone: string;
+      address: string;
+      hours: string;
+      acknowledge_hours: number;
+      resolve_days: number;
+    };
     Health: {
       status: components["schemas"]["HealthStatusEnum"];
       database: components["schemas"]["DatabaseEnum"];
@@ -2307,6 +4979,57 @@ export interface components {
      * @enum {string}
      */
     HealthStatusEnum: "ok" | "degraded";
+    HourLog: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: date */
+      readonly day: string;
+      readonly minutes: number;
+      readonly note: string;
+      readonly status: components["schemas"]["HourStatusEnum"];
+      readonly vendor_note: string;
+      /** Format: date-time */
+      readonly reviewed_at: string | null;
+      /** Format: date-time */
+      readonly created_at: string;
+      /** Format: date-time */
+      readonly updated_at: string;
+    };
+    HourReview: {
+      confirm: boolean;
+      /** @default  */
+      note: string;
+    };
+    /**
+     * @description * `pending` - Waiting for the host
+     *     * `confirmed` - Confirmed
+     *     * `disputed` - Disputed
+     * @enum {string}
+     */
+    HourStatusEnum: "pending" | "confirmed" | "disputed";
+    HoursCheck: {
+      allowed: boolean;
+      problems: string[];
+      warnings: string[];
+      /** Format: date */
+      week_start: string;
+      week_minutes: number;
+      week_days: number;
+      weekly_cap_minutes: number;
+      days_per_week: number;
+    };
+    HoursWeek: {
+      /** Format: date */
+      week_start: string;
+      /** Format: date */
+      week_end: string;
+      logs: components["schemas"]["HourLog"][];
+      minutes: number;
+      days_worked: number;
+      weekly_cap_minutes: number;
+      hours_per_day: number;
+      days_per_week: number;
+    };
     /**
      * @description * `aadhaar` - Aadhaar
      *     * `passport` - Passport
@@ -2315,6 +5038,18 @@ export interface components {
      * @enum {string}
      */
     IdDocumentTypeEnum: "aadhaar" | "passport" | "driving_licence" | "voter_id";
+    InHouse: {
+      /** Format: uuid */
+      booking_id: string;
+      talent_name: string;
+      gig_title: string;
+      /** Format: date */
+      start_date: string;
+      /** Format: date */
+      end_date: string;
+      status: string;
+      hours_to_review: number;
+    };
     Interview: {
       /** Format: uuid */
       readonly id: string;
@@ -2349,6 +5084,36 @@ export interface components {
      * @enum {string}
      */
     InterviewStatusEnum: "proposed" | "scheduled" | "new_times_requested" | "cancelled";
+    Invoice: {
+      /** Format: uuid */
+      readonly id: string;
+      readonly number: string;
+      readonly plan_name: string;
+      /** Format: date-time */
+      readonly period_start: string | null;
+      /** Format: date-time */
+      readonly period_end: string | null;
+      readonly taxable_paise: number;
+      readonly cgst_paise: number;
+      readonly sgst_paise: number;
+      readonly igst_paise: number;
+      readonly tax_paise: number;
+      readonly total_paise: number;
+      /** Format: decimal */
+      readonly gst_rate_percent: string;
+      readonly place_of_supply: string;
+      readonly buyer_gstin: string;
+      /** Format: date-time */
+      readonly issued_at: string;
+      /** Format: date-time */
+      readonly emailed_at: string | null;
+      readonly pdf_ready: boolean;
+    };
+    InvoicePdfLink: {
+      /** Format: uri */
+      url: string;
+      expires_in: number;
+    };
     JobResult: {
       job: string;
       run_id: number | null;
@@ -2356,6 +5121,20 @@ export interface components {
       result: {
         [key: string]: unknown;
       };
+    };
+    /**
+     * @description * `ai_safety_checks` - ai_safety_checks
+     *     * `escrow_funding` - escrow_funding
+     *     * `sos_live_sharing` - sos_live_sharing
+     * @enum {string}
+     */
+    KeyEnum: "ai_safety_checks" | "escrow_funding" | "sos_live_sharing";
+    KillSwitch: {
+      paused?: boolean;
+      reason?: string;
+      /** Format: date-time */
+      readonly changed_at: string | null;
+      readonly paused_by_setting: boolean;
     };
     /**
      * @description * `avatar` - Profile photo
@@ -2441,6 +5220,105 @@ export interface components {
       created_at: string;
     };
     /**
+     * @description * `new` - new
+     *     * `excellent` - excellent
+     *     * `good` - good
+     *     * `fair` - fair
+     *     * `poor` - poor
+     * @enum {string}
+     */
+    LevelEnum: "new" | "excellent" | "good" | "fair" | "poor";
+    LibraryItem: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly booking_id: string;
+      readonly gig_title: string;
+      readonly kind: components["schemas"]["DeliverableKindEnum"];
+      readonly platform: components["schemas"]["DeliverablePlatformEnum"];
+      /** @description The agreement's deliverable type. */
+      readonly spec_type: string;
+      readonly title: string;
+      readonly notes: string;
+      /** Format: date */
+      readonly due_date: string;
+      readonly status: components["schemas"]["DeliverableStatusEnum"];
+      readonly change_rounds: number;
+      readonly change_rounds_left: number;
+      /** @description A public post: it must carry the collaboration label (#collab, #ad, ...). */
+      readonly disclosure_required: boolean;
+      /**
+       * Format: date-time
+       * @description Latest submission.
+       */
+      readonly submitted_at: string | null;
+      /** Format: date-time */
+      readonly approved_at: string | null;
+      readonly latest_submission: components["schemas"]["Submission"] | null;
+      readonly stats: components["schemas"]["PostStats"][];
+      readonly usage_rights: components["schemas"]["UsageRights"] | null;
+      readonly usable_until: string | null;
+      readonly talent_name: string;
+      readonly downloads: components["schemas"]["FileLink"][];
+    };
+    LinkPayoutAccount: {
+      method: components["schemas"]["PayoutMethodEnum"];
+      /**
+       * @description UPI id, for method upi.
+       * @default
+       */
+      vpa: string;
+      /** @default  */
+      account_number: string;
+      /** @default  */
+      ifsc: string;
+      /** @default  */
+      holder_name: string;
+    };
+    Location: {
+      /** Format: decimal */
+      latitude: string;
+      /** Format: decimal */
+      longitude: string;
+      accuracy_m?: number | null;
+    };
+    LogHours: {
+      /** Format: date */
+      day: string;
+      minutes: number;
+      /** @default  */
+      note: string;
+    };
+    LoggedHours: {
+      log: components["schemas"]["HourLog"];
+      check: components["schemas"]["HoursCheck"];
+    };
+    MakeOffer: {
+      /** @description Checked against the gig's pay model. */
+      terms: components["schemas"]["Terms"];
+      message?: string;
+    };
+    ManualStats: {
+      views?: number | null;
+      likes?: number | null;
+      comments?: number | null;
+      /**
+       * Format: uuid
+       * @description An uploaded photo of the numbers.
+       */
+      screenshot_id: string;
+    };
+    MarkRead: {
+      /**
+       * @description Opened by tapping the push: the push counts as read too.
+       * @default false
+       */
+      from_push: boolean;
+    };
+    Marked: {
+      marked: number;
+    };
+    /**
      * @description * `none` - No meals
      *     * `breakfast` - Breakfast
      *     * `two_meals` - Two meals a day
@@ -2492,11 +5370,30 @@ export interface components {
       /** @description The newest of your messages the other side has read (a cursor). */
       other_read_up_to: string;
     };
+    /**
+     * @description * `otp` - Re-confirm your phone by OTP
+     *     * `none` - Consent only (tests)
+     * @enum {string}
+     */
+    MethodEnum: "otp" | "none";
+    Moderation: {
+      decision: components["schemas"]["ModerationDecisionEnum"];
+      note: string;
+    };
+    /**
+     * @description * `allow` - allow
+     *     * `remove` - remove
+     * @enum {string}
+     */
+    ModerationDecisionEnum: "allow" | "remove";
     MyVerification: {
       checks: components["schemas"]["CheckSummary"][];
       /** @description Active badges. */
       badges: components["schemas"]["Badge"][];
       trusted_member: boolean;
+    };
+    NoShow: {
+      reason: string;
     };
     Note: {
       /** Format: uuid */
@@ -2508,6 +5405,95 @@ export interface components {
     };
     NoteIn: {
       note?: string;
+    };
+    Notification: {
+      /** Format: uuid */
+      readonly id: string;
+      /** @description The event type, e.g. 'offer.expiring'. */
+      readonly kind: string;
+      readonly title: string;
+      readonly body: string;
+      /** @description Not held back by quiet hours. */
+      readonly urgent: boolean;
+      /** @description Mobile app route. */
+      readonly app_path: string;
+      /**
+       * Format: uri
+       * @description Web console page.
+       */
+      readonly web_url: string;
+      readonly read: boolean;
+      /** Format: date-time */
+      readonly read_at: string | null;
+      /** Format: date-time */
+      readonly created_at: string;
+    };
+    /**
+     * @description * `in_app` - In the app
+     *     * `push` - Push
+     *     * `email` - Email
+     *     * `sms` - SMS
+     *     * `whatsapp` - WhatsApp
+     * @enum {string}
+     */
+    NotificationChannelEnum: "in_app" | "push" | "email" | "sms" | "whatsapp";
+    /**
+     * @description * `en` - English
+     *     * `hi` - हिन्दी (Hindi)
+     * @enum {string}
+     */
+    NotificationLocaleEnum: "en" | "hi";
+    Offer: {
+      /** Format: uuid */
+      readonly id: string;
+      /** @description 1 for the first offer, then 2, 3. */
+      readonly revision: number;
+      readonly proposed_by: components["schemas"]["PartyEnum"];
+      /** @description You sent this one. */
+      readonly mine: boolean;
+      readonly terms: components["schemas"]["Terms"];
+      readonly terms_sha256: string;
+      /**
+       * Format: uuid
+       * @description The offer this one answers (a counter, or the host's reply to it).
+       */
+      readonly counter_of: string | null;
+      /** @description For a counter or the host's reply: what differs from the offer it answers. */
+      readonly changed_fields: string[];
+      /** @description No counter allowed: the one counter has been used. */
+      readonly final: boolean;
+      readonly message: string;
+      readonly status: components["schemas"]["OfferStatusEnum"];
+      readonly status_reason: string;
+      /** Format: date-time */
+      readonly created_at: string;
+      /** Format: date-time */
+      readonly answered_at: string | null;
+    };
+    /**
+     * @description * `open` - Waiting for an answer
+     *     * `held` - On hold until a place opens
+     *     * `accepted` - Accepted
+     *     * `declined` - Declined
+     *     * `countered` - Countered
+     *     * `lapsed` - Lapsed
+     * @enum {string}
+     */
+    OfferStatusEnum: "open" | "held" | "accepted" | "declined" | "countered" | "lapsed";
+    /** @description Every offer on an application, oldest first, and what you can do next. */
+    OfferThread: {
+      offers: components["schemas"]["Offer"][];
+      /** Format: uuid */
+      open_offer: string | null;
+      /** @description The open offer is waiting for your answer. */
+      your_turn: boolean;
+      /** @description You may still ask for a change (the talent, once per application). */
+      can_counter: boolean;
+      counterable: string[];
+      /** Format: date-time */
+      offer_expires_at: string | null;
+      /** @description The host's reliability (v1). */
+      host_reliability: components["schemas"]["Reliability"];
     };
     PaginatedAdminCaseList: {
       /** @example 123 */
@@ -2523,6 +5509,21 @@ export interface components {
        */
       previous?: string | null;
       results: components["schemas"]["AdminCase"][];
+    };
+    PaginatedAgreementListItemList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["AgreementListItem"][];
     };
     PaginatedApplicationListItemList: {
       /** @example 123 */
@@ -2554,6 +5555,36 @@ export interface components {
       previous?: string | null;
       results: components["schemas"]["BookingListItem"][];
     };
+    PaginatedCheckInList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["CheckIn"][];
+    };
+    PaginatedConsentRecordList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["ConsentRecord"][];
+    };
     PaginatedConversationList: {
       /** @example 123 */
       count: number;
@@ -2568,6 +5599,36 @@ export interface components {
        */
       previous?: string | null;
       results: components["schemas"]["Conversation"][];
+    };
+    PaginatedCorrectionRequestList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["CorrectionRequest"][];
+    };
+    PaginatedDataExportList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["DataExport"][];
     };
     PaginatedGigList: {
       /** @example 123 */
@@ -2584,6 +5645,96 @@ export interface components {
       previous?: string | null;
       results: components["schemas"]["Gig"][];
     };
+    PaginatedInvoiceList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["Invoice"][];
+    };
+    PaginatedLibraryItemList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["LibraryItem"][];
+    };
+    PaginatedNotificationList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["Notification"][];
+    };
+    PaginatedPayoutList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["Payout"][];
+    };
+    PaginatedPayoutRunList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["PayoutRun"][];
+    };
+    PaginatedPendingHourLogList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["PendingHourLog"][];
+    };
     PaginatedPropertyList: {
       /** @example 123 */
       count: number;
@@ -2598,6 +5749,51 @@ export interface components {
        */
       previous?: string | null;
       results: components["schemas"]["Property"][];
+    };
+    PaginatedQueueItemList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["QueueItem"][];
+    };
+    PaginatedStayReviewList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["StayReview"][];
+    };
+    PaginatedTrackedDeliverableList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["TrackedDeliverable"][];
     };
     PaginatedVendorApplicationListItemList: {
       /** @example 123 */
@@ -2614,11 +5810,58 @@ export interface components {
       previous?: string | null;
       results: components["schemas"]["VendorApplicationListItem"][];
     };
+    PaginatedWalletEntryList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=4
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?page=2
+       */
+      previous?: string | null;
+      results: components["schemas"]["WalletEntry"][];
+    };
     Party: {
       /** Format: uuid */
       id: string;
       name: string;
       role: string;
+    };
+    /**
+     * @description * `vendor` - The host
+     *     * `talent` - The talent
+     * @enum {string}
+     */
+    PartyEnum: "vendor" | "talent";
+    /**
+     * @description Show `token` as a QR code. If scanning fails, show the six-digit code: TOTP
+     *     (HMAC-SHA1) of `code_secret` (base32), changing every `code_period_seconds`.
+     */
+    Pass: {
+      /** Format: uuid */
+      booking_id: string;
+      token: string;
+      code_secret: string;
+      /** @default 300 */
+      code_period_seconds: number;
+      /** @default 6 */
+      code_digits: number;
+      /** Format: date-time */
+      valid_from: string;
+      /** Format: date-time */
+      valid_until: string;
+    };
+    PassRequest: {
+      /** @description Where you are now (for the host's records). */
+      location?: components["schemas"]["Location"] | null;
+    };
+    PatchedDueDate: {
+      /** Format: date */
+      due_date?: string;
     };
     PatchedGig: {
       /** Format: uuid */
@@ -2691,6 +5934,8 @@ export interface components {
       property_type?: components["schemas"]["PropertyTypeEnum"];
       /** @description Street address. Never shown publicly. */
       address?: string;
+      /** @description How to find the place (landmarks, which gate, where to park). Shown only to talent with a confirmed booking, like the address. */
+      directions?: string;
       city?: string;
       state?: components["schemas"]["StateEnum"];
       pincode?: string;
@@ -2798,6 +6043,176 @@ export interface components {
       /** Format: date-time */
       readonly updated_at?: string;
     };
+    Payout: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly escrow_id: string;
+      /** Format: uuid */
+      readonly booking_id: string;
+      /** Format: uuid */
+      readonly talent_id: string;
+      readonly attempt: number;
+      readonly amount_paise: number;
+      readonly account_display: string;
+      readonly status: components["schemas"]["PayoutAttemptStatusEnum"];
+      readonly provider_payout_id: string;
+      /** @description The bank's reference. */
+      readonly utr: string;
+      readonly failure_reason: string;
+      /**
+       * Format: date-time
+       * @description When a failed payout is tried again; empty: an admin.
+       */
+      readonly next_attempt_at: string | null;
+      /** Format: date-time */
+      readonly processed_at: string | null;
+      /** Format: date-time */
+      readonly created_at: string;
+    };
+    /** @description Masked: the full UPI id or account number is never stored or returned. */
+    PayoutAccount: {
+      readonly method: components["schemas"]["PayoutMethodEnum"];
+      /** @description Masked, for showing. */
+      readonly display: string;
+      readonly validation_status:
+        components["schemas"]["PayoutValidationStatusEnum"] | components["schemas"]["BlankEnum"];
+      readonly validation_reason: string;
+      /** Format: date-time */
+      readonly verified_at: string | null;
+      /**
+       * Format: date-time
+       * @description Last replaced.
+       */
+      readonly changed_at: string | null;
+      /**
+       * Format: date-time
+       * @description No payouts before this (set by a change).
+       */
+      readonly hold_until: string | null;
+      /** @description Decides the TDS rate (no PAN: the higher rate). */
+      readonly pan_on_file: boolean;
+    };
+    /**
+     * @description * `creating` - Being created
+     *     * `processing` - With the provider
+     *     * `processed` - Paid out
+     *     * `failed` - Failed
+     *     * `reversed` - Reversed by the bank
+     * @enum {string}
+     */
+    PayoutAttemptStatusEnum: "creating" | "processing" | "processed" | "failed" | "reversed";
+    /**
+     * @description * `upi` - UPI
+     *     * `bank` - Bank account
+     * @enum {string}
+     */
+    PayoutMethodEnum: "upi" | "bank";
+    PayoutRetry: {
+      note: string;
+    };
+    PayoutRun: {
+      readonly id: number;
+      readonly trigger: components["schemas"]["PayoutTriggerEnum"];
+      /** Format: uuid */
+      readonly started_by: string | null;
+      /**
+       * Format: uuid
+       * @description Only this talent's payouts (on demand).
+       */
+      readonly talent: string | null;
+      /** Format: date-time */
+      readonly started_at: string;
+      /** Format: date-time */
+      readonly finished_at: string | null;
+      readonly considered: number;
+      readonly sent: number;
+      readonly held: number;
+      readonly failed: number;
+      readonly sent_paise: number;
+      /** @description reason: count */
+      readonly held_reasons: unknown;
+    };
+    PayoutRunDetail: {
+      readonly id: number;
+      readonly trigger: components["schemas"]["PayoutTriggerEnum"];
+      /** Format: uuid */
+      readonly started_by: string | null;
+      /**
+       * Format: uuid
+       * @description Only this talent's payouts (on demand).
+       */
+      readonly talent: string | null;
+      /** Format: date-time */
+      readonly started_at: string;
+      /** Format: date-time */
+      readonly finished_at: string | null;
+      readonly considered: number;
+      readonly sent: number;
+      readonly held: number;
+      readonly failed: number;
+      readonly sent_paise: number;
+      /** @description reason: count */
+      readonly held_reasons: unknown;
+      readonly payouts: components["schemas"]["Payout"][];
+    };
+    /**
+     * @description * `` - No payout
+     *     * `waiting_for_account` - Waiting for a verified payout account
+     *     * `on_hold` - On hold (ID check or a recent account change)
+     *     * `paused` - Paused by the kill switch
+     *     * `sending` - Payout being created
+     *     * `sent` - With the payout provider
+     *     * `settled` - Paid out
+     *     * `failed` - Payout failed
+     * @enum {string}
+     */
+    PayoutStatusEnum:
+      "waiting_for_account" | "on_hold" | "paused" | "sending" | "sent" | "settled" | "failed";
+    /**
+     * @description * `scheduled` - Scheduled
+     *     * `release` - After a release
+     *     * `on_demand` - Asked for by the talent
+     *     * `admin` - Started by an admin
+     * @enum {string}
+     */
+    PayoutTriggerEnum: "scheduled" | "release" | "on_demand" | "admin";
+    /**
+     * @description * `` - Not linked
+     *     * `pending` - Being checked
+     *     * `verified` - Verified
+     *     * `failed` - Couldn't be verified
+     * @enum {string}
+     */
+    PayoutValidationStatusEnum: "pending" | "verified" | "failed";
+    PdfLink: {
+      /** Format: uri */
+      url: string;
+      /** @description Seconds. */
+      expires_in: number;
+      sha256: string;
+      size: number;
+    };
+    PendingHourLog: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: date */
+      readonly day: string;
+      readonly minutes: number;
+      readonly note: string;
+      readonly status: components["schemas"]["HourStatusEnum"];
+      readonly vendor_note: string;
+      /** Format: date-time */
+      readonly reviewed_at: string | null;
+      /** Format: date-time */
+      readonly created_at: string;
+      /** Format: date-time */
+      readonly updated_at: string;
+      /** Format: uuid */
+      readonly booking_id: string;
+      readonly talent_name: string;
+      readonly gig_title: string;
+    };
     Photo: {
       /** Format: uuid */
       readonly id: string;
@@ -2826,6 +6241,82 @@ export interface components {
     PickSlot: {
       slot_id: number;
     };
+    Place: {
+      name: string;
+      address: string;
+      city: string;
+      state: string;
+      pincode: string;
+      /** Format: double */
+      latitude: number | null;
+      /** Format: double */
+      longitude: number | null;
+      directions: string;
+      /** @description Directions in Google Maps; empty without a pin. */
+      maps_url: string;
+    };
+    Plan: {
+      readonly code: string;
+      readonly name: string;
+      readonly description: string;
+      /** @description Per month, before GST, in paise. */
+      readonly price_paise: number;
+      readonly currency: string;
+      /** Format: double */
+      readonly gst_percent: number;
+      /** @description Empty: no limit. */
+      readonly max_live_gigs: number | null;
+      readonly features: {
+        [key: string]: boolean;
+      };
+    };
+    PolicyDocument: {
+      purpose: components["schemas"]["ConsentPurposeEnum"];
+      label: string;
+      version: string;
+      required: boolean;
+      /** @description Where to read it on the web app. */
+      web_path: string;
+    };
+    PostStats: {
+      readonly source: components["schemas"]["PostStatsSourceEnum"];
+      readonly self_reported: boolean;
+      readonly views: number | null;
+      readonly likes: number | null;
+      readonly comments: number | null;
+      /** Format: date-time */
+      readonly captured_at: string;
+      readonly screenshot_url: string | null;
+    };
+    /**
+     * @description * `instagram` - Instagram API
+     *     * `youtube` - YouTube API
+     *     * `manual` - Self-reported
+     * @enum {string}
+     */
+    PostStatsSourceEnum: "instagram" | "youtube" | "manual";
+    PreferenceChange: {
+      event_type: components["schemas"]["EventTypeEnum"];
+      channel: components["schemas"]["NotificationChannelEnum"];
+      enabled: boolean;
+    };
+    Preferences: {
+      locale: components["schemas"]["NotificationLocaleEnum"];
+      quiet_hours_enabled: boolean;
+      /**
+       * Format: time
+       * @description India time.
+       */
+      quiet_start: string;
+      /**
+       * Format: time
+       * @description India time.
+       */
+      quiet_end: string;
+      /** @description Channels Barterly can send on right now. */
+      channels_available: components["schemas"]["NotificationChannelEnum"][];
+      event_types: components["schemas"]["EventTypeSetting"][];
+    };
     /** @description The owner's view: everything, including the exact address and pin. */
     Property: {
       /** Format: uuid */
@@ -2834,6 +6325,8 @@ export interface components {
       property_type: components["schemas"]["PropertyTypeEnum"];
       /** @description Street address. Never shown publicly. */
       address: string;
+      /** @description How to find the place (landmarks, which gate, where to park). Shown only to talent with a confirmed booking, like the address. */
+      directions?: string;
       city: string;
       state: components["schemas"]["StateEnum"];
       pincode?: string;
@@ -2875,6 +6368,10 @@ export interface components {
      * @enum {string}
      */
     PropertyTypeEnum: "hostel" | "homestay" | "cafe" | "hotel" | "trek_operator";
+    ProposeChange: {
+      changes: components["schemas"]["Changes"];
+      reason: string;
+    };
     ProposeInterview: {
       /** @description ISO 8601. Times without an offset are read as India time (Asia/Kolkata). */
       slots: string[];
@@ -2886,6 +6383,12 @@ export interface components {
       /** @default 30 */
       duration_minutes: number;
       note?: string;
+    };
+    PublicKey: {
+      kid: string;
+      alg: string;
+      /** @description Raw Ed25519 public key, base64url. */
+      public_key: string;
     };
     PublicPhoto: {
       /** Format: uuid */
@@ -2914,6 +6417,27 @@ export interface components {
       readonly exact_location: components["schemas"]["ExactLocation"] | null;
       readonly photos: components["schemas"]["PublicPhoto"][];
     };
+    QueueItem: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly booking_id: string;
+      readonly subject_side: components["schemas"]["ReviewSideEnum"];
+      readonly rating: number;
+      readonly categories: components["schemas"]["CategoryScore"][];
+      readonly text: string;
+      readonly status: components["schemas"]["ReviewStatusEnum"];
+      readonly author_name: string;
+      /** Format: date-time */
+      readonly submitted_at: string;
+      /** Format: date-time */
+      readonly published_at: string | null;
+      readonly reply: components["schemas"]["Reply"] | null;
+      readonly flags: string[];
+      readonly reports: {
+        [key: string]: unknown;
+      }[];
+    };
     Read: {
       /** @description A message cursor; everything up to it is read. */
       up_to: string;
@@ -2926,6 +6450,22 @@ export interface components {
       label: string;
       /** @description What the applicant reads. */
       text: string;
+    };
+    ReconciliationRun: {
+      /** Format: date */
+      readonly day: string;
+      readonly ok: boolean;
+      ledger: {
+        [key: string]: number;
+      };
+      gateway: {
+        [key: string]: number;
+      };
+      mismatches: {
+        [key: string]: unknown;
+      }[];
+      /** Format: date-time */
+      readonly created_at: string;
     };
     ReferenceCheck: {
       name: string;
@@ -2947,14 +6487,74 @@ export interface components {
      * @enum {string}
      */
     RejectionReasonEnum: "not_a_fit" | "dates" | "filled" | "language" | "incomplete" | "other";
+    Reliability: {
+      score: number;
+      level: components["schemas"]["LevelEnum"];
+      version: string;
+    };
+    ReliabilityDetail: {
+      score: number;
+      level: components["schemas"]["LevelEnum"];
+      version: string;
+      side: components["schemas"]["ReliabilitySideEnum"];
+      inputs: {
+        [key: string]: number;
+      };
+      /** @description Each term's points (docs/reliability.md). */
+      breakdown: {
+        [key: string]: number;
+      };
+    };
+    /**
+     * @description * `talent` - As talent
+     *     * `vendor` - As a host
+     * @enum {string}
+     */
+    ReliabilitySideEnum: "talent" | "vendor";
+    Reply: {
+      readonly text: string;
+      /** Format: date-time */
+      readonly created_at: string;
+    };
+    ReplyRequest: {
+      text: string;
+    };
     Report: {
       reason: components["schemas"]["ChatReportReasonEnum"];
       note?: string;
+    };
+    /**
+     * @description * `abusive` - Abusive or hateful
+     *     * `false` - Not true / about something else
+     *     * `private` - Shares private information
+     *     * `spam` - Spam or advertising
+     *     * `other` - Something else
+     * @enum {string}
+     */
+    ReportReasonEnum: "abusive" | "false" | "private" | "spam" | "other";
+    ReportRequest: {
+      reason: components["schemas"]["ReportReasonEnum"];
+      /** @default  */
+      note: string;
     };
     ReportResult: {
       /** Format: uuid */
       id: string;
       status: string;
+    };
+    Reputation: {
+      /** Format: decimal */
+      rating_average: string | null;
+      review_count: number;
+      /** @description Percent. */
+      completion_rate: number | null;
+      /** @description Median chat reply time, last 90 days. */
+      response_minutes: number | null;
+      badges: components["schemas"]["ReputationBadge"][];
+    };
+    ReputationBadge: {
+      key: string;
+      label: string;
     };
     /**
      * @description * `none` - No verification needed
@@ -2963,6 +6563,42 @@ export interface components {
      * @enum {string}
      */
     RequiredVerificationEnum: "none" | "id_verified" | "trusted_member";
+    Review: {
+      approve: boolean;
+      /** @default  */
+      note: string;
+    };
+    ReviewDeliverable: {
+      approve: boolean;
+      /** @default  */
+      note: string;
+    };
+    ReviewResult: {
+      submission: components["schemas"]["DeliverableSubmission"];
+      escrow: components["schemas"]["Escrow"] | null;
+      /** @description Why the money wasn't released just now (it will be retried), or empty. */
+      release_held_back: string;
+    };
+    /**
+     * @description * `talent` - Talent
+     *     * `host` - Host
+     * @enum {string}
+     */
+    ReviewSideEnum: "talent" | "host";
+    /**
+     * @description * `submitted` - Waiting for the other review
+     *     * `held` - Held for moderation
+     *     * `published` - Published
+     *     * `removed` - Removed by Barterly
+     * @enum {string}
+     */
+    ReviewStatusEnum: "submitted" | "held" | "published" | "removed";
+    /**
+     * @description * `talent` - talent
+     *     * `host` - host
+     * @enum {string}
+     */
+    ReviewingEnum: "talent" | "host";
     /**
      * @description * `volunteer` - Volunteer
      *     * `content_creator` - Content creator
@@ -3022,6 +6658,12 @@ export interface components {
      * @enum {string}
      */
     ScanStatusEnum: "pending" | "clean" | "infected" | "skipped" | "error";
+    /**
+     * @description * `organic` - The host's own social channels and website
+     *     * `organic_and_ads` - Own channels, website and paid ads
+     * @enum {string}
+     */
+    ScopeEnum: "organic" | "organic_and_ads";
     Send: {
       body?: string;
       /** @description Confirmed uploads (kind 'photo' or 'document'): JPEG, PNG, WebP or PDF, up to 10 MB each. */
@@ -3033,6 +6675,38 @@ export interface components {
       message: components["schemas"]["ChatMessage"];
       /** @description Tell the sender this when it isn't empty (e.g. why a number was hidden). */
       notice: string;
+    };
+    SetAppVersion: {
+      minimum_version: string;
+      latest_version: string;
+      store_url?: string;
+      message?: string;
+      reason: string;
+    };
+    SetFlag: {
+      enabled: boolean;
+      reason: string;
+    };
+    Sign: {
+      /** @description The signer ticked the consent statement. */
+      consent: boolean;
+      /** @description The fingerprint of the PDF the signer read. */
+      document_sha256: string;
+      /**
+       * @description A fresh ID token from re-running phone OTP (method otp).
+       * @default
+       */
+      otp_token: string;
+    };
+    Signature: {
+      readonly party: components["schemas"]["PartyEnum"];
+      /** Format: date-time */
+      readonly signed_at: string;
+      /** @description The ESignProvider that took it. */
+      readonly provider: string;
+      readonly otp_confirmed: boolean;
+      /** @description The PDF the signer saw: equal to the version's pdf_sha256. */
+      readonly document_sha256: string;
     };
     Skill: {
       slug: string;
@@ -3128,10 +6802,55 @@ export interface components {
       | "Ladakh"
       | "Lakshadweep"
       | "Puducherry";
+    Statement: {
+      financial_year: string;
+      talent: components["schemas"]["StatementParty"];
+      rows: components["schemas"]["StatementRow"][];
+      totals: {
+        [key: string]: number;
+      };
+    };
+    StatementParty: {
+      name: string;
+      id: string;
+    };
+    StatementRow: {
+      /** Format: date */
+      date: string;
+      /** Format: uuid */
+      booking_id: string;
+      gig_title: string;
+      gross_paise: number;
+      commission_paise: number;
+      commission_gst_paise: number;
+      tds_paise: number;
+      net_paise: number;
+      payout_status: string;
+      /** Format: date */
+      paid_on: string | null;
+      utr: string;
+    };
     StatusChange: {
       status: components["schemas"]["GigStatusEnum"];
       /** @description Required when an admin sends a gig back. Shown to the vendor. */
       reason?: string;
+    };
+    StayReview: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly booking_id: string;
+      readonly subject_side: components["schemas"]["ReviewSideEnum"];
+      readonly rating: number;
+      readonly categories: components["schemas"]["CategoryScore"][];
+      readonly text: string;
+      readonly status: components["schemas"]["ReviewStatusEnum"];
+      readonly author_name: string;
+      /** Format: date-time */
+      readonly submitted_at: string;
+      /** Format: date-time */
+      readonly published_at: string | null;
+      readonly reply: components["schemas"]["Reply"] | null;
     };
     /**
      * @description * `none` - No stay
@@ -3156,6 +6875,112 @@ export interface components {
      * @enum {string}
      */
     SubjectTypeEnum: "user" | "property" | "social_account";
+    Submission: {
+      readonly version: number;
+      /** Format: uri */
+      readonly post_url: string;
+      readonly files: components["schemas"]["FileLink"][];
+      readonly note: string;
+      /** @description The talent confirms the post carries the collaboration label. */
+      readonly disclosure_confirmed: boolean;
+      /** @description Seen in the post's caption (empty: couldn't check). */
+      readonly disclosure_detected: boolean | null;
+      /** Format: date-time */
+      readonly submitted_at: string;
+      readonly review:
+        components["schemas"]["SubmissionReviewEnum"] | components["schemas"]["BlankEnum"];
+      readonly review_note: string;
+      /** Format: date-time */
+      readonly reviewed_at: string | null;
+    };
+    /**
+     * @description * `` - Waiting for the host
+     *     * `approved` - Approved
+     *     * `changes` - Changes asked for
+     * @enum {string}
+     */
+    SubmissionReviewEnum: "approved" | "changes";
+    Submit: {
+      post_url?: string;
+      file_ids?: string[];
+      /** @default  */
+      note: string;
+      /**
+       * @description The post carries the collaboration label (#collab, #ad or the paid partnership tag). Required for public posts.
+       * @default false
+       */
+      disclosure_confirmed: boolean;
+    };
+    SubmitDeliverable: {
+      /** @default  */
+      note: string;
+      links?: string[];
+    };
+    Subscribe: {
+      plan: string;
+      coupon?: string;
+    };
+    Subscription: {
+      /** Format: uuid */
+      readonly id: string;
+      readonly plan: components["schemas"]["Plan"];
+      readonly pending_plan: components["schemas"]["Plan"] | null;
+      readonly status: components["schemas"]["SubscriptionStatusEnum"];
+      /** Format: uri */
+      readonly checkout_url: string;
+      /** Format: date-time */
+      readonly trial_ends_at: string | null;
+      /** Format: date-time */
+      readonly current_period_start: string | null;
+      /** Format: date-time */
+      readonly current_period_end: string | null;
+      /**
+       * Format: date-time
+       * @description First failure of the current dunning run.
+       */
+      readonly payment_failed_at: string | null;
+      /**
+       * Format: date-time
+       * @description Paid features stay on until here while retrying.
+       */
+      readonly grace_until: string | null;
+      readonly cancel_at_period_end: boolean;
+      /** Format: date-time */
+      readonly created_at: string;
+    };
+    /**
+     * @description * `created` - Waiting for checkout
+     *     * `authenticated` - Card set up (trial or first charge pending)
+     *     * `active` - Active
+     *     * `past_due` - Payment failed: retrying
+     *     * `halted` - Retries exhausted
+     *     * `cancelled` - Cancelled
+     *     * `completed` - Completed
+     * @enum {string}
+     */
+    SubscriptionStatusEnum:
+      "created" | "authenticated" | "active" | "past_due" | "halted" | "cancelled" | "completed";
+    SyncRequest: {
+      events: components["schemas"]["CheckInRequest"][];
+    };
+    SyncResponse: {
+      results: components["schemas"]["SyncResult"][];
+    };
+    SyncResult: {
+      /** Format: uuid */
+      client_id: string;
+      status: components["schemas"]["SyncResultStatusEnum"];
+      message: string;
+      /** Format: uuid */
+      booking_id: string | null;
+    };
+    /**
+     * @description * `applied` - applied
+     *     * `duplicate` - duplicate
+     *     * `refused` - refused
+     * @enum {string}
+     */
+    SyncResultStatusEnum: "applied" | "duplicate" | "refused";
     Tags: {
       tags: string[];
     };
@@ -3213,6 +7038,63 @@ export interface components {
       | "tech"
       | "outdoor"
       | "other";
+    TdsQuarter: {
+      quarter: string;
+      amount_credited_paise: number;
+      tds_paise: number;
+    };
+    TdsRecord: {
+      financial_year: string;
+      section: string;
+      deductor: components["schemas"]["Deductor"];
+      deductee: components["schemas"]["Deductee"];
+      quarters: components["schemas"]["TdsQuarter"][];
+      rows: components["schemas"]["TdsRow"][];
+      total_credited_paise: number;
+      total_tds_paise: number;
+      note: string;
+    };
+    TdsRow: {
+      /** Format: date */
+      date: string;
+      quarter: string;
+      /** Format: uuid */
+      booking_id: string;
+      gig_title: string;
+      amount_credited_paise: number;
+      tds_paise: number;
+    };
+    /** @description Everything both sides agree to. Validated against the gig's pay model. */
+    Terms: {
+      readonly compensation_model: components["schemas"]["CompensationModelEnum"];
+      /** Format: date */
+      start_date: string;
+      /** Format: date */
+      end_date: string;
+      hours_per_day: number;
+      /** @description At most 6: everyone gets at least one day off. */
+      days_per_week: number;
+      stay_type: components["schemas"]["StayTypeEnum"];
+      meals: components["schemas"]["MealsEnum"];
+      /**
+       * Format: decimal
+       * @description INR. Hybrid and paid gigs only.
+       */
+      stipend_amount?: string | null;
+      /** @default  */
+      stipend_period:
+        components["schemas"]["StipendPeriodEnum"] | components["schemas"]["BlankEnum"];
+      deliverables?: components["schemas"]["TermsDeliverable"][];
+      /** @description How the host may use the talent's content. Barter and hybrid gigs only. */
+      usage_rights?: components["schemas"]["UsageRights"] | null;
+      cancellation_policy: components["schemas"]["CancellationPolicyEnum"];
+    };
+    TermsDeliverable: {
+      type: components["schemas"]["DeliverableTypeEnum"];
+      quantity: number;
+      /** @default  */
+      notes: string;
+    };
     TimelineEntry: {
       status: string;
       /** Format: date-time */
@@ -3225,11 +7107,74 @@ export interface components {
       /** @description Exchange at /api/v1/auth/refresh/ for new tokens. */
       refresh: string;
     };
+    TrackedDeliverable: {
+      /** Format: uuid */
+      readonly id: string;
+      /** Format: uuid */
+      readonly booking_id: string;
+      readonly gig_title: string;
+      readonly kind: components["schemas"]["DeliverableKindEnum"];
+      readonly platform: components["schemas"]["DeliverablePlatformEnum"];
+      /** @description The agreement's deliverable type. */
+      readonly spec_type: string;
+      readonly title: string;
+      readonly notes: string;
+      /** Format: date */
+      readonly due_date: string;
+      readonly status: components["schemas"]["DeliverableStatusEnum"];
+      readonly change_rounds: number;
+      readonly change_rounds_left: number;
+      /** @description A public post: it must carry the collaboration label (#collab, #ad, ...). */
+      readonly disclosure_required: boolean;
+      /**
+       * Format: date-time
+       * @description Latest submission.
+       */
+      readonly submitted_at: string | null;
+      /** Format: date-time */
+      readonly approved_at: string | null;
+      readonly latest_submission: components["schemas"]["Submission"] | null;
+      readonly stats: components["schemas"]["PostStats"][];
+      readonly usage_rights: components["schemas"]["UsageRights"] | null;
+      readonly usable_until: string | null;
+    };
+    /**
+     * @description Shared once both have signed: each side's verified phone, and for the talent the
+     *     exact address and directions.
+     */
+    Unlocked: {
+      /** Format: uuid */
+      booking_id: string;
+      status: components["schemas"]["BookingStatusEnum"];
+      host: components["schemas"]["Contact"];
+      talent: components["schemas"]["Contact"];
+      /** @description For the talent only. */
+      place: components["schemas"]["Place"] | null;
+    };
     Unread: {
       /** @description Unread messages across all conversations. */
       unread: number;
       /** @description Conversations with unread messages. */
       conversations: number;
+    };
+    UnreadCount: {
+      unread: number;
+    };
+    /**
+     * @description * `required` - required
+     *     * `available` - available
+     *     * `none` - none
+     * @enum {string}
+     */
+    UpdateEnum: "required" | "available" | "none";
+    UpdatePreferences: {
+      locale?: components["schemas"]["NotificationLocaleEnum"];
+      quiet_hours_enabled?: boolean;
+      /** Format: time */
+      quiet_start?: string;
+      /** Format: time */
+      quiet_end?: string;
+      changes?: components["schemas"]["PreferenceChange"][];
     };
     UploadUrlRequest: {
       kind: components["schemas"]["KindEnum"];
@@ -3251,6 +7196,12 @@ export interface components {
       /** Format: date-time */
       expires_at: string;
     };
+    UsageRights: {
+      scope: components["schemas"]["ScopeEnum"];
+      duration_months: number;
+      /** @description The host credits the talent (name or handle) when using the content. */
+      credit_required: boolean;
+    };
     User: {
       /** Format: uuid */
       readonly id: string;
@@ -3270,8 +7221,14 @@ export interface components {
       readonly is_active: boolean;
       /** @description True once the user has a role and the matching profile. */
       readonly profile_complete: boolean;
+      /** @description True when the terms or the privacy policy were never accepted, or changed since. Ask again (POST /api/v1/privacy/consents/) before going on. */
+      readonly needs_consent: boolean;
       /** Format: date-time */
       readonly created_at: string;
+    };
+    UserReputation: {
+      talent: components["schemas"]["Reputation"];
+      host: components["schemas"]["Reputation"];
     };
     /**
      * @description * `vendor` - Vendor
@@ -3345,20 +7302,17 @@ export interface components {
       readonly conversation: string | null;
       /** @default 0 */
       readonly unread_messages: number;
+      /**
+       * Format: uuid
+       * @description The agreement, once the application is booked (apps.agreements).
+       */
+      readonly agreement: string | null;
       /** Format: date-time */
       readonly applied_at: string;
       readonly rejection_code: string;
       readonly tags: string[];
       readonly note_count: number;
     };
-    /**
-     * @description * `shortlisted` - shortlisted
-     *     * `interview` - interview
-     *     * `offered` - offered
-     *     * `rejected` - rejected
-     * @enum {string}
-     */
-    VendorApplicationMoveEnum: "shortlisted" | "interview" | "offered" | "rejected";
     VendorProfile: {
       /** Format: uuid */
       readonly id: string;
@@ -3387,10 +7341,24 @@ export interface components {
      *     applicant sees its text plus the optional message.
      */
     VendorStatus: {
-      status: components["schemas"]["VendorApplicationMoveEnum"];
+      /**
+       * @description To offer, send the terms: POST /api/v1/applications/{id}/offer/.
+       *
+       *     * `shortlisted` - shortlisted
+       *     * `interview` - interview
+       *     * `rejected` - rejected
+       */
+      status: components["schemas"]["VendorStatusStatusEnum"];
       reason_code?: components["schemas"]["RejectionReasonEnum"];
       message?: string;
     };
+    /**
+     * @description * `shortlisted` - shortlisted
+     *     * `interview` - interview
+     *     * `rejected` - rejected
+     * @enum {string}
+     */
+    VendorStatusStatusEnum: "shortlisted" | "interview" | "rejected";
     /**
      * @description * `pending` - Pending
      *     * `verified` - Verified
@@ -3438,11 +7406,62 @@ export interface components {
       | "rejected"
       | "changes_requested"
       | "expired";
+    Wallet: {
+      /** @description Held in escrow, not yet released. */
+      pending_paise: number;
+      /** @description Roughly what pending would pay you, after commission, GST and TDS. */
+      pending_net_estimate_paise: number;
+      /** @description Released to you, not yet paid out. */
+      available_paise: number;
+      in_transit_paise: number;
+      paid_out_paise: number;
+      tds_this_year_paise: number;
+      financial_year: string;
+      payout_account: components["schemas"]["PayoutAccount"] | null;
+      /** @description Why payouts wait, as a code; or empty. */
+      on_hold_reason: string;
+      on_hold_message: string;
+      can_request_payout: boolean;
+    };
+    WalletEntry: {
+      kind: components["schemas"]["WalletEntryKindEnum"];
+      /** Format: date-time */
+      at: string;
+      /** @description Release: your net; payout: the amount. */
+      amount_paise: number;
+      status: string;
+      /** Format: uuid */
+      booking_id: string;
+      gig_title: string;
+      gross_paise: number;
+      commission_paise: number;
+      commission_gst_paise: number;
+      tds_paise: number;
+      account: string;
+      reference: string;
+      failure_reason: string;
+    };
+    /**
+     * @description * `release` - release
+     *     * `payout` - payout
+     * @enum {string}
+     */
+    WalletEntryKindEnum: "release" | "payout";
     WebhookResponse: {
       outcome: string;
     };
     Withdraw: {
       reason?: string;
+    };
+    WriteReview: {
+      rating: number;
+      communication: number;
+      /** @description Reviewing a host: accuracy of the listing. A talent: work quality. */
+      accuracy: number;
+      safety: number;
+      /** @description Reviewing a host: payment as agreed. A talent: punctuality. */
+      reliability: number;
+      text: string;
     };
   };
   responses: never;
@@ -3453,6 +7472,1075 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  app_versions_admin_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AppVersion"][];
+        };
+      };
+    };
+  };
+  app_versions_admin_set: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        platform: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SetAppVersion"];
+        "application/x-www-form-urlencoded": components["schemas"]["SetAppVersion"];
+        "multipart/form-data": components["schemas"]["SetAppVersion"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AppVersion"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_admin_flag_review: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        check_in_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["FlagReview"];
+        "application/x-www-form-urlencoded": components["schemas"]["FlagReview"];
+        "multipart/form-data": components["schemas"]["FlagReview"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CheckIn"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_admin_flagged: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedCheckInList"];
+        };
+      };
+    };
+  };
+  flags_admin_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Flag"][];
+        };
+      };
+    };
+  };
+  flags_admin_set: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        key: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SetFlag"];
+        "application/x-www-form-urlencoded": components["schemas"]["SetFlag"];
+        "multipart/form-data": components["schemas"]["SetFlag"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Flag"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_admin_decide: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EscrowDecision"];
+        "application/x-www-form-urlencoded": components["schemas"]["EscrowDecision"];
+        "multipart/form-data": components["schemas"]["EscrowDecision"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Escrow"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_admin_kill_switch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["KillSwitch"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_admin_kill_switch_set: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["KillSwitch"];
+        "application/x-www-form-urlencoded": components["schemas"]["KillSwitch"];
+        "multipart/form-data": components["schemas"]["KillSwitch"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["KillSwitch"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_admin_payout_runs: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedPayoutRunList"];
+        };
+      };
+    };
+  };
+  money_admin_payout_run_start: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PayoutRunDetail"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_admin_payout_run: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        run_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PayoutRunDetail"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_admin_payouts: {
+    parameters: {
+      query?: {
+        needs_admin?: boolean;
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+        status?: "creating" | "failed" | "processed" | "processing" | "reversed";
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedPayoutList"];
+        };
+      };
+    };
+  };
+  money_admin_payout_retry: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        payout_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PayoutRetry"];
+        "application/x-www-form-urlencoded": components["schemas"]["PayoutRetry"];
+        "multipart/form-data": components["schemas"]["PayoutRetry"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PayoutRunDetail"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_admin_reconciliation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReconciliationRun"][];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  reviews_admin_moderate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        review_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Moderation"];
+        "application/x-www-form-urlencoded": components["schemas"]["Moderation"];
+        "multipart/form-data": components["schemas"]["Moderation"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StayReview"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  reviews_admin_queue: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedQueueItemList"];
+        };
+      };
+    };
+  };
+  agreements_decline_change: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        version_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["DeclineChange"];
+        "application/x-www-form-urlencoded": components["schemas"]["DeclineChange"];
+        "multipart/form-data": components["schemas"]["DeclineChange"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Agreement"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  agreements_pdf: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        version_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PdfLink"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  agreements_sign_challenge: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        version_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Challenge"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  agreements_sign: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        version_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Sign"];
+        "application/x-www-form-urlencoded": components["schemas"]["Sign"];
+        "multipart/form-data": components["schemas"]["Sign"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Agreement"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  agreements_list: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedAgreementListItemList"];
+        };
+      };
+    };
+  };
+  agreements_retrieve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        agreement_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Agreement"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  app_version: {
+    parameters: {
+      query: {
+        platform: "android" | "ios";
+        /** @description The app's version, e.g. 1.4.2. */
+        version?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AppVersionStatus"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
   hiring_filters_list: {
     parameters: {
       query?: never;
@@ -4205,6 +9293,163 @@ export interface operations {
       };
     };
   };
+  offers_make: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        application_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MakeOffer"];
+        "application/x-www-form-urlencoded": components["schemas"]["MakeOffer"];
+        "multipart/form-data": components["schemas"]["MakeOffer"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OfferThread"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  offers_draft: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        application_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Terms"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  offers_thread: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        application_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OfferThread"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
   applications_status_change: {
     parameters: {
       query?: never;
@@ -4422,6 +9667,224 @@ export interface operations {
       };
     };
   };
+  attendance_arrivals: {
+    parameters: {
+      query?: {
+        date?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Arrivals"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_check_in: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CheckInRequest"];
+        "application/x-www-form-urlencoded": components["schemas"]["CheckInRequest"];
+        "multipart/form-data": components["schemas"]["CheckInRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CheckIn"];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CheckIn"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_hours_pending: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedPendingHourLogList"];
+        };
+      };
+    };
+  };
+  attendance_keys: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PublicKey"][];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_sync: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SyncRequest"];
+        "application/x-www-form-urlencoded": components["schemas"]["SyncRequest"];
+        "multipart/form-data": components["schemas"]["SyncRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SyncResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
   auth_exchange: {
     parameters: {
       query?: never;
@@ -4568,6 +10031,391 @@ export interface operations {
       };
     };
   };
+  billing_overview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BillingOverview"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  billing_cancel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["CancelSubscription"];
+        "application/x-www-form-urlencoded": components["schemas"]["CancelSubscription"];
+        "multipart/form-data": components["schemas"]["CancelSubscription"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Subscription"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  billing_change_plan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangePlan"];
+        "application/x-www-form-urlencoded": components["schemas"]["ChangePlan"];
+        "multipart/form-data": components["schemas"]["ChangePlan"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Subscription"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  billing_invoices: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedInvoiceList"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  billing_invoice_pdf: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        invoice_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvoicePdfLink"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  billing_plans: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Plan"][];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  billing_subscribe: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Subscribe"];
+        "application/x-www-form-urlencoded": components["schemas"]["Subscribe"];
+        "multipart/form-data": components["schemas"]["Subscribe"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Subscription"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  billing_razorpay_webhook: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          [key: string]: unknown;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            outcome?: string;
+          };
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
   bookings_list: {
     parameters: {
       query?: {
@@ -4584,7 +10432,8 @@ export interface operations {
           | "disputed"
           | "no_show"
           | "refunded"
-          | "reviewed";
+          | "reviewed"
+          | "signing";
       };
       header?: never;
       path?: never;
@@ -4671,6 +10520,1065 @@ export interface operations {
       };
     };
   };
+  agreements_for_booking: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Agreement"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  agreements_propose_change: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ProposeChange"];
+        "application/x-www-form-urlencoded": components["schemas"]["ProposeChange"];
+        "multipart/form-data": components["schemas"]["ProposeChange"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Agreement"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_check_in_record: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CheckIn"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_check_out: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CheckIn"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_no_show: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NoShow"];
+        "application/x-www-form-urlencoded": components["schemas"]["NoShow"];
+        "multipart/form-data": components["schemas"]["NoShow"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            status?: string;
+          };
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_pass: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["PassRequest"];
+        "application/x-www-form-urlencoded": components["schemas"]["PassRequest"];
+        "multipart/form-data": components["schemas"]["PassRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Pass"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  bookings_cancel_preview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CancelPreview"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  bookings_cancel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Cancel"];
+        "application/x-www-form-urlencoded": components["schemas"]["Cancel"];
+        "multipart/form-data": components["schemas"]["Cancel"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Booking"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_deliverables: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeliverableSubmission"][];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_deliverables_submit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["SubmitDeliverable"];
+        "application/x-www-form-urlencoded": components["schemas"]["SubmitDeliverable"];
+        "multipart/form-data": components["schemas"]["SubmitDeliverable"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeliverableSubmission"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  deliverables_for_booking: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TrackedDeliverable"][];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  bookings_details: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Unlocked"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_escrow: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EscrowOverview"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_escrow_fund: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EscrowCheckout"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_hours_week: {
+    parameters: {
+      query?: {
+        week?: string;
+      };
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HoursWeek"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_hours_log: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LogHours"];
+        "application/x-www-form-urlencoded": components["schemas"]["LogHours"];
+        "multipart/form-data": components["schemas"]["LogHours"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LoggedHours"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  attendance_hours_check: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LogHours"];
+        "application/x-www-form-urlencoded": components["schemas"]["LogHours"];
+        "multipart/form-data": components["schemas"]["LogHours"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HoursCheck"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  reviews_for_booking: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BookingReviews"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  reviews_submit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        booking_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["WriteReview"];
+        "application/x-www-form-urlencoded": components["schemas"]["WriteReview"];
+        "multipart/form-data": components["schemas"]["WriteReview"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StayReview"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
   bookings_transition: {
     parameters: {
       query?: never;
@@ -4726,6 +11634,54 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  deliverables_library: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedLibraryItemList"];
+        };
+      };
+    };
+  };
+  deliverables_to_review: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedTrackedDeliverableList"];
         };
       };
     };
@@ -5102,6 +12058,360 @@ export interface operations {
       };
     };
   };
+  money_deliverables_review: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        submission_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReviewDeliverable"];
+        "application/x-www-form-urlencoded": components["schemas"]["ReviewDeliverable"];
+        "multipart/form-data": components["schemas"]["ReviewDeliverable"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReviewResult"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  deliverables_due_date: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deliverable_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["PatchedDueDate"];
+        "application/x-www-form-urlencoded": components["schemas"]["PatchedDueDate"];
+        "multipart/form-data": components["schemas"]["PatchedDueDate"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TrackedDeliverable"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  deliverables_review: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deliverable_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Review"];
+        "application/x-www-form-urlencoded": components["schemas"]["Review"];
+        "multipart/form-data": components["schemas"]["Review"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TrackedDeliverable"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  deliverables_report_stats: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deliverable_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ManualStats"];
+        "application/x-www-form-urlencoded": components["schemas"]["ManualStats"];
+        "multipart/form-data": components["schemas"]["ManualStats"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PostStats"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  deliverables_submit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deliverable_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["Submit"];
+        "application/x-www-form-urlencoded": components["schemas"]["Submit"];
+        "multipart/form-data": components["schemas"]["Submit"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TrackedDeliverable"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  flags_values: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FlagValues"];
+        };
+      };
+    };
+  };
   geo_geocode: {
     parameters: {
       query?: never;
@@ -5407,11 +12717,21 @@ export interface operations {
   gig_applications_list: {
     parameters: {
       query?: {
+        /** @description Only applicants with it. */
+        badge?:
+          | "id_verified"
+          | "licence_verified"
+          | "property_verified"
+          | "reference_checked"
+          | "social_verified"
+          | "trusted_member";
         min_score?: number;
         /** @description A page number within the paginated result set. */
         page?: number;
         /** @description Number of results to return per page. */
         page_size?: number;
+        /** @description Part of the applicant's name. */
+        q?: string;
         sort?: "fit" | "newest" | "oldest";
         /** @description Comma list of statuses. */
         status?: string;
@@ -6082,6 +13402,73 @@ export interface operations {
       };
     };
   };
+  attendance_hours_review: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        log_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["HourReview"];
+        "application/x-www-form-urlencoded": components["schemas"]["HourReview"];
+        "multipart/form-data": components["schemas"]["HourReview"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HourLog"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
   jobs_run: {
     parameters: {
       query?: never;
@@ -6449,6 +13836,1220 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_razorpay_webhook: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          [key: string]: unknown;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            outcome?: string;
+          };
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_razorpayx_webhook: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          [key: string]: unknown;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            outcome?: string;
+          };
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  notifications_list: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+        /** @description Only unread ones. */
+        unread?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedNotificationList"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  notifications_read: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        notification_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["MarkRead"];
+        "application/x-www-form-urlencoded": components["schemas"]["MarkRead"];
+        "multipart/form-data": components["schemas"]["MarkRead"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Notification"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  notifications_devices_register: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Device"];
+        "application/x-www-form-urlencoded": components["schemas"]["Device"];
+        "multipart/form-data": components["schemas"]["Device"];
+      };
+    };
+    responses: {
+      /** @description No response body */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  notifications_devices_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DeviceToken"];
+        "application/x-www-form-urlencoded": components["schemas"]["DeviceToken"];
+        "multipart/form-data": components["schemas"]["DeviceToken"];
+      };
+    };
+    responses: {
+      /** @description No response body */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  notifications_preferences: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Preferences"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  notifications_preferences_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["UpdatePreferences"];
+        "application/x-www-form-urlencoded": components["schemas"]["UpdatePreferences"];
+        "multipart/form-data": components["schemas"]["UpdatePreferences"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Preferences"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  notifications_read_all: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Marked"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  notifications_unread_count: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["UnreadCount"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  offers_accept: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        offer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Accepted"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  offers_counter: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        offer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Counter"];
+        "application/x-www-form-urlencoded": components["schemas"]["Counter"];
+        "multipart/form-data": components["schemas"]["Counter"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OfferThread"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  offers_decline: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        offer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["Answer"];
+        "application/x-www-form-urlencoded": components["schemas"]["Answer"];
+        "multipart/form-data": components["schemas"]["Answer"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OfferThread"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_payout_account: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PayoutAccount"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_payout_account_link: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LinkPayoutAccount"];
+        "application/x-www-form-urlencoded": components["schemas"]["LinkPayoutAccount"];
+        "multipart/form-data": components["schemas"]["LinkPayoutAccount"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PayoutAccount"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_consents: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConsentState"][];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_consents_change: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ConsentChange"];
+        "application/x-www-form-urlencoded": components["schemas"]["ConsentChange"];
+        "multipart/form-data": components["schemas"]["ConsentChange"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConsentState"][];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_consents_history: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedConsentRecordList"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_corrections: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedCorrectionRequestList"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_corrections_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CorrectionCreate"];
+        "application/x-www-form-urlencoded": components["schemas"]["CorrectionCreate"];
+        "multipart/form-data": components["schemas"]["CorrectionCreate"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CorrectionRequest"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_deletion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeletionStatus"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_deletion_request: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DeletionCreate"];
+        "application/x-www-form-urlencoded": components["schemas"]["DeletionCreate"];
+        "multipart/form-data": components["schemas"]["DeletionCreate"];
+      };
+    };
+    responses: {
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeletionStatus"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_deletion_cancel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeletionRequest"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_documents: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicyDocument"][];
+        };
+      };
+    };
+  };
+  privacy_exports: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedDataExportList"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_exports_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DataExport"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_exports_link: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        export_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ExportLink"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      410: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  privacy_grievance_officer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GrievanceOfficer"];
         };
       };
     };
@@ -7127,6 +15728,264 @@ export interface operations {
       };
     };
   };
+  reliability_me: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReliabilityDetail"][];
+        };
+      };
+    };
+  };
+  reviews_reply: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        review_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReplyRequest"];
+        "application/x-www-form-urlencoded": components["schemas"]["ReplyRequest"];
+        "multipart/form-data": components["schemas"]["ReplyRequest"];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Reply"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  reviews_report: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        review_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReportRequest"];
+        "application/x-www-form-urlencoded": components["schemas"]["ReportRequest"];
+        "multipart/form-data": components["schemas"]["ReportRequest"];
+      };
+    };
+    responses: {
+      /** @description No response body */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  tasks_run: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          [key: string]: unknown;
+        };
+      };
+    };
+    responses: {
+      /** @description No response body */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  reviews_reputation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        user_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["UserReputation"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  reviews_of_user: {
+    parameters: {
+      query?: {
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+        side?: "host" | "talent";
+      };
+      header?: never;
+      path: {
+        user_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedStayReviewList"];
+        };
+      };
+    };
+  };
   verification_admin_cases_list: {
     parameters: {
       query?: {
@@ -7664,6 +16523,352 @@ export interface operations {
         };
       };
       503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_wallet: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Wallet"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_wallet_history: {
+    parameters: {
+      query?: {
+        /** @description To (India date). */
+        end?: string;
+        /** @description Financial year, like 2026-27. */
+        fy?: string;
+        /**
+         * @description * `release` - release
+         *     * `payout` - payout
+         */
+        kind?: "release" | "payout";
+        /** @description A page number within the paginated result set. */
+        page?: number;
+        /** @description Number of results to return per page. */
+        page_size?: number;
+        /** @description From (India date). */
+        start?: string;
+        status?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedWalletEntryList"];
+        };
+      };
+    };
+  };
+  money_wallet_request_payout: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PayoutRun"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_statement: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        fy: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Statement"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_statement_file: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        fy: string;
+        kind: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/csv": string;
+          "application/pdf": string;
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_tds: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        fy: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TdsRecord"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  money_tds_file: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        fy: string;
+        kind: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/csv": string;
+          "application/pdf": string;
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      404: {
         headers: {
           [name: string]: unknown;
         };

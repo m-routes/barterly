@@ -10,6 +10,8 @@ import logging
 import time
 from collections.abc import Callable
 
+from apps.common.ops import ops_event
+
 logger = logging.getLogger(__name__)
 
 
@@ -36,6 +38,12 @@ def connect_with_retry[T](
         except retry_on as exc:
             if attempt == attempts:
                 logger.error("Database connection failed after %d attempts: %s", attempts, exc)
+                ops_event(
+                    "db_connection_failed",
+                    level=logging.ERROR,
+                    attempts=attempts,
+                    error=type(exc).__name__,
+                )
                 raise
             delay = min(base_delay * (2 ** (attempt - 1)), max_delay)
             logger.warning(

@@ -1,9 +1,12 @@
 """THE transition table for an engagement, from application to booking.
 
-An application moves applied → shortlisted → interview → offered. When the talent
-accepts an offer (offered → confirmed) a Booking is created, and the booking carries
-on: confirmed → checked_in → delivering → completed → reviewed, with cancelled,
-no_show, disputed and refunded along the way.
+An application moves applied → shortlisted → interview → offered. When an offer is
+accepted (offered → confirmed: the talent accepts the host's offer, or the host accepts
+the talent's counter; see apps.offers) a Booking is created awaiting signatures. It is
+confirmed, and takes one of the gig's slots, only when both sides have signed the
+agreement (apps.bookings.confirmation). The booking then carries on: confirmed →
+checked_in → delivering → completed → reviewed, with cancelled, no_show, disputed and
+refunded along the way.
 
 Every allowed move is one row of TRANSITIONS: who may make it and the guard that must
 pass. Nothing else in the code decides whether a status change is allowed; the
@@ -27,6 +30,7 @@ CHECK_IN_EARLY = timedelta(days=1)
 
 
 class BookingStatus(models.TextChoices):
+    SIGNING = "signing", "Awaiting signatures"
     CONFIRMED = "confirmed", "Confirmed"
     CHECKED_IN = "checked_in", "Checked in"
     DELIVERING = "delivering", "Delivering"
@@ -52,6 +56,10 @@ T, V, SYS, ADM = Actor.TALENT, Actor.VENDOR, Actor.SYSTEM, Actor.ADMIN
 HOLDS_SLOT = frozenset(
     {B.CONFIRMED, B.CHECKED_IN, B.DELIVERING, B.COMPLETED, B.DISPUTED, B.REVIEWED}
 )
+# Bookings in these states keep the talent's dates: no second booking may overlap them.
+HOLDS_DATES = HOLDS_SLOT | {B.SIGNING}
+# Cancelling a booking in these states is "before check-in" (apps.bookings.cancellation).
+BEFORE_CHECK_IN = frozenset({B.SIGNING, B.CONFIRMED})
 
 
 class GuardFailed(Exception):
@@ -111,6 +119,8 @@ def _can_offer(ctx: Context) -> str | None:
 
 
 def _can_accept(ctx: Context) -> str | None:
+    """The booking's dates are the accepted offer's: bookings.services.confirm() puts them
+    on the application as `booking_dates` before the move."""
     from apps.bookings.models import Booking
 
     application = ctx.subject
@@ -118,11 +128,14 @@ def _can_accept(ctx: Context) -> str | None:
         return "This offer has expired."
     if problem := _open_slot(ctx):
         return problem
+    start, end = getattr(
+        application, "booking_dates", (application.proposed_start, application.proposed_end)
+    )
     overlapping = Booking.objects.filter(
         talent_id=application.talent_id,
-        status__in=HOLDS_SLOT,
-        start_date__lt=application.proposed_end,
-        end_date__gt=application.proposed_start,
+        status__in=HOLDS_DATES,
+        start_date__lt=end,
+        end_date__gt=start,
     )
     if overlapping.exists():
         return "You already have a booking for some of these dates."
@@ -130,10 +143,40 @@ def _can_accept(ctx: Context) -> str | None:
 
 
 def _offer_lapsed(ctx: Context) -> str | None:
+    """The offer ran out of time, or every slot is taken (apps.bookings.confirmation
+    expires the other offers when the gig fills, if settings say so)."""
     expires = ctx.subject.offer_expires_at
-    if expires is None or expires > ctx.now:
-        return "The offer hasn't expired yet."
+    if expires is not None and expires <= ctx.now:
+        return None
+    if _open_slot(ctx) is not None:
+        return None
+    return "The offer hasn't expired yet."
+
+
+def _agreement_in_force(ctx: Context) -> str | None:
+    from apps.agreements.models import Agreement
+
+    if not Agreement.objects.filter(
+        booking_id=ctx.subject.pk, current_version__isnull=False
+    ).exists():
+        return "Both of you need to sign the agreement before check-in."
     return None
+
+
+def _signed_with_open_slot(ctx: Context) -> str | None:
+    """Both signatures are in (apps.bookings.confirmation calls this inside signing)."""
+    return _agreement_in_force(ctx) or _open_slot(ctx)
+
+
+def _can_check_in(ctx: Context) -> str | None:
+    return _check_in_window(ctx) or _agreement_in_force(ctx) or _stipend_funded(ctx)
+
+
+def _stipend_funded(ctx: Context) -> str | None:
+    """Paid and hybrid stays: the host's stipend must be held in escrow first."""
+    from apps.money.escrow import require_funded
+
+    return require_funded(ctx.subject)
 
 
 def _check_in_window(ctx: Context) -> str | None:
@@ -148,6 +191,24 @@ def _check_in_window(ctx: Context) -> str | None:
 def _stay_started(ctx: Context) -> str | None:
     if ctx.today < ctx.subject.start_date:
         return "The stay hasn't started yet."
+    return None
+
+
+def _no_show_due(ctx: Context) -> str | None:
+    """A no-show waits ATTENDANCE_NO_SHOW_GRACE_HOURS into the first day (the talent may
+    simply be late)."""
+    from django.conf import settings
+
+    from apps.attendance.services import no_show_from
+
+    if ctx.today < ctx.subject.start_date:
+        return "The stay hasn't started yet."
+    due = no_show_from(ctx.subject)
+    if ctx.now < due:
+        return (
+            f"Give them until {timezone.localtime(due):%I:%M %p} "
+            f"({settings.ATTENDANCE_NO_SHOW_GRACE_HOURS} hours into the first day)."
+        )
     return None
 
 
@@ -179,26 +240,44 @@ TRANSITIONS: dict[tuple[str, str], Rule] = {
         (s, A.OFFERED): Rule(frozenset({V}), _can_offer, note="Expires 48 hours after it is made.")
         for s in _ACTIVE_BEFORE_OFFER
     },
+    # A place opened up: the system offers it to the next shortlisted applicant on the
+    # terms the host agreed before (apps.bookings.cancellation.offer_place).
+    (A.SHORTLISTED, A.OFFERED): Rule(
+        frozenset({V, SYS}), _can_offer, note="Also sent automatically when a place opens."
+    ),
     **{(s, A.REJECTED): Rule(frozenset({V})) for s in ACTIVE},
     # Auto-reject rules: the system turns down a new application that misses them.
     (A.APPLIED, A.REJECTED): Rule(frozenset({V, SYS})),
     # The talent: withdraw any time until accepting; answer an offer.
     **{(s, A.WITHDRAWN): Rule(frozenset({T})) for s in ACTIVE},
     (A.OFFERED, A.DECLINED): Rule(frozenset({T})),
-    (A.OFFERED, A.CONFIRMED): Rule(frozenset({T}), _can_accept, note="Creates the booking."),
+    (A.OFFERED, A.CONFIRMED): Rule(
+        frozenset({T, V}),
+        _can_accept,
+        note="Creates the booking. The host confirms only by accepting the talent's counter.",
+    ),
     # The system: an unanswered offer lapses; a closed or filled gig ends the rest.
     (A.OFFERED, A.EXPIRED): Rule(frozenset({SYS}), _offer_lapsed),
     **{(s, A.EXPIRED): Rule(frozenset({SYS})) for s in _ACTIVE_BEFORE_OFFER},
-    # Booking.
-    (B.CONFIRMED, B.CHECKED_IN): Rule(frozenset({V}), _check_in_window),
+    # Booking. Confirmed when both have signed; either side may call it off before then.
+    (B.SIGNING, B.CONFIRMED): Rule(
+        frozenset({SYS}), _signed_with_open_slot, note="When both sides have signed."
+    ),
+    (B.SIGNING, B.CANCELLED): Rule(frozenset({T, V, SYS, ADM}), needs_reason=True),
+    (B.CONFIRMED, B.CHECKED_IN): Rule(
+        frozenset({V}),
+        _can_check_in,
+        note="Needs the agreement signed by both; paid and hybrid gigs, the stipend funded.",
+    ),
     (B.CONFIRMED, B.CANCELLED): Rule(frozenset({T, V, ADM}), needs_reason=True),
-    (B.CONFIRMED, B.NO_SHOW): Rule(frozenset({V}), _stay_started, needs_reason=True),
+    (B.CONFIRMED, B.NO_SHOW): Rule(frozenset({V}), _no_show_due, needs_reason=True),
     (B.CHECKED_IN, B.DELIVERING): Rule(frozenset({T, V})),
     (B.CHECKED_IN, B.CANCELLED): Rule(frozenset({ADM}), needs_reason=True),
     (B.DELIVERING, B.COMPLETED): Rule(frozenset({V, SYS}), _stay_started),
     (B.DELIVERING, B.DISPUTED): Rule(frozenset({T, V}), needs_reason=True),
     (B.COMPLETED, B.DISPUTED): Rule(frozenset({T, V}), _within_dispute_window, needs_reason=True),
-    (B.COMPLETED, B.REVIEWED): Rule(frozenset({T, V})),
+    # Both reviews published (apps.reviews), or either side marking it.
+    (B.COMPLETED, B.REVIEWED): Rule(frozenset({T, V, SYS})),
     (B.NO_SHOW, B.DISPUTED): Rule(frozenset({T}), _within_dispute_window, needs_reason=True),
     (B.DISPUTED, B.COMPLETED): Rule(frozenset({ADM}), needs_reason=True),
     (B.DISPUTED, B.CANCELLED): Rule(frozenset({ADM}), needs_reason=True),

@@ -1,0 +1,15 @@
+# Findings gitleaks reports in history that were reviewed and accepted (security.yml).
+# Each line is a finding fingerprint: <commit>:<file>:<rule>:<line>. Add new entries
+# only after review, with a reason; never to silence a real secret in a new commit.
+
+# Fixed, published test vectors for check-in TOTP codes (RFC 6238 style), not secrets.
+586e0f11286805baac1e844b40187040c5345c0d:backend/apps/attendance/tests/test_attendance.py:generic-api-key:104
+586e0f11286805baac1e844b40187040c5345c0d:mobile/test/attendance/totp_test.dart:generic-api-key:8
+586e0f11286805baac1e844b40187040c5345c0d:web/src/lib/attendance/crypto.test.ts:generic-api-key:64
+
+# A Firebase iOS API key committed on 2026-11-13 and removed later. Firebase client
+# API keys identify the app and ship inside every build, so they aren't secret, but
+# this one stays in git history: restrict it to the iOS bundle id in Google Cloud
+# (APIs & Services → Credentials) or rotate it. See docs/security.md.
+c723362cec82075588bf092e5e45359cce4713bb:mobile/env/local.json:gcp-api-key:6
+17d3101c123fee7f14cc1ec1a842c67d47537852:mobile/env/local.json:gcp-api-key:6

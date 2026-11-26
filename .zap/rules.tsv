@@ -1,0 +1,3 @@
+10055	WARN	(CSP: script-src unsafe-inline on web pages - prerendered pages inline their RSC payload; see docs/security.md "Web CSP")
+10049	IGNORE	(Non-storable content - API responses are deliberately not cached)
+10027	IGNORE	(Suspicious comments - matches minified framework code)

@@ -1,11 +1,17 @@
 /** API objects for tests, shaped by the generated types so schema changes break them. */
 import type {
+  Agreement,
+  AgreementListItem,
+  AgreementVersion,
   Application,
   ApplicationListItem,
   Gig,
   MyVerification,
+  Offer,
+  OfferThread,
   Property,
   PropertyPhoto,
+  Terms,
   VendorProfile,
 } from "@/lib/api/types";
 
@@ -142,11 +148,20 @@ export const applicant = (overrides: Partial<ApplicationListItem> = {}): Applica
     skills: ["reception"],
     instagram_followers: 1200,
     badges: ["id_verified"],
+    reliability: { score: 62, level: "good", version: "v2" },
+    reputation: {
+      rating_average: "4.80",
+      review_count: 5,
+      completion_rate: 100,
+      response_minutes: 25,
+      badges: [{ key: "top_volunteer", label: "Top Volunteer" }],
+    },
   },
   fit: { score: 92, breakdown: {} },
   attachment_count: 1,
   conversation: null,
   unread_messages: 0,
+  agreement: null,
   applied_at: "2026-11-10T10:00:00Z",
   ...overrides,
 });
@@ -188,3 +203,101 @@ export const application: Application = {
 export function page<T>(results: T[], count = results.length) {
   return { count, next: null, previous: null, results };
 }
+
+export const terms: Terms = {
+  compensation_model: "hybrid",
+  start_date: "2026-12-15",
+  end_date: "2027-01-10",
+  hours_per_day: 4,
+  days_per_week: 5,
+  stay_type: "dorm_bed",
+  meals: "two_meals",
+  stipend_amount: "5000.00",
+  stipend_period: "per_month",
+  deliverables: [{ type: "instagram_reel", quantity: 2, notes: "" }],
+  usage_rights: { scope: "organic", duration_months: 12, credit_required: true },
+  cancellation_policy: "moderate",
+};
+
+export const offer = (overrides: Partial<Offer> = {}): Offer => ({
+  id: "of-1",
+  revision: 1,
+  proposed_by: "vendor",
+  mine: true,
+  terms,
+  terms_sha256: "a".repeat(64),
+  counter_of: null,
+  changed_fields: [],
+  final: false,
+  message: "",
+  status: "open",
+  status_reason: "",
+  created_at: "2026-11-12T10:00:00Z",
+  answered_at: null,
+  ...overrides,
+});
+
+export const offerThread = (overrides: Partial<OfferThread> = {}): OfferThread => ({
+  offers: [],
+  open_offer: null,
+  your_turn: false,
+  can_counter: false,
+  counterable: [],
+  offer_expires_at: null,
+  host_reliability: { score: 50, level: "new", version: "v1" },
+  ...overrides,
+});
+
+export const agreementVersion = (overrides: Partial<AgreementVersion> = {}): AgreementVersion => ({
+  id: "v-1",
+  number: 1,
+  status: "awaiting",
+  status_reason: "",
+  terms,
+  terms_sha256: "b".repeat(64),
+  changed_fields: [],
+  change_reason: "",
+  proposed_by: "",
+  template: "agreement_v1",
+  template_reviewed: false,
+  pdf_ready: true,
+  pdf_sha256: "c".repeat(64),
+  pdf_size: 17000,
+  signatures: [],
+  signed_by_me: false,
+  can_sign: true,
+  created_at: "2026-11-13T10:00:00Z",
+  in_force_at: null,
+  ...overrides,
+});
+
+export const agreement = (overrides: Partial<Agreement> = {}): Agreement => ({
+  id: "ag-1",
+  booking: "bk-1",
+  booking_status: "signing",
+  gig_title: "Content creator for the winter season",
+  in_force: false,
+  current_version: null,
+  my_side: "vendor",
+  versions: [agreementVersion()],
+  created_at: "2026-11-13T10:00:00Z",
+  ...overrides,
+});
+
+export const agreementListItem = (
+  overrides: Partial<AgreementListItem> = {},
+): AgreementListItem => ({
+  id: "ag-1",
+  booking: "bk-1",
+  booking_status: "signing",
+  gig_title: "Content creator for the winter season",
+  other_name: "Aarav Mehta",
+  start_date: "2026-12-15",
+  end_date: "2027-01-10",
+  in_force: false,
+  current_version: null,
+  awaiting_version: 1,
+  awaiting_my_signature: true,
+  created_at: "2026-11-13T10:00:00Z",
+  ...overrides,
+});

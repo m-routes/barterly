@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 
 from django.utils import timezone
 
-from apps.media.storage import SignedUpload, StoredObject, upload_headers
+from apps.media.storage import SignedUpload, StoredObject, check_link_lifetime, upload_headers
 
 
 class InMemoryMediaStorage:
@@ -18,6 +18,7 @@ class InMemoryMediaStorage:
         self.objects[key] = (data, content_type)
 
     def signed_upload(self, key, *, content_type, max_bytes, md5_b64, expires):
+        check_link_lifetime(expires)
         self.signed.append(("PUT", key))
         query = urlencode({"X-Goog-Expires": int(expires.total_seconds())})
         return SignedUpload(
@@ -26,9 +27,11 @@ class InMemoryMediaStorage:
             headers=upload_headers(content_type, max_bytes, md5_b64),
         )
 
-    def signed_read_url(self, key, *, expires, download_name=None):
+    def signed_read_url(self, key, *, expires, download_name=None, attachment=False):
+        check_link_lifetime(expires)
         self.signed.append(("GET", key))
-        return f"https://storage.test/read/{key}?X-Goog-Expires={int(expires.total_seconds())}"
+        how = "&download=1" if attachment else ""
+        return f"https://storage.test/read/{key}?X-Goog-Expires={int(expires.total_seconds())}{how}"
 
     def stat(self, key):
         if key not in self.objects:

@@ -12,11 +12,21 @@ COPY pyproject.toml uv.lock .python-version ./
 RUN uv sync --locked --no-dev --no-install-project
 
 FROM python:3.12-slim AS runtime
-ENV PYTHONDONTWRITEBYTECODE=1 \
+# The commit is the Sentry release (deploy.yml passes it).
+ARG GIT_SHA=unknown
+ENV SENTRY_RELEASE=${GIT_SHA} \
+    PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH" \
     DJANGO_SETTINGS_MODULE=config.settings.production \
     PORT=8080
+# Pango, HarfBuzz and a font for WeasyPrint (agreement PDFs, apps.agreements.pdf).
+# Security updates first: the base image can lag Debian's fixes (zlib, for one).
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && apt-get install -y --no-install-recommends \
+        libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
 RUN groupadd --system --gid 10001 app \
     && useradd --system --uid 10001 --gid app --no-create-home --shell /usr/sbin/nologin app
 WORKDIR /app

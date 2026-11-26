@@ -22,8 +22,13 @@ from apps.bookings.tests.fakes import GOOD_TOKEN, OTHER_CALLER_TOKEN
 from apps.bookings.tests.helpers import offered
 from apps.common.models import AuditLog
 from apps.notifications.models import Notification
+from apps.offers.tests.helpers import make_offer_for
 
 pytestmark = pytest.mark.django_db
+
+
+def nothing_else(expired: int) -> dict:
+    return {"expired": expired, "skipped": 0, "unsigned_cancelled": 0}
 
 
 def interviewing(days_ago: int):
@@ -44,7 +49,7 @@ class TestExpireOffers:
         Application.objects.filter(pk=lapsed.pk).update(
             offer_expires_at=timezone.now() - timedelta(minutes=5)
         )
-        assert jobs.expire_offers(timezone.now()) == {"expired": 1, "skipped": 0}
+        assert jobs.expire_offers(timezone.now()) == nothing_else(expired=1)
         lapsed.refresh_from_db()
         fresh.refresh_from_db()
         assert lapsed.status == A.EXPIRED and fresh.status == A.OFFERED
@@ -57,7 +62,7 @@ class TestExpireOffers:
         )
         assert notified == {lapsed.talent_id, lapsed.gig.vendor_id}
         # A second run finds nothing to do.
-        assert jobs.expire_offers(timezone.now()) == {"expired": 0, "skipped": 0}
+        assert jobs.expire_offers(timezone.now()) == nothing_else(expired=0)
 
     def test_offers_dont_expire_early(self):
         application = offered()
@@ -79,7 +84,7 @@ class TestStaleInterviews:
     def test_moving_on_clears_the_flag(self):
         stale = interviewing(days_ago=8)
         jobs.flag_stale_interviews(timezone.now())
-        transition(stale.pk, A.OFFERED, actor=Actor.VENDOR, user=stale.gig.vendor)
+        make_offer_for(stale)
         stale.refresh_from_db()
         assert stale.stale_flagged_at is None
         assert STALE_INTERVIEW_AFTER.days == 7
@@ -88,7 +93,7 @@ class TestStaleInterviews:
 class TestRunner:
     def test_records_each_run(self):
         run = jobs.run("expire_offers", trigger="manual")
-        assert run.finished_at and run.result == {"expired": 0, "skipped": 0} and not run.error
+        assert run.finished_at and run.result == nothing_else(expired=0) and not run.error
         assert JobRun.objects.get().trigger == "manual"
 
     def test_records_failures_and_reraises(self):
@@ -126,7 +131,7 @@ class TestEndpoint:
     def test_runs_with_the_scheduler_token(self):
         response = self.post("expire_offers", GOOD_TOKEN)
         assert response.status_code == 200
-        assert response.json()["result"] == {"expired": 0, "skipped": 0}
+        assert response.json()["result"] == nothing_else(expired=0)
         assert JobRun.objects.get(pk=response.json()["run_id"]).trigger == "scheduler"
 
     def test_refuses_everyone_else(self):

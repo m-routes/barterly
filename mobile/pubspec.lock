@@ -9,6 +9,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.79"
+  add_2_calendar:
+    dependency: "direct main"
+    description:
+      name: add_2_calendar
+      sha256: "8274d1c7a776fdb46b7b7b9a4ed6b1b80ec8f2a9325fe46e2336687bcbc18ce5"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.1"
+  ansicolor:
+    dependency: transitive
+    description:
+      name: ansicolor
+      sha256: "50e982d500bc863e1d703448afdbf9e5a72eb48840a4f766fa361ffd6877055f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.3"
   archive:
     dependency: transitive
     description:
@@ -89,6 +105,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
+  convert:
+    dependency: transitive
+    description:
+      name: convert
+      sha256: b30acd5944035672bc15c6b7a8b47d773e41e2f17de064350988c5d02adb1c68
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.2"
   cross_file:
     dependency: transitive
     description:
@@ -98,7 +122,7 @@ packages:
     source: hosted
     version: "0.3.5+5"
   crypto:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: crypto
       sha256: e3626ae6270383c9e3a549f34c9e4cd26c09ae6a9adaab2bf4737a00340efdc4
@@ -273,6 +297,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.0"
+  firebase_messaging:
+    dependency: "direct main"
+    description:
+      name: firebase_messaging
+      sha256: b971abf6ca94426d4cfc7685d6f97a34d3e1c2fda8e21d0e923d61736a984774
+      url: "https://pub.dev"
+    source: hosted
+    version: "17.1.0"
+  firebase_messaging_platform_interface:
+    dependency: transitive
+    description:
+      name: firebase_messaging_platform_interface
+      sha256: d51e4d1d1b3f575b83d3eff908f567311792601caafb04e63aff2c6ba09b6079
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.12.0"
+  firebase_messaging_web:
+    dependency: transitive
+    description:
+      name: firebase_messaging_web
+      sha256: d519ccbf71ca759c4817ee2894960f7bfeb6568d8adef9ec8dbc4bea848b9e74
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.4.0"
   fixnum:
     dependency: transitive
     description:
@@ -383,6 +431,70 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  geolocator:
+    dependency: "direct main"
+    description:
+      name: geolocator
+      sha256: ee2212a3df8292ec4c90b91183b8001d3f5a800823c974b570c5f9344ca320dc
+      url: "https://pub.dev"
+    source: hosted
+    version: "14.0.1"
+  geolocator_android:
+    dependency: transitive
+    description:
+      name: geolocator_android
+      sha256: e67583809a1fab5f4a2255902978e2bc095ace9451fde0d9624e54facd0a5c22
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.2.1"
+  geolocator_apple:
+    dependency: transitive
+    description:
+      name: geolocator_apple
+      sha256: a1e177f3081089724f2095856aeb96eb8d7d1c59e425aed8dd4de7aa2c11ab66
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.3"
+  geolocator_platform_interface:
+    dependency: transitive
+    description:
+      name: geolocator_platform_interface
+      sha256: e012af6b7e2674e7500237ab11e44ac9119e87fd0105e7bb55cde1750e8e5d80
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.4.1"
+  geolocator_web:
+    dependency: transitive
+    description:
+      name: geolocator_web
+      sha256: "19e485a0f8d6a88abcf9c53cba3a4105e14b7435ed8ac1c108c067b938fe8429"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.1.4"
+  geolocator_windows:
+    dependency: transitive
+    description:
+      name: geolocator_windows
+      sha256: "175435404d20278ffd220de83c2ca293b73db95eafbdc8131fe8609be1421eb6"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.5"
+  glob:
+    dependency: transitive
+    description:
+      name: glob
+      sha256: "218aeb56050c714f62a3182775320dfa04602b55074873e24e31bbd39bda96fb"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.0"
+  globbing:
+    dependency: transitive
+    description:
+      name: globbing
+      sha256: "4f89cfaf6fa74c9c1740a96259da06bd45411ede56744e28017cc534a12b6e2d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   go_router:
     dependency: "direct main"
     description:
@@ -487,6 +599,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.2"
+  injector:
+    dependency: transitive
+    description:
+      name: injector
+      sha256: ed389bed5b48a699d5b9561c985023d0d5cc88dd5ff2237aadcce5a5ab433e4e
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.0"
   integration_test:
     dependency: "direct dev"
     description: flutter
@@ -653,7 +773,7 @@ packages:
     source: hosted
     version: "3.0.0"
   package_info_plus:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: package_info_plus
       sha256: "73ef2cd5c11a7548f9b7f6fc2a4f6113de2e64aa2a70de63feede95548822908"
@@ -772,6 +892,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
+  properties:
+    dependency: transitive
+    description:
+      name: properties
+      sha256: "333f427dd4ed07bdbe8c75b9ff864a1e70b5d7a8426a2e8bdd457b65ae5ac598"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.1"
   pub_semver:
     dependency: transitive
     description:
@@ -780,6 +908,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.1"
+  qr:
+    dependency: transitive
+    description:
+      name: qr
+      sha256: "2c0189dca64a3ab08dda7acd7911c89af2374f08eb4eaded3e8ef4609f3b9c8b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.3"
+  qr_flutter:
+    dependency: "direct main"
+    description:
+      name: qr_flutter
+      sha256: "5095f0fc6e3f71d08adef8feccc8cea4f12eec18a2e31c2e8d82cb6019f4b097"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.1.0"
   record_use:
     dependency: transitive
     description:
@@ -804,6 +948,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "10.4.0"
+  sentry_dart_plugin:
+    dependency: "direct dev"
+    description:
+      name: sentry_dart_plugin
+      sha256: da9c1d0b3c87a251bfc36301f16af090a88c2d59128fe9a6f908f5ac20340c97
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.4.0"
   sentry_flutter:
     dependency: "direct main"
     description:
@@ -929,6 +1081,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.3.1"
+  system_info2:
+    dependency: transitive
+    description:
+      name: system_info2
+      sha256: "2d5e586c5e6b569d2e3afab1e61542d8fc0603be2d6ee671e573c041541a1541"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.2.0"
   term_glyph:
     dependency: transitive
     description:
@@ -1106,7 +1266,7 @@ packages:
     source: hosted
     version: "7.0.1"
   yaml:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: yaml
       sha256: f67cdd8e07d3c6329146aaef1ba043542b3134c12489f553ca9a7435d1068aea

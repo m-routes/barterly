@@ -9,6 +9,7 @@ import logging
 
 import sentry_sdk
 from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
+from django.core.exceptions import RequestDataTooBig, TooManyFieldsSent
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import Http404
 from rest_framework import exceptions, status
@@ -22,6 +23,12 @@ logger = logging.getLogger("apps.api")
 SERVER_ERROR_MESSAGE = "Something went wrong on our side. Quote the request id if you contact us."
 
 
+class RequestTooLarge(exceptions.APIException):
+    status_code = status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+    default_detail = "The request body is too large."
+    default_code = "request_too_large"
+
+
 def error_body(code: str, message: str, details: dict | None = None) -> dict:
     return {"code": code, "message": message, "details": details or {}}
 
@@ -32,6 +39,8 @@ def exception_handler(exc, context):
         exc = exceptions.NotFound()
     elif isinstance(exc, DjangoPermissionDenied):
         exc = exceptions.PermissionDenied()
+    elif isinstance(exc, RequestDataTooBig | TooManyFieldsSent):
+        exc = RequestTooLarge()
     elif isinstance(exc, DjangoValidationError):
         exc = exceptions.ValidationError(as_serializer_error(exc))
 
@@ -62,5 +71,6 @@ def _format(exc: exceptions.APIException) -> dict:
     details = {}
     if isinstance(exc, exceptions.Throttled) and exc.wait is not None:
         details["retry_after_seconds"] = int(exc.wait)
+    details.update(getattr(exc, "extra_details", None) or {})
     message = exc.detail if isinstance(exc.detail, str) else str(exc.default_detail)
     return error_body(code, str(message), details)

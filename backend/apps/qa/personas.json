@@ -1,0 +1,83 @@
+{
+  "_comment": "Acceptance-test personas. Each phone must also be a Firebase test number (Authentication -> Sign-in method -> Phone -> Phone numbers for testing) with the code in the E2E_OTP_CODE secret. No SMS is ever sent to them. Used by backend seed_staging (it ships in the API image), web/e2e-acceptance and mobile/integration_test. See docs/qa/README.md.",
+  "hostel_owner": {
+    "role": "vendor",
+    "phone": "+919000000101",
+    "name": "Meera Shah",
+    "business_name": "Riverbend Hostel",
+    "business_type": "hostel",
+    "property_type": "hostel",
+    "city": "Manali",
+    "state": "Himachal Pradesh",
+    "pincode": "175131",
+    "latitude": 32.2432,
+    "longitude": 77.1892
+  },
+  "cafe_owner": {
+    "role": "vendor",
+    "phone": "+919000000102",
+    "name": "Arjun Dsouza",
+    "business_name": "Saltwater Cafe",
+    "business_type": "cafe",
+    "property_type": "cafe",
+    "city": "Anjuna",
+    "state": "Goa",
+    "pincode": "403509",
+    "latitude": 15.5736,
+    "longitude": 73.74
+  },
+  "onboarding_vendor": {
+    "role": "",
+    "phone": "+919000000103",
+    "name": "Kavya Iyer",
+    "business_name": "Hilltop Homestay",
+    "business_type": "homestay",
+    "property_type": "homestay",
+    "city": "Munnar",
+    "state": "Kerala",
+    "pincode": "685612",
+    "latitude": 10.0889,
+    "longitude": 77.0595
+  },
+  "volunteer": {
+    "role": "talent",
+    "phone": "+919000000201",
+    "name": "Rohan Verma",
+    "talent_type": "hospitality",
+    "home_city": "Pune"
+  },
+  "creator": {
+    "role": "talent",
+    "phone": "+919000000202",
+    "name": "Ananya Rao",
+    "talent_type": "content_creator",
+    "home_city": "Bengaluru",
+    "instagram_handle": "ananya.travels",
+    "instagram_followers": 18500
+  },
+  "trip_leader": {
+    "role": "talent",
+    "phone": "+919000000203",
+    "name": "Tenzin Norbu",
+    "talent_type": "outdoor",
+    "home_city": "Dharamshala"
+  },
+  "journey_creator": {
+    "role": "talent",
+    "phone": "+919000000204",
+    "name": "Isha Kapoor",
+    "talent_type": "content_creator",
+    "home_city": "Kochi",
+    "instagram_handle": "isha.eats.kerala",
+    "instagram_followers": 9200,
+    "_note": "Used only by the hire journey; reset before each run."
+  },
+  "admin": {
+    "role": "admin",
+    "phone": "+919000000301",
+    "name": "Barterly Ops",
+    "admin_roles": [
+      "super_admin"
+    ]
+  }
+}

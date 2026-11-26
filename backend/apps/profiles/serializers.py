@@ -2,6 +2,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.accounts.services.phone import normalize_phone
+from apps.common.serializers import bounded_slugs
 from apps.profiles.constants import LANGUAGES, MAX_LANGUAGES, MAX_SKILLS
 from apps.profiles.models import INSTAGRAM_VALIDATOR, Skill, TalentProfile, VendorProfile
 
@@ -73,8 +74,8 @@ class VendorProfileSerializer(_ProfileSerializer):
 
 
 class TalentProfileSerializer(_ProfileSerializer):
-    skills = serializers.SlugRelatedField(
-        many=True,
+    skills = bounded_slugs(
+        MAX_SKILLS,
         slug_field="slug",
         queryset=Skill.objects.filter(is_active=True),
         required=False,

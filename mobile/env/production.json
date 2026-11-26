@@ -1,6 +1,6 @@
 {
   "BARTERLY_ENV": "production",
-  "API_BASE_URL": "https://barterly-api-production-430344535597.asia-south1.run.app",
+  "API_BASE_URL": "https://api.barterly.in",
   "FIREBASE_PROJECT_ID": "project-19c38b75-2d9e-4394-ae1",
   "FIREBASE_IOS_APP_ID": "",
   "FIREBASE_ANDROID_APP_ID": "",

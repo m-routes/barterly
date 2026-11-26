@@ -49,3 +49,6 @@ app.*.map.json
 
 # Firebase API keys stay out of git (see env/firebase-keys.example.json)
 /env/firebase-keys.json
+
+# Names the Apple team; copy from ExportOptions.plist.example (docs/release.md)
+/ios/ExportOptions.plist

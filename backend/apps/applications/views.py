@@ -1,4 +1,4 @@
-from django.db.models import Count, Prefetch
+from django.db.models import Count, F, Prefetch
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import exceptions, generics, status
 from rest_framework.request import Request
@@ -19,13 +19,11 @@ from apps.applications.services import (
     AttachmentInput,
     InvalidApplicationTransition,
     apply,
-    transition,
     withdraw,
 )
-from apps.bookings.lifecycle import Actor
 from apps.chat.services import with_chat
 from apps.common.exceptions import error_body
-from apps.common.permissions import IsAdminRole, IsTalent, IsVendor
+from apps.common.permissions import IsStaffWith, IsTalent, IsVendor, staff_can
 from apps.common.serializers import ErrorSerializer
 from apps.gigs.models import Gig
 from apps.hiring import services as hiring
@@ -33,6 +31,7 @@ from apps.hiring.serializers import (
     VendorApplicationListItemSerializer,
     VendorApplicationSerializer,
 )
+from apps.verification.constants import BadgeKind
 from apps.verification.models import Badge
 
 TAG = ["applications"]
@@ -56,6 +55,8 @@ def applications():
         Application.objects.select_related("gig", "talent__talent_profile")
         .prefetch_related(
             "talent__talent_profile__skills",
+            "talent__reliability_scores",
+            "talent__reputations",
             Prefetch(
                 "talent__badges",
                 queryset=Badge.objects.filter(revoked_at__isnull=True),
@@ -85,11 +86,22 @@ class GigApplicationsView(generics.ListAPIView):
         gig = generics.get_object_or_404(Gig, pk=self.kwargs["gig_id"], vendor=self.request.user)
         qs = (
             with_chat(applications(), self.request.user)
+            .annotate(agreement_ref=F("booking__agreement__id"))
             .filter(gig=gig)
             .prefetch_related("private_tags")
             .annotate(note_count=Count("private_notes", distinct=True))
         )
         params = self.request.query_params
+        if q := params.get("q", "").strip():
+            qs = qs.filter(talent__talent_profile__display_name__icontains=q[:80])
+        if badge := params.get("badge", "").strip():
+            if badge not in BadgeKind.values:
+                raise exceptions.ValidationError(
+                    {"badge": [f"One of: {', '.join(BadgeKind.values)}."]}
+                )
+            qs = qs.filter(
+                talent__badges__kind=badge, talent__badges__revoked_at__isnull=True
+            ).distinct()
         if params.get("tag"):
             qs = qs.filter(private_tags__label=params["tag"].strip().lower())
         if params.get("status"):
@@ -112,6 +124,10 @@ class GigApplicationsView(generics.ListAPIView):
             OpenApiParameter("status", str, description="Comma list of statuses."),
             OpenApiParameter("min_score", int),
             OpenApiParameter("tag", str, description="Only applicants with this private tag."),
+            OpenApiParameter("q", str, description="Part of the applicant's name."),
+            OpenApiParameter(
+                "badge", enum=list(BadgeKind.values), description="Only applicants with it."
+            ),
             OpenApiParameter("sort", enum=list(SORTS)),
         ],
         responses={
@@ -186,6 +202,7 @@ class MyApplicationsView(generics.ListAPIView):
     def get_queryset(self):
         return (
             with_chat(applications(), self.request.user)
+            .annotate(agreement_ref=F("booking__agreement__id"))
             .filter(talent=self.request.user)
             .order_by("-applied_at", "id")
         )
@@ -205,21 +222,23 @@ class MyApplicationsView(generics.ListAPIView):
 
 
 class ApplicationDetailView(generics.RetrieveAPIView):
-    permission_classes = [IsTalent | IsVendor | IsAdminRole]
+    permission_classes = [IsTalent | IsVendor | IsStaffWith("applications.view_application")]
     serializer_class = ApplicationSerializer
     lookup_url_kwarg = "application_id"
 
     def get_serializer_class(self):
         # Vendors and admins also see private notes and tags; the applicant never does.
         user = self.request.user
-        if user.is_authenticated and (user.is_vendor or user.is_admin_role):
+        if user.is_authenticated and (
+            user.is_vendor or staff_can(user, "applications.view_application")
+        ):
             return VendorApplicationSerializer
         return ApplicationSerializer
 
     def get_queryset(self):
         user = self.request.user
         qs = with_attachments(applications())
-        if user.is_admin_role:
+        if staff_can(user, "applications.view_application"):
             return qs
         if user.is_vendor:
             return qs.filter(gig__vendor=user).prefetch_related(
@@ -282,13 +301,12 @@ class VendorStatusView(APIView):
 
     @extend_schema(
         operation_id="applications_status_change",
-        summary="Shortlist, interview, offer or reject",
+        summary="Shortlist, interview or reject",
         description=(
             "The gig's vendor moves an application along. Rejecting needs a reason_code "
             "(GET /api/v1/hiring/rejection-reasons/); the applicant reads its text and the "
-            "optional message. An offer reserves nothing yet: the "
-            "talent has 48 hours to accept (which books a slot) or decline, and offers need "
-            "an open slot on a running gig."
+            "optional message. Offers carry terms, so they have their own endpoint: "
+            "POST /api/v1/applications/{id}/offer/."
         ),
         request=VendorStatusSerializer,
         responses={200: VendorApplicationSerializer, 409: ErrorSerializer, **ERRORS},
@@ -320,6 +338,7 @@ class DeclineView(APIView):
     @extend_schema(
         operation_id="applications_decline",
         summary="Decline an offer",
+        description="Declines the host's offer waiting for your answer (see offers_decline).",
         request=WithdrawSerializer,
         responses={200: ApplicationSerializer, 409: ErrorSerializer, **ERRORS},
         tags=TAG,
@@ -329,15 +348,19 @@ class DeclineView(APIView):
             raise exceptions.NotFound("No such application.")
         serializer = WithdrawSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        from apps.offers import services as offers
+        from apps.offers.models import Party
+
+        offer = offers.open_offer(application_id)
+        if offer is None or offer.proposed_by != Party.VENDOR:
+            raise Conflict("There's no offer waiting for your answer.")
         try:
-            transition(
-                application_id,
-                "declined",
-                actor=Actor.TALENT,
+            offers.decline(
+                offer.pk,
                 user=request.user,
                 reason=serializer.validated_data.get("reason", ""),
                 request=request,
             )
-        except InvalidApplicationTransition as exc:
-            raise Conflict(str(exc)) from exc
+        except offers.OfferError as exc:
+            raise Conflict(exc.message) from exc
         return _respond(application_id)

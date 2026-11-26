@@ -4,8 +4,15 @@ from rest_framework import serializers
 from apps.applications.constants import MAX_ATTACHMENTS
 from apps.applications.models import Application, ApplicationAttachment, AttachmentKind
 from apps.discovery.serializers import FitSerializer
+from apps.gigs.constants import MAX_SCREENING_QUESTIONS
 from apps.hiring.interview_serializers import InterviewSerializer
 from apps.media.services.uploads import read_urls
+from apps.reliability import services as reliability
+from apps.reliability.models import Side
+from apps.reliability.serializers import ReliabilitySerializer
+from apps.reviews import reputation
+from apps.reviews.models import Side as ReviewSide
+from apps.reviews.serializers import ReputationSerializer
 
 
 class AttachmentInputSerializer(serializers.Serializer):
@@ -33,6 +40,7 @@ class ApplySerializer(serializers.Serializer):
         child=serializers.CharField(max_length=1000, allow_blank=True),
         required=False,
         default=list,
+        max_length=MAX_SCREENING_QUESTIONS,
         help_text="One answer per screening question, in order.",
     )
     proposed_start = serializers.DateField()
@@ -83,6 +91,10 @@ class ApplicantSerializer(serializers.Serializer):
     skills = serializers.ListField(child=serializers.CharField())
     instagram_followers = serializers.IntegerField(allow_null=True)
     badges = serializers.ListField(child=serializers.CharField(), help_text="Active badge kinds.")
+    reliability = ReliabilitySerializer(help_text="Their reliability as talent.")
+    reputation = ReputationSerializer(
+        help_text="As talent: rating, completion rate, response time, badges."
+    )
 
 
 def applicant(user) -> dict:
@@ -97,6 +109,8 @@ def applicant(user) -> dict:
         "skills": [s.slug for s in profile.skills.all()] if profile else [],
         "instagram_followers": profile.instagram_followers if profile else None,
         "badges": sorted(b.kind for b in getattr(user, "active_badges", [])),
+        "reliability": reliability.for_user(user, Side.TALENT),
+        "reputation": reputation.for_user_object(user, ReviewSide.TALENT),
     }
 
 
@@ -124,6 +138,13 @@ class ApplicationListItemSerializer(_ApplicationBase):
         help_text="The chat about this application, once it's open (apps.chat).",
     )
     unread_messages = serializers.IntegerField(read_only=True, default=0)
+    agreement = serializers.UUIDField(
+        source="agreement_ref",
+        read_only=True,
+        allow_null=True,
+        default=None,
+        help_text="The agreement, once the application is booked (apps.agreements).",
+    )
 
     class Meta:
         model = Application
@@ -140,6 +161,7 @@ class ApplicationListItemSerializer(_ApplicationBase):
             "attachment_count",
             "conversation",
             "unread_messages",
+            "agreement",
             "applied_at",
         ]
         read_only_fields = fields
@@ -204,7 +226,10 @@ class VendorStatusSerializer(serializers.Serializer):
     they're allowed from the current status). Rejecting needs a reason_code; the
     applicant sees its text plus the optional message."""
 
-    status = serializers.ChoiceField(choices=["shortlisted", "interview", "offered", "rejected"])
+    status = serializers.ChoiceField(
+        choices=["shortlisted", "interview", "rejected"],
+        help_text="To offer, send the terms: POST /api/v1/applications/{id}/offer/.",
+    )
     reason_code = serializers.ChoiceField(
         choices=["not_a_fit", "dates", "filled", "language", "incomplete", "other"], required=False
     )

@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
+from apps.common.permissions import staff_can
 from apps.common.services.audit import log_action, snapshot
 from apps.gigs.constants import (
     EDITABLE,
@@ -39,7 +40,7 @@ class PlanLimitReached(Exception):
 def actor_for(user, gig: Gig) -> str | None:
     if user.pk == gig.vendor_id:
         return Actor.VENDOR
-    if getattr(user, "is_admin_role", False):
+    if staff_can(user, "backoffice.review_gigs"):
         return Actor.ADMIN
     return None
 
@@ -169,8 +170,8 @@ def _check_plan(gig: Gig) -> None:
     live = Gig.objects.filter(vendor_id=gig.vendor_id, status=GigStatus.LIVE).exclude(pk=gig.pk)
     if live.count() >= plan.max_live_gigs:
         raise PlanLimitReached(
-            f"Your {plan.name} plan allows {plan.max_live_gigs} live gigs. "
-            "Pause or close one first."
+            f"Your {plan.name} plan allows {plan.max_live_gigs} live "
+            f"gig{'' if plan.max_live_gigs == 1 else 's'}. Pause or close one, or upgrade."
         )
 
 

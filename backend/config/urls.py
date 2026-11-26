@@ -21,6 +21,18 @@ urlpatterns = [
     path("api/v1/", include("apps.bookings.urls")),
     path("api/v1/", include("apps.hiring.urls")),
     path("api/v1/", include("apps.chat.urls")),
+    path("api/v1/", include("apps.offers.urls")),
+    path("api/v1/", include("apps.agreements.urls")),
+    path("api/v1/", include("apps.reliability.urls")),
+    path("api/v1/", include("apps.notifications.urls")),
+    path("api/v1/", include("apps.billing.urls")),
+    path("api/v1/", include("apps.money.urls")),
+    path("api/v1/", include("apps.attendance.urls")),
+    path("api/v1/", include("apps.deliverables.urls")),
+    path("api/v1/", include("apps.reviews.urls")),
+    path("api/v1/", include("apps.flags.urls")),
+    path("api/v1/", include("apps.appversions.urls")),
+    path("api/v1/", include("apps.privacy.urls")),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
 ]
 

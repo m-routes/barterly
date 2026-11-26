@@ -7,8 +7,13 @@ import type { ApiError } from "./errors";
  *   403). The shell shows a toast.
  * - "session-expired": the refresh token is gone or rejected. The shell sends the
  *   person to /login.
+ * - "notice": a message for the person from a screen that has nowhere else to put it
+ *   (an optimistic change that the server refused and was put back). Shown as a toast.
  */
-export type ApiEvent = { type: "error"; error: ApiError } | { type: "session-expired" };
+export type ApiEvent =
+  | { type: "error"; error: ApiError }
+  | { type: "session-expired" }
+  | { type: "notice"; message: string };
 
 type Listener = (event: ApiEvent) => void;
 
@@ -23,4 +28,9 @@ export function onApiEvent(listener: Listener): () => void {
 
 export function emitApiEvent(event: ApiEvent): void {
   for (const listener of listeners) listener(event);
+}
+
+/** Show a short message in the toaster. */
+export function notify(message: string): void {
+  emitApiEvent({ type: "notice", message });
 }

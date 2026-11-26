@@ -17,6 +17,11 @@ if not ALLOWED_HOSTS:
     raise ImproperlyConfigured("DJANGO_ALLOWED_HOSTS must list at least one host")
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
+# Check-in passes must be signed with the real key, never one derived from SECRET_KEY.
+ATTENDANCE_SIGNING_KEY = env_str("ATTENDANCE_SIGNING_KEY")
+# Field encryption keys must be real ones, never derived from SECRET_KEY.
+FIELD_ENCRYPTION_KEYS = env_str("FIELD_ENCRYPTION_KEYS")
+
 DATABASES = {"default": database_config(ssl_require=True, pool=True)}
 
 # Google's front end appends the real client IP to X-Forwarded-For; trust only that
@@ -66,8 +71,19 @@ STORAGES = {
         },
     },
 }
-STATIC_URL = f"https://storage.googleapis.com/{GS_STATIC_BUCKET}/static/"
+# Behind the load balancer, static files come from the CDN-backed bucket on the API's
+# own domain (https://api.example.com/static/); otherwise straight from the bucket.
+STATIC_URL = (
+    env_str("STATIC_URL", "") or f"https://storage.googleapis.com/{GS_STATIC_BUCKET}/static/"
+)
 
 
 # Health probes come from inside Cloud Run over plain HTTP.
 SECURE_REDIRECT_EXEMPT = [r"^api/v1/health/$"]
+
+# Email goes out only where SMTP is configured; otherwise the channel is off rather than
+# "sent" to the logs.
+if not env_str("EMAIL_HOST", ""):
+    NOTIFICATION_PROVIDERS = {**NOTIFICATION_PROVIDERS, "email": None}  # noqa: F405
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"

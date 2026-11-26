@@ -3,6 +3,7 @@ import 'package:barterly/src/apply/application.dart';
 import 'package:barterly/src/platform/device_keys.dart';
 import 'package:barterly/src/platform/key_value_store.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart' show Scrollable;
 
 import '../fixtures.dart';
 import '../helpers.dart';
@@ -92,7 +93,14 @@ void main() {
 
     await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
+    // The profile list builds lazily: scroll down to the button first.
+    await tester.scrollUntilVisible(
+      find.text('Sign out'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.ensureVisible(find.text('Sign out'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Sign out'));
     await tester.pumpAndSettle();
 

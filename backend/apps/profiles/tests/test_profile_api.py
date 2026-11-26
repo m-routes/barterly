@@ -171,11 +171,17 @@ def test_talent_profile_round_trip():
 
 def test_talent_must_be_18():
     client = client_for(TalentFactory())
-    underage = client.patch(TALENT_ME, {"date_of_birth": years_ago(18, days=1)}, format="json")
-    assert underage.status_code == 400
-    assert "at least 18" in underage.json()["details"]["date_of_birth"][0]
     birthday = client.patch(TALENT_ME, {"date_of_birth": years_ago(18)}, format="json")
     assert birthday.status_code == 201
+
+
+def test_an_under_18_date_pauses_the_account_for_review():
+    # They declared 18+ at sign-up; apps.privacy.services.minors takes it from here.
+    client = client_for(TalentFactory())
+    underage = client.patch(TALENT_ME, {"date_of_birth": years_ago(18, days=1)}, format="json")
+    assert underage.status_code == 403
+    assert underage.json()["code"] == "underage"
+    assert "at least 18" in underage.json()["message"]
 
 
 @pytest.mark.parametrize(

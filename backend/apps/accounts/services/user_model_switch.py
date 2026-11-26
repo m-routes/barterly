@@ -49,7 +49,7 @@ def switch_to_custom_user(connection=default_connection) -> list[str]:
     with transaction.atomic(using=connection.alias), connection.cursor() as cursor:
         for table in _MUST_BE_EMPTY:
             if table in existing:
-                cursor.execute(f"SELECT EXISTS (SELECT 1 FROM {quote(table)})")  # noqa: S608
+                cursor.execute(f"SELECT EXISTS (SELECT 1 FROM {quote(table)})")  # nosec B608  # noqa: S608
                 if cursor.fetchone()[0]:
                     raise LegacyUsersPresent(
                         f"{table} has rows; refusing to drop it. Migrate the data instead."

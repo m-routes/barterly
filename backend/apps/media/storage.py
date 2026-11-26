@@ -7,15 +7,30 @@ apps.media.tests.fakes.InMemoryMediaStorage.
 
 import base64
 import contextlib
+import hashlib
+import hmac
 import threading
+import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from functools import cache
 from typing import Protocol
+from urllib.parse import quote
 
 from django.conf import settings
 from django.utils import timezone
 from django.utils.module_loading import import_string
+
+
+def check_link_lifetime(expires) -> None:
+    """Signed links are short-lived (MEDIA_MAX_SIGNED_URL_SECONDS); longer is a bug."""
+    from django.conf import settings
+
+    if expires.total_seconds() > settings.MEDIA_MAX_SIGNED_URL_SECONDS:
+        raise ValueError(
+            f"Signed links last at most {settings.MEDIA_MAX_SIGNED_URL_SECONDS}s, "
+            f"not {int(expires.total_seconds())}s."
+        )
 
 
 class StorageNotConfigured(Exception):
@@ -49,8 +64,15 @@ class MediaStorage(Protocol):
     ) -> SignedUpload: ...
 
     def signed_read_url(
-        self, key: str, *, expires: timedelta, download_name: str | None = None
-    ) -> str: ...
+        self,
+        key: str,
+        *,
+        expires: timedelta,
+        download_name: str | None = None,
+        attachment: bool = False,
+    ) -> str:
+        """A read link. With `attachment`, browsers save the file instead of showing it."""
+        ...
 
     def stat(self, key: str) -> StoredObject | None: ...
 
@@ -111,6 +133,7 @@ class GCSMediaStorage:
         return {"service_account_email": email, "access_token": self._credentials.token}
 
     def signed_upload(self, key, *, content_type, max_bytes, md5_b64, expires):
+        check_link_lifetime(expires)
         headers = upload_headers(content_type, max_bytes, md5_b64)
         url = self._bucket.blob(key).generate_signed_url(
             version="v4",
@@ -123,8 +146,10 @@ class GCSMediaStorage:
         )
         return SignedUpload(url=url, expires_at=timezone.now() + expires, headers=headers)
 
-    def signed_read_url(self, key, *, expires, download_name=None):
-        disposition = f'inline; filename="{download_name}"' if download_name else None
+    def signed_read_url(self, key, *, expires, download_name=None, attachment=False):
+        check_link_lifetime(expires)
+        how = "attachment" if attachment else "inline"
+        disposition = f'{how}; filename="{download_name}"' if download_name else None
         return self._bucket.blob(key).generate_signed_url(
             version="v4",
             method="GET",
@@ -151,6 +176,41 @@ class GCSMediaStorage:
 
         with contextlib.suppress(NotFound):
             self._bucket.blob(key).delete()
+
+
+def cdn_signed_url(base_url: str, *, key_name: str, key_b64: str, expires_at: int) -> str:
+    """A Cloud CDN signed URL (HMAC-SHA1 over the URL with Expires and KeyName).
+
+    https://cloud.google.com/cdn/docs/using-signed-urls#programmatically_creating_signed_urls
+    """
+    separator = "&" if "?" in base_url else "?"
+    unsigned = f"{base_url}{separator}Expires={expires_at}&KeyName={key_name}"
+    key = base64.urlsafe_b64decode(key_b64 + "=" * (-len(key_b64) % 4))
+    digest = hmac.new(key, unsigned.encode(), hashlib.sha1).digest()
+    return f"{unsigned}&Signature={base64.urlsafe_b64encode(digest).decode()}"
+
+
+class CDNMediaStorage(GCSMediaStorage):
+    """GCSMediaStorage whose inline reads go through Cloud CDN (docs/edge.md).
+
+    The CDN's backend bucket is the private media bucket; only Cloud CDN's fill account
+    may read it, and only for requests carrying a valid signed URL. Downloads that need
+    a Content-Disposition (attachments, file names) keep using Cloud Storage signed
+    URLs, since the CDN can't set that header per request. Uploads are unchanged.
+    """
+
+    def signed_read_url(self, key, *, expires, download_name=None, attachment=False):
+        if attachment or download_name:
+            return super().signed_read_url(
+                key, expires=expires, download_name=download_name, attachment=attachment
+            )
+        check_link_lifetime(expires)
+        return cdn_signed_url(
+            f"https://{settings.MEDIA_CDN_HOST}/{quote(key, safe='/~')}",
+            key_name=settings.MEDIA_CDN_KEY_NAME,
+            key_b64=settings.MEDIA_CDN_KEY,
+            expires_at=int(time.time() + expires.total_seconds()),
+        )
 
 
 @cache

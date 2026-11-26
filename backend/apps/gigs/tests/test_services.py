@@ -193,11 +193,13 @@ def test_plan_limit_blocks_going_live(settings):
         plans._build.cache_clear()
 
 
-def test_unlimited_plan_by_default():
-    vendor_gig = live_gig()
-    for _ in range(3):
-        live_gig(property=PropertyFactory(vendor=vendor_gig.vendor))
-    assert Gig.objects.filter(vendor=vendor_gig.vendor, status=G.LIVE).count() == 4
+def test_without_a_plan_one_gig_can_be_live():
+    """Billing's free fallback (apps.billing.entitlements.FREE) allows one."""
+    first = live_gig()
+    second = GigFactory(property=PropertyFactory(vendor=first.vendor))
+    transition(second.pk, G.IN_REVIEW, actor=Actor.VENDOR, user=second.vendor)
+    with pytest.raises(PlanLimitReached, match="Free plan allows 1 live gig"):
+        transition(second.pk, G.LIVE, actor=Actor.ADMIN, user=AdminUserFactory())
 
 
 def test_auto_close_after_apply_by():

@@ -7,6 +7,8 @@ import 'package:barterly/src/discover/gig.dart' show dateRange, shortDate;
 import 'package:barterly/src/providers.dart';
 import 'package:barterly/src/router.dart' show Routes;
 import 'package:barterly/src/theme/tokens.dart';
+import 'package:barterly/src/trips/trip_models.dart';
+import 'package:barterly/src/trips/trip_screen.dart' show TripTracker;
 import 'package:barterly/src/widgets/feedback.dart';
 import 'package:barterly/src/widgets/states.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -314,6 +316,7 @@ class _ApplicationCardState extends ConsumerState<_ApplicationCard> {
               ],
             ),
             Text(a.gigTitle, style: Theme.of(context).textTheme.titleMedium),
+            TripTracker(progress: tripProgress(a.status)),
             if (a.proposedStart != null && a.proposedEnd != null)
               Text(
                 [
@@ -322,31 +325,55 @@ class _ApplicationCardState extends ConsumerState<_ApplicationCard> {
                 ].join(' · '),
                 style: const TextStyle(color: BarterlyColors.inkMuted),
               ),
-            if (active || a.conversationId != null)
-              Wrap(
-                alignment: WrapAlignment.end,
-                spacing: 4,
-                children: [
-                  if (a.conversationId case final id?)
-                    TextButton.icon(
-                      onPressed: () async {
-                        await context.push(Routes.chat(id));
-                        ref.invalidate(myApplicationsProvider);
-                      },
-                      icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                      label: Text(
-                        a.unreadMessages > 0
-                            ? 'Message (${a.unreadMessages} new)'
-                            : 'Message',
-                      ),
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 4,
+              children: [
+                TextButton.icon(
+                  onPressed: () async {
+                    await context.push(Routes.trip(a.id));
+                    ref.invalidate(myApplicationsProvider);
+                  },
+                  icon: const Icon(Icons.timeline, size: 18),
+                  label: const Text('Trip details'),
+                ),
+                if (a.status == ApplicationStatus.offered)
+                  FilledButton.tonal(
+                    onPressed: () async {
+                      await context.push(Routes.offer(a.id));
+                      ref.invalidate(myApplicationsProvider);
+                    },
+                    child: const Text('See offer'),
+                  ),
+                if (a.agreementId case final id?)
+                  TextButton.icon(
+                    onPressed: () async {
+                      await context.push(Routes.agreement(id));
+                      ref.invalidate(myApplicationsProvider);
+                    },
+                    icon: const Icon(Icons.description_outlined, size: 18),
+                    label: const Text('Agreement'),
+                  ),
+                if (a.conversationId case final id?)
+                  TextButton.icon(
+                    onPressed: () async {
+                      await context.push(Routes.chat(id));
+                      ref.invalidate(myApplicationsProvider);
+                    },
+                    icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                    label: Text(
+                      a.unreadMessages > 0
+                          ? 'Message (${a.unreadMessages} new)'
+                          : 'Message',
                     ),
-                  if (active)
-                    TextButton(
-                      onPressed: _busy ? null : _withdraw,
-                      child: Text(_busy ? 'Withdrawing…' : 'Withdraw'),
-                    ),
-                ],
-              ),
+                  ),
+                if (active)
+                  TextButton(
+                    onPressed: _busy ? null : _withdraw,
+                    child: Text(_busy ? 'Withdrawing…' : 'Withdraw'),
+                  ),
+              ],
+            ),
           ],
         ),
       ),

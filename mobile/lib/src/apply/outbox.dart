@@ -92,8 +92,39 @@ class ApplicationSender {
       if (error.code == 'network_error' || error.status == 503) {
         return Offline(current);
       }
-      return Refused(current, error, blockedReasons(error));
+      final reasons = blockedReasons(error);
+      final sentBefore = await _sentByAnEarlierTry(current, reasons);
+      if (sentBefore != null) return Sent(current, sentBefore);
+      return Refused(current, error, reasons);
     }
+  }
+
+  /// A connection that drops after the server saved the application but
+  /// before its answer arrived looks like "offline", so the draft is sent
+  /// again and refused as `already_applied`. If the talent's application for
+  /// this gig was made after the draft was written, it's this draft's: it was
+  /// sent.
+  Future<Application?> _sentByAnEarlierTry(
+    ApplicationDraft draft,
+    List<BlockedReason> reasons,
+  ) async {
+    if (reasons.isEmpty || reasons.any((r) => r.code != 'already_applied')) {
+      return null;
+    }
+    try {
+      final mine = await _applications.mine();
+      for (final application in mine) {
+        final appliedAt = application.appliedAt;
+        if (application.gigId == draft.gigId &&
+            appliedAt != null &&
+            !appliedAt.isBefore(draft.createdAt)) {
+          return application;
+        }
+      }
+    } on ApiError {
+      // Can't tell: let the talent see the refusal.
+    }
+    return null;
   }
 
   Future<List<int>> _readFile(AttachmentDraft attachment) async {

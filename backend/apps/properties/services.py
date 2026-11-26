@@ -7,6 +7,7 @@ from django.db import transaction
 from django.db.models import Max
 from django.utils import timezone
 
+from apps.common.permissions import staff_can
 from apps.common.services.audit import log_action
 from apps.geo.geocoders import GeocoderUnavailable
 from apps.geo.services import geocode
@@ -25,15 +26,13 @@ def can_see_exact_location(user, prop: Property) -> bool:
     checked in or delivering). After the stay, guests see the approximate area again."""
     if not getattr(user, "is_authenticated", False):
         return False
-    if user.pk == prop.vendor_id or user.is_admin_role:
+    if user.pk == prop.vendor_id or staff_can(user, "properties.view_property"):
         return True
-    from apps.bookings.lifecycle import BookingStatus
+    from apps.bookings.confirmation import UNLOCKED_WHILE
     from apps.bookings.models import Booking
 
     return Booking.objects.filter(
-        talent=user,
-        gig__property=prop,
-        status__in=[BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN, BookingStatus.DELIVERING],
+        talent=user, gig__property=prop, status__in=UNLOCKED_WHILE
     ).exists()
 
 

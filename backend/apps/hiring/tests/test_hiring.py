@@ -14,6 +14,7 @@ from apps.bookings import jobs
 from apps.hiring import services
 from apps.hiring.models import Interview, InterviewStatus
 from apps.notifications.models import Notification
+from apps.offers.tests.helpers import make_offer_for
 from apps.profiles.tests.factories import SkillFactory
 from apps.verification.tests.factories import client_for
 
@@ -220,13 +221,29 @@ class TestPrivateNotesAndTags:
         assert len(vendor.get(f"/api/v1/gigs/{gig.pk}/applications/").json()["results"]) == 2
         assert other
 
+    def test_list_searches_names_and_filters_by_badge(self):
+        from apps.verification.models import Badge
+
+        gig = live_gig()
+        riya = applied(gig, eligible_talent(display_name="Riya Sharma"))
+        kabir = applied(gig, eligible_talent(display_name="Kabir Rana"))
+        Badge.objects.filter(user=kabir.talent).update(
+            revoked_at=timezone.now(), revoke_reason="test"
+        )
+        vendor = client_for(gig.vendor)
+        url = f"/api/v1/gigs/{gig.pk}/applications/"
+        assert [r["id"] for r in vendor.get(url, {"q": "riya"}).json()["results"]] == [str(riya.pk)]
+        verified = vendor.get(url, {"badge": "id_verified"}).json()["results"]
+        assert [r["id"] for r in verified] == [str(riya.pk)]
+        assert vendor.get(url, {"badge": "nope"}).status_code == 400
+
     def test_saved_filters(self):
         gig = live_gig()
         vendor = client_for(gig.vendor)
         body = {
             "name": "Strong",
             "gig": str(gig.pk),
-            "params": {"min_score": 70, "tag": "call back"},
+            "params": {"min_score": 70, "tag": "call back", "q": "ri", "badge": "id_verified"},
         }
         saved = vendor.post("/api/v1/applicant-filters/", body, format="json")
         assert saved.status_code == 201, saved.json()
@@ -234,6 +251,8 @@ class TestPrivateNotesAndTags:
         assert vendor.get("/api/v1/applicant-filters/").json()[0]["params"] == {
             "min_score": 70,
             "tag": "call back",
+            "q": "ri",
+            "badge": "id_verified",
         }
         other_gig = {"name": "Theirs", "gig": str(live_gig().pk), "params": {}}
         assert (
@@ -346,7 +365,7 @@ class TestInterviews:
     def test_moving_past_interview_closes_it(self):
         application = applied()
         self.propose(application, [at(2, 10).isoformat()])
-        services.move(application.pk, A.OFFERED, vendor=application.gig.vendor)
+        make_offer_for(application)
         assert Interview.objects.get(application=application).status == InterviewStatus.CANCELLED
 
 

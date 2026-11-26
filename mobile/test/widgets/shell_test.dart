@@ -52,7 +52,11 @@ void main() {
     expect(find.text('Find a gig'), findsOneWidget);
     await tester.tap(find.text('Wallet'));
     await tester.pumpAndSettle();
-    expect(find.text('Nothing here yet'), findsOneWidget);
+    expect(
+      find.text('Add a UPI id or bank account to get paid.'),
+      findsOneWidget,
+    );
+    await tester.scrollUntilVisible(find.text('Nothing here yet.'), 200);
   });
 
   testWidgets('Profile shows the saved profile and signs out', (tester) async {
@@ -63,6 +67,13 @@ void main() {
     expect(find.text('Asha Rao'), findsOneWidget);
     expect(find.text('Artist / muralist'), findsOneWidget);
 
+    await tester.scrollUntilVisible(
+      find.text('Sign out'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.ensureVisible(find.text('Sign out'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Sign out'));
     await tester.pumpAndSettle();
     expect(find.text('Sign in to Barterly'), findsOneWidget);

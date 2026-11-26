@@ -1,5 +1,6 @@
 """Tests for settings helpers and the deployed settings modules."""
 
+import base64
 import os
 import secrets
 import subprocess
@@ -95,6 +96,8 @@ def deployed_env(**overrides: str) -> dict[str, str]:
         "DJANGO_ALLOWED_HOSTS": "api.example.test",
         "DATABASE_URL": CLOUD_SQL_URL,
         "GS_MEDIA_BUCKET": "media-bucket",
+        "ATTENDANCE_SIGNING_KEY": base64.b64encode(secrets.token_bytes(32)).decode(),
+        "FIELD_ENCRYPTION_KEYS": "k1:" + base64.b64encode(secrets.token_bytes(32)).decode(),
         "GS_STATIC_BUCKET": "static-bucket",
     }
     base.update(overrides)
@@ -120,7 +123,16 @@ def test_deployed_settings_pass_deploy_checks(module):
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-@pytest.mark.parametrize("missing", ["DJANGO_SECRET_KEY", "DATABASE_URL", "GS_MEDIA_BUCKET"])
+@pytest.mark.parametrize(
+    "missing",
+    [
+        "DJANGO_SECRET_KEY",
+        "DATABASE_URL",
+        "GS_MEDIA_BUCKET",
+        "ATTENDANCE_SIGNING_KEY",
+        "FIELD_ENCRYPTION_KEYS",
+    ],
+)
 def test_production_refuses_to_start_without_required_env(missing):
     env_vars = deployed_env()
     del env_vars[missing]

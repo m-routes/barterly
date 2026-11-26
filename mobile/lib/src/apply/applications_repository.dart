@@ -1,5 +1,6 @@
 import 'package:barterly/src/api/api_error.dart';
 import 'package:barterly/src/apply/application.dart';
+import 'package:barterly/src/trips/trip_models.dart';
 import 'package:dio/dio.dart';
 
 /// Applying, listing and withdrawing, over the API.
@@ -33,6 +34,34 @@ class ApplicationsRepository {
         if (item is Map<String, Object?>) Application.fromJson(item),
     ];
   });
+
+  /// The application with its status history and interview.
+  Future<ApplicationDetail> detail(String id) => guardApi(() async {
+    final response = await _dio.get<Map<String, Object?>>(
+      '/api/v1/applications/$id/',
+    );
+    return ApplicationDetail.fromJson(response.data!);
+  });
+
+  /// Pick one of the interview times the host offered.
+  Future<Interview> pickInterviewSlot(String applicationId, int slotId) =>
+      guardApi(() async {
+        final response = await _dio.post<Map<String, Object?>>(
+          '/api/v1/applications/$applicationId/interview/pick/',
+          data: {'slot_id': slotId},
+        );
+        return Interview.fromJson(response.data!);
+      });
+
+  /// None of the times work: ask the host for others.
+  Future<Interview> askForNewTimes(String applicationId, {String note = ''}) =>
+      guardApi(() async {
+        final response = await _dio.post<Map<String, Object?>>(
+          '/api/v1/applications/$applicationId/interview/new-times/',
+          data: {'note': note},
+        );
+        return Interview.fromJson(response.data!);
+      });
 
   Future<Application> withdraw(String id, {String reason = ''}) =>
       guardApi(() async {
