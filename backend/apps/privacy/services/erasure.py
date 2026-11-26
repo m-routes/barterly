@@ -450,9 +450,10 @@ def _money(user, now) -> int:
 
 
 def _attendance(user, now) -> int:
+    # Blanking the pass's secret on erasure, not setting a password.
     count = (
         _model("attendance.AttendancePass")
-        .objects.filter(talent=user)
+        .objects.filter(talent=user)  # nosec B106
         .update(latitude=None, longitude=None, accuracy_m=None, code_secret="")
     )
     count += _model("attendance.HourLog").objects.filter(talent=user).update(note="")
